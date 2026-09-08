@@ -59,7 +59,7 @@ export default function App() {
       const timeRes = await fetch(`${BACKEND_URL}/situation/timeline`);
       if (timeRes.ok) {
         const timeData = await timeRes.json();
-        setTimeline(timeData || []);
+        setTimeline(Array.isArray(timeData) ? timeData : (timeData.timeline || []));
       }
 
       // 3. Events
@@ -199,7 +199,7 @@ export default function App() {
         <div className="flex items-center gap-2 border-b border-slate-800/80 pb-2">
           <TabBtn id="overview" label="SITUATION OVERVIEW" icon={<Activity className="w-4 h-4" />} active={activeTab} onClick={setActiveTab} />
           <TabBtn id="events" label={`INGESTED EVENTS (${events.length})`} icon={<Layers className="w-4 h-4" />} active={activeTab} onClick={setActiveTab} />
-          <TabBtn id="timeline" label={`THREAT TIMELINE (${timeline.length})`} icon={<TrendingUp className="w-4 h-4" />} active={activeTab} onClick={setActiveTab} />
+          <TabBtn id="timeline" label={`THREAT TIMELINE (${Array.isArray(timeline) ? timeline.length : 0})`} icon={<TrendingUp className="w-4 h-4" />} active={activeTab} onClick={setActiveTab} />
           <TabBtn id="sources" label={`SOURCE HEALTH (${sourceHealth.length})`} icon={<Radio className="w-4 h-4" />} active={activeTab} onClick={setActiveTab} />
           <TabBtn id="api_tester" label="LIVE API TESTER" icon={<Terminal className="w-4 h-4" />} active={activeTab} onClick={setActiveTab} />
         </div>
@@ -313,24 +313,33 @@ export default function App() {
             </h3>
 
             <div className="space-y-4 font-mono">
-              {timeline.map((item, idx) => (
-                <div key={idx} className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-amber-950 border border-amber-800 text-amber-400 text-xs font-bold">
-                      {item.from?.toUpperCase()} ➔ {item.to?.toUpperCase()}
+              {Array.isArray(timeline) && timeline.length > 0 ? (
+                timeline.map((item, idx) => (
+                  <div key={idx} className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-amber-950 border border-amber-800 text-amber-400 text-xs font-bold uppercase min-w-[120px] text-center">
+                        {(item.from || 'GREEN')} ➔ {(item.to || item.threatLevel || 'YELLOW')}
+                      </div>
+                      <div>
+                        <h4 className="font-hud font-bold text-sm text-slate-200 mb-1">{item.reason || item.headline || 'Escalation Record'}</h4>
+                        <p className="text-xs text-slate-400">
+                          Trigger Events: {Array.isArray(item.triggerEventIds) ? item.triggerEventIds.join(', ') : (item.triggerEventIds || item.triggerEventId || 'N/A')}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-hud font-bold text-sm text-slate-200 mb-1">{item.reason}</h4>
-                      <p className="text-xs text-slate-400">Trigger Events: {item.triggerEventIds?.join(', ') || 'N/A'}</p>
-                    </div>
-                  </div>
 
-                  <div className="text-xs text-slate-500">
-                    <div>Score: <span className="text-amber-300 font-bold">{item.score}</span></div>
-                    <div>{new Date(item.timestamp).toLocaleTimeString()}</div>
+                    <div className="text-xs text-slate-500 text-right min-w-[140px]">
+                      <div>Score: <span className="text-amber-300 font-bold">{item.score ?? item.threatScore ?? 'N/A'}</span></div>
+                      <div>{item.timestamp ? new Date(item.timestamp).toLocaleTimeString() : 'N/A'}</div>
+                    </div>
                   </div>
+                ))
+              ) : (
+                <div className="text-center py-10 text-slate-500 font-mono">
+                  <TrendingUp className="w-8 h-8 text-slate-600 mx-auto mb-2 opacity-50" />
+                  No threat level escalations recorded yet.
                 </div>
-              ))}
+              )}
             </div>
           </div>
         )}
