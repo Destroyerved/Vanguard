@@ -38,6 +38,7 @@ import {
 import LoadingRadar, { RadarContact } from './LoadingRadar';
 import WireframeDottedGlobe, { DEFENSE_SECTORS } from './WireframeDottedGlobe';
 import TacticalTypewriter from './TacticalTypewriter';
+import { GlobePulse } from '@/components/ui/cobe-globe-pulse';
 
 interface VanguardLandingPageProps {
   onLaunchCop: () => void;
@@ -537,10 +538,39 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
         className="relative w-screen h-screen min-h-[100dvh] max-h-screen bg-[#000000] text-white overflow-hidden select-none font-sans flex flex-col justify-between pt-16 pb-3 sm:pb-4 px-4 sm:px-8 lg:px-12 z-10"
       >
 
-        {/* HORIZONTAL TACTICAL HIGHLIGHT BAR BEHIND VANGUARD */}
+        {/* HORIZONTAL TACTICAL HIGHLIGHT BAR & COBE 3D PULSE GLOBE BEHIND VANGUARD */}
         <div className="relative w-full flex items-center justify-center z-20 mb-2 mt-auto pt-24 sm:pt-28 md:pt-32">
+          {/* COBE 3D PULSE GLOBE AESTHETIC SPHERE CENTERED BEHIND VANGUARD */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0 flex items-center justify-center">
+            {/* Soft tactical radial aura behind globe */}
+            <div className="absolute w-[360px] h-[360px] sm:w-[520px] sm:h-[520px] md:w-[680px] md:h-[680px] rounded-full bg-[#526a27]/20 blur-[90px] pointer-events-none" />
+            
+            <div className="relative w-[300px] h-[300px] sm:w-[460px] sm:h-[460px] md:w-[580px] md:h-[580px] lg:w-[680px] lg:h-[680px] opacity-80 mix-blend-screen drop-shadow-[0_0_40px_rgba(82,106,39,0.4)]">
+              <GlobePulse
+                className="w-full h-full"
+                speed={0.0025}
+                baseColor={[0.15, 0.22, 0.1]}
+                markerColor={[0.64, 0.77, 0.22]}
+                glowColor={[0.08, 0.12, 0.04]}
+                dark={1}
+                diffuse={1.6}
+                mapBrightness={10}
+                arcColor={[0.64, 0.77, 0.22]}
+                pulseColor="#a4c639"
+                markers={[
+                  { id: 'vanguard-hq', location: [28.6139, 77.209], delay: 0 },
+                  { id: 'us-pentagon', location: [38.8719, -77.0563], delay: 0.4 },
+                  { id: 'nato-brussels', location: [50.8503, 4.3517], delay: 0.8 },
+                  { id: 'indopac-singapore', location: [1.3521, 103.8198], delay: 1.2 },
+                  { id: 'pacom-tokyo', location: [35.6762, 139.6503], delay: 1.6 },
+                  { id: 'aus-canberra', location: [-35.2809, 149.13], delay: 2.0 },
+                ]}
+              />
+            </div>
+          </div>
+
           {/* Tactical Olive Green Highlight Bar (#33401c) */}
-          <div className="absolute inset-x-0 h-11 sm:h-13 md:h-14 bg-[#33401c] flex items-center justify-between z-0 border-y border-[#526a27]/70 shadow-[0_0_35px_rgba(51,64,28,0.85)]">
+          <div className="absolute inset-x-0 h-11 sm:h-13 md:h-14 bg-[#33401c]/80 backdrop-blur-[1px] flex items-center justify-between z-1 border-y border-[#526a27]/70 shadow-[0_0_35px_rgba(51,64,28,0.85)]">
             {/* Left Vertical Accent */}
             <div className="w-2.5 sm:w-3.5 h-full bg-[#526a27] shadow-[0_0_12px_#526a27]" />
             {/* Right Horizontal Accent Tab with Tactical Lime Glow */}
