@@ -34,7 +34,7 @@ interface TacticalMapProps {
   onSelectEvent: (event: UnifiedEvent) => void;
 }
 
-type MapLayerType = 'dark' | 'satellite' | 'dark_terrain' | 'hybrid';
+type MapLayerType = 'dark' | 'satellite' | 'dark_terrain';
 
 // Mercator Projection Math
 function latLngToWorld(lat: number, lng: number, zoom: number) {
@@ -219,10 +219,8 @@ export default function TacticalMap({
           url = `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/${zoom}/${ty}/${wrappedX}`;
         } else if (activeLayer === 'satellite') {
           url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${ty}/${wrappedX}`;
-        } else if (activeLayer === 'dark_terrain') {
-          url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${zoom}/${ty}/${wrappedX}`;
         } else {
-          url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${ty}/${wrappedX}`;
+          url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${zoom}/${ty}/${wrappedX}`;
         }
 
         const screenX = tx * 256 - x0;
@@ -367,7 +365,6 @@ export default function TacticalMap({
               { id: 'dark', label: 'DARK GIS' },
               { id: 'satellite', label: 'ORBITAL SATELLITE' },
               { id: 'dark_terrain', label: 'DARK TERRAIN' },
-              { id: 'hybrid', label: 'HYBRID HUD' },
             ].map((lyr) => (
               <button
                 key={lyr.id}
