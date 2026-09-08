@@ -30,8 +30,6 @@ import {
   Crosshair,
   MapPin,
   Workflow,
-  Sun,
-  Moon,
   Users,
   Crown,
 } from 'lucide-react';
@@ -196,8 +194,8 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
   eventCount = 118,
   threatLevel = 'green',
 }) => {
-  // Global Theme State: Light / Dark Mode Toggle
-  const { theme, setTheme, isDark } = useTheme();
+  // Global Theme State: Dark Mode Only
+  const { theme, isDark } = useTheme();
 
   // Mouse Tracking for dynamic cursor spotlight over the cyber grid
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: -1000, y: -1000 });
@@ -313,51 +311,8 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
           <span>PROBLEM ID D-05 · 114 INVARIANT TESTS PASSING</span>
         </div>
 
-        {/* Right: Tactical Light/Dark Switch & Launch COP */}
+        {/* Right: Tactical Launch COP */}
         <div className="flex items-center gap-3 pointer-events-auto">
-          {/* Tactical Segmented Light / Dark Switch */}
-          <div
-            className={`flex items-center p-0.5 rounded-full ${glassPillClass} border shadow-xl relative backdrop-blur-xl ${
-              isDark ? 'border-[#526a27]/40 bg-black/60' : 'border-slate-300 bg-white/80'
-            }`}
-          >
-            <button
-              type="button"
-              onClick={() => setTheme('light')}
-              className={`relative flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold transition-colors cursor-pointer z-10 ${
-                !isDark ? 'text-slate-950 font-black' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Sun className={`w-3 h-3 ${!isDark ? 'text-amber-500' : 'text-slate-400'}`} />
-              <span>LIGHT</span>
-              {!isDark && (
-                <motion.div
-                  layoutId="activeThemeCapsule"
-                  transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-                  className="absolute inset-0 rounded-full bg-white shadow-md border border-slate-200 -z-10"
-                />
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setTheme('dark')}
-              className={`relative flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold transition-colors cursor-pointer z-10 ${
-                isDark ? 'text-[#a4c639] font-black' : 'text-slate-500 hover:text-slate-900'
-              }`}
-            >
-              <Moon className={`w-3 h-3 ${isDark ? 'text-[#a4c639]' : 'text-slate-500'}`} />
-              <span>DARK</span>
-              {isDark && (
-                <motion.div
-                  layoutId="activeThemeCapsule"
-                  transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-                  className="absolute inset-0 rounded-full bg-[#33401c] border border-[#526a27] shadow-[0_0_12px_rgba(82,106,39,0.5)] -z-10"
-                />
-              )}
-            </button>
-          </div>
-
           {/* Quick Launch COP Button (Tactical Olive / Lime) */}
           <motion.button
             type="button"

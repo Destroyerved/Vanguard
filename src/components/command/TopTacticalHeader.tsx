@@ -19,9 +19,7 @@ import {
   LogOut,
   LogIn,
   ChevronDown,
-  Key,
-  Sun,
-  Moon
+  Key
 } from 'lucide-react';
 import { DemoScenarioMode } from '../../data/scenarioEngine';
 
@@ -53,8 +51,6 @@ interface TopTacticalHeaderProps {
   anomalyCount?: number;
   onOpenAuthModal?: () => void;
   onNavigateToLanding?: () => void;
-  theme?: 'dark' | 'light';
-  onToggleTheme?: () => void;
 }
 
 export default function TopTacticalHeader({
@@ -74,12 +70,10 @@ export default function TopTacticalHeader({
   anomalyCount = 0,
   onOpenAuthModal,
   onNavigateToLanding,
-  theme = 'dark',
-  onToggleTheme
 }: TopTacticalHeaderProps) {
   const { operatorProfile, logout } = useAuth();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const isDark = theme === 'dark';
+  const isDark = true;
 
   const threatLevel = situation?.threatLevel || 'green';
   const threatScore = situation?.threatScore ?? 0;
@@ -136,25 +130,6 @@ export default function TopTacticalHeader({
             >
               <Globe className="w-3.5 h-3.5 text-[#a4c639] group-hover:rotate-45 transition-transform" />
               <span className="text-[11px] hidden sm:inline">Landing Page</span>
-            </button>
-          )}
-
-          {onToggleTheme && (
-            <button
-              onClick={onToggleTheme}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold transition-all shadow-sm group ${
-                isDark
-                  ? 'bg-[#16200d] border border-[#526a27]/60 hover:border-[#a4c639] text-[#a4c639] hover:text-white'
-                  : 'bg-slate-100 border border-slate-300 hover:border-[#526a27] text-slate-700 hover:text-slate-900'
-              }`}
-              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              {isDark ? (
-                <Sun className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-45 transition-transform" />
-              ) : (
-                <Moon className="w-3.5 h-3.5 text-[#526a27] group-hover:-rotate-12 transition-transform" />
-              )}
-              <span className="text-[11px] hidden sm:inline">{isDark ? 'LIGHT' : 'DARK'}</span>
             </button>
           )}
 

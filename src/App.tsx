@@ -33,7 +33,7 @@ import EventReconMedia from './components/EventReconMedia';
 import VanguardLandingPage from './components/landing/VanguardLandingPage';
 
 function AppContent() {
-  const { theme, toggleTheme, isDark } = useTheme();
+  const { isDark } = useTheme();
   const [viewMode, setViewMode] = useState<'landing' | 'console'>('landing');
   const [activeTab, setActiveTab] = useState<NavSection>('overview');
   const [loading, setLoading] = useState(true);
@@ -333,8 +333,6 @@ const handleRunNlQuery = async (query: string) => {
         anomalyCount={anomalyCount}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onNavigateToLanding={() => setViewMode('landing')}
-        theme={theme}
-        onToggleTheme={toggleTheme}
       />
 
       {/* 2. PRIMARY FULL-WIDTH OPERATIONAL WORKSPACE */}
