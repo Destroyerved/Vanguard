@@ -39,6 +39,7 @@ import LoadingRadar, { RadarContact } from './LoadingRadar';
 import WireframeDottedGlobe, { DEFENSE_SECTORS } from './WireframeDottedGlobe';
 import TacticalTypewriter from './TacticalTypewriter';
 import { GlobePulse } from '@/components/ui/cobe-globe-pulse';
+import { useTheme } from '../../context/ThemeContext';
 
 interface VanguardLandingPageProps {
   onLaunchCop: () => void;
@@ -46,6 +47,22 @@ interface VanguardLandingPageProps {
   eventCount?: number;
   threatLevel?: string;
 }
+
+const COBE_HERO_MARKERS = [
+  { id: 'vanguard-hq', location: [28.6139, 77.209] as [number, number] },
+  { id: 'us-pentagon', location: [38.8719, -77.0563] as [number, number] },
+  { id: 'nato-brussels', location: [50.8503, 4.3517] as [number, number] },
+  { id: 'indopac-singapore', location: [1.3521, 103.8198] as [number, number] },
+  { id: 'pacom-tokyo', location: [35.6762, 139.6503] as [number, number] },
+  { id: 'aus-canberra', location: [-35.2809, 149.13] as [number, number] },
+];
+
+const COBE_DARK_BASE: [number, number, number] = [0.15, 0.22, 0.1];
+const COBE_LIGHT_BASE: [number, number, number] = [0.82, 0.88, 0.78];
+const COBE_DARK_MARKER: [number, number, number] = [0.64, 0.77, 0.22];
+const COBE_LIGHT_MARKER: [number, number, number] = [0.32, 0.45, 0.15];
+const COBE_DARK_GLOW: [number, number, number] = [0.08, 0.12, 0.04];
+const COBE_LIGHT_GLOW: [number, number, number] = [0.92, 0.96, 0.88];
 
 const HERO_TYPEWRITER_PHRASES = [
   'Multi-Source Defence Situational Awareness System',
@@ -179,8 +196,8 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
   eventCount = 118,
   threatLevel = 'green',
 }) => {
-  // Theme State: Light / Dark Mode Toggle
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  // Global Theme State: Light / Dark Mode Toggle
+  const { theme, setTheme, isDark } = useTheme();
 
   // Mouse Tracking for dynamic cursor spotlight over the cyber grid
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: -1000, y: -1000 });
@@ -226,8 +243,6 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
     Math.round(sourceReliability * dataFreshness * 1.0 * 100)
   );
   const counterfactualFusionGain = rawConfidence - baseWithoutCorroboration;
-
-  const isDark = theme === 'dark';
 
   // Dynamic Glass & Layout Theme Classes
   const glassPanelClass = isDark ? 'glass-panel border-[#33401c]/60 bg-black/85' : 'glass-panel-light';
@@ -535,7 +550,9 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
       <motion.section
         id="hero"
         style={{ y: heroY, scale: heroScale, opacity: heroOpacity, filter: heroFilter }}
-        className="relative w-screen h-screen min-h-[100dvh] max-h-screen bg-[#000000] text-white overflow-hidden select-none font-sans flex flex-col justify-between pt-16 pb-3 sm:pb-4 px-4 sm:px-8 lg:px-12 z-10"
+        className={`relative w-screen h-screen min-h-[100dvh] max-h-screen ${
+          isDark ? 'bg-[#000000] text-white' : 'bg-[#f8fafc] text-slate-900'
+        } overflow-hidden select-none font-sans flex flex-col justify-between pt-16 pb-3 sm:pb-4 px-4 sm:px-8 lg:px-12 z-10`}
       >
 
         {/* HORIZONTAL TACTICAL HIGHLIGHT BAR & COBE 3D PULSE GLOBE BEHIND VANGUARD */}
@@ -543,34 +560,42 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
           {/* COBE 3D PULSE GLOBE AESTHETIC SPHERE CENTERED BEHIND VANGUARD */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0 flex items-center justify-center">
             {/* Soft tactical radial aura behind globe */}
-            <div className="absolute w-[360px] h-[360px] sm:w-[520px] sm:h-[520px] md:w-[680px] md:h-[680px] rounded-full bg-[#526a27]/20 blur-[90px] pointer-events-none" />
-            
-            <div className="relative w-[300px] h-[300px] sm:w-[460px] sm:h-[460px] md:w-[580px] md:h-[580px] lg:w-[680px] lg:h-[680px] opacity-80 mix-blend-screen drop-shadow-[0_0_40px_rgba(82,106,39,0.4)]">
+            <div
+              className={`absolute w-[360px] h-[360px] sm:w-[520px] sm:h-[520px] md:w-[680px] md:h-[680px] rounded-full ${
+                isDark ? 'bg-[#526a27]/20 blur-[90px]' : 'bg-[#526a27]/12 blur-[80px]'
+              } pointer-events-none`}
+            />
+
+            <div
+              className={`relative w-[300px] h-[300px] sm:w-[460px] sm:h-[460px] md:w-[580px] md:h-[580px] lg:w-[680px] lg:h-[680px] ${
+                isDark
+                  ? 'opacity-85 mix-blend-screen drop-shadow-[0_0_40px_rgba(82,106,39,0.4)]'
+                  : 'opacity-90 drop-shadow-[0_10px_35px_rgba(82,106,39,0.25)]'
+              }`}
+            >
               <GlobePulse
                 className="w-full h-full"
-                speed={0.0025}
-                baseColor={[0.15, 0.22, 0.1]}
-                markerColor={[0.64, 0.77, 0.22]}
-                glowColor={[0.08, 0.12, 0.04]}
-                dark={1}
-                diffuse={1.6}
-                mapBrightness={10}
-                arcColor={[0.64, 0.77, 0.22]}
-                pulseColor="#a4c639"
-                markers={[
-                  { id: 'vanguard-hq', location: [28.6139, 77.209], delay: 0 },
-                  { id: 'us-pentagon', location: [38.8719, -77.0563], delay: 0.4 },
-                  { id: 'nato-brussels', location: [50.8503, 4.3517], delay: 0.8 },
-                  { id: 'indopac-singapore', location: [1.3521, 103.8198], delay: 1.2 },
-                  { id: 'pacom-tokyo', location: [35.6762, 139.6503], delay: 1.6 },
-                  { id: 'aus-canberra', location: [-35.2809, 149.13], delay: 2.0 },
-                ]}
+                speed={0.0022}
+                baseColor={isDark ? COBE_DARK_BASE : COBE_LIGHT_BASE}
+                markerColor={isDark ? COBE_DARK_MARKER : COBE_LIGHT_MARKER}
+                glowColor={isDark ? COBE_DARK_GLOW : COBE_LIGHT_GLOW}
+                dark={isDark ? 1 : 0}
+                diffuse={isDark ? 1.6 : 1.3}
+                mapBrightness={isDark ? 10 : 8}
+                arcColor={isDark ? COBE_DARK_MARKER : COBE_LIGHT_MARKER}
+                pulseColor={isDark ? '#a4c639' : '#526a27'}
+                markers={COBE_HERO_MARKERS}
+                showOverlayPulses={false}
               />
             </div>
           </div>
 
           {/* Tactical Olive Green Highlight Bar (#33401c) */}
-          <div className="absolute inset-x-0 h-11 sm:h-13 md:h-14 bg-[#33401c]/80 backdrop-blur-[1px] flex items-center justify-between z-1 border-y border-[#526a27]/70 shadow-[0_0_35px_rgba(51,64,28,0.85)]">
+          <div
+            className={`absolute inset-x-0 h-11 sm:h-13 md:h-14 ${
+              isDark ? 'bg-[#33401c]/85 border-[#526a27]/70' : 'bg-[#33401c]/90 border-[#526a27]'
+            } backdrop-blur-[1px] flex items-center justify-between z-1 border-y shadow-[0_0_35px_rgba(51,64,28,0.85)]`}
+          >
             {/* Left Vertical Accent */}
             <div className="w-2.5 sm:w-3.5 h-full bg-[#526a27] shadow-[0_0_12px_#526a27]" />
             {/* Right Horizontal Accent Tab with Tactical Lime Glow */}
@@ -579,10 +604,13 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
 
           {/* VANGUARD GIANT HEADLINE WITH TACTICAL SHADE GLOW */}
           <h1
-            className="relative z-10 font-vanguard font-black uppercase text-white tracking-[0.035em] text-[13.5vw] sm:text-[12.5vw] md:text-[11.2vw] lg:text-[10.5vw] leading-none select-none text-center"
+            className={`relative z-10 font-vanguard font-black uppercase tracking-[0.035em] text-[13.5vw] sm:text-[12.5vw] md:text-[11.2vw] lg:text-[10.5vw] leading-none select-none text-center ${
+              isDark ? 'text-white' : 'text-slate-950'
+            }`}
             style={{
-              filter:
-                'drop-shadow(0 0 16px rgba(82, 106, 39, 0.95)) drop-shadow(0 0 35px rgba(51, 64, 28, 0.9)) drop-shadow(0 0 70px rgba(51, 64, 28, 0.6))',
+              filter: isDark
+                ? 'drop-shadow(0 0 16px rgba(82, 106, 39, 0.95)) drop-shadow(0 0 35px rgba(51, 64, 28, 0.9)) drop-shadow(0 0 70px rgba(51, 64, 28, 0.6))'
+                : 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.12)) drop-shadow(0 0 25px rgba(82, 106, 39, 0.45))',
             }}
           >
             VANGUARD
@@ -592,7 +620,7 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
         {/* BOTTOM BEVELED TACTICAL FRAME CONTAINER */}
         <div className="relative w-full max-w-[1580px] mx-auto z-10 mb-2">
           <div className="relative w-full min-h-[190px] sm:min-h-[210px] md:min-h-[225px] p-5 sm:p-7 flex flex-col justify-between">
-            {/* SVG Crisp Chamfered Border & Black Background */}
+            {/* SVG Crisp Chamfered Border & Dynamic Theme Background */}
             <svg
               className="absolute inset-0 w-full h-full pointer-events-none"
               preserveAspectRatio="none"
@@ -600,8 +628,8 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
             >
               <path
                 d="M 38 0 L 1000 0 L 1000 400 L 0 400 L 0 38 Z"
-                fill="#000000"
-                stroke="rgba(255, 255, 255, 0.28)"
+                fill={isDark ? '#000000' : '#ffffff'}
+                stroke={isDark ? 'rgba(255, 255, 255, 0.28)' : 'rgba(82, 106, 39, 0.35)'}
                 strokeWidth="1.5"
                 vectorEffect="non-scaling-stroke"
               />
@@ -626,12 +654,22 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
                   Exploring the<br />
                   Skies &amp; Beyond
                 </p>
-                <h2 className="text-xs sm:text-sm font-heading font-extrabold uppercase tracking-wider text-slate-200">
+                <h2
+                  className={`text-xs sm:text-sm font-heading font-extrabold uppercase tracking-wider ${
+                    isDark ? 'text-slate-200' : 'text-slate-900'
+                  }`}
+                >
                   Multi-Source Defence Situational Awareness System
                 </h2>
 
                 {/* Tactical Typewriter Pill */}
-                <div className="mt-2.5 inline-flex items-center gap-2 text-xs font-mono bg-black/80 px-3.5 py-1.5 rounded-lg border border-[#526a27]/50 shadow-lg text-slate-200">
+                <div
+                  className={`mt-2.5 inline-flex items-center gap-2 text-xs font-mono px-3.5 py-1.5 rounded-lg border shadow-lg ${
+                    isDark
+                      ? 'bg-black/80 border-[#526a27]/50 text-slate-200'
+                      : 'bg-slate-100/90 border-[#526a27]/40 text-slate-800'
+                  }`}
+                >
                   <span className="text-[#a4c639] font-bold">&gt;</span>
                   <TacticalTypewriter
                     words={HERO_TYPEWRITER_PHRASES}
@@ -650,7 +688,11 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
                   Science, Technology, and<br />
                   the Future of Flight
                 </p>
-                <p className="text-xs font-sans text-slate-300 leading-relaxed max-w-md">
+                <p
+                  className={`text-xs font-sans leading-relaxed max-w-md ${
+                    isDark ? 'text-slate-300' : 'text-slate-600'
+                  }`}
+                >
                   From fragmented sensor streams to one explainable, unified operational picture. Ingests 5 feeds, calculates mathematical confidence, and coordinates instant response with zero hallucinations.
                 </p>
 
@@ -674,18 +716,25 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
                       e.preventDefault();
                       document.querySelector('#telemetry')?.scrollIntoView({ behavior: 'smooth' });
                     }}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-black/60 hover:bg-[#33401c]/40 border border-[#526a27]/60 text-slate-200 hover:text-white font-mono text-xs uppercase tracking-wide transition-all"
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border font-mono text-xs uppercase tracking-wide transition-all ${
+                      isDark
+                        ? 'bg-black/60 hover:bg-[#33401c]/40 border-[#526a27]/60 text-slate-200 hover:text-white'
+                        : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800'
+                    }`}
                   >
                     <Compass className="w-3.5 h-3.5 text-[#a4c639]" />
                     <span>Telemetry</span>
                   </a>
-
                   <motion.button
                     type="button"
                     onClick={() => setBriefingModalOpen(true)}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-black/40 hover:bg-white/10 border border-white/20 text-slate-300 hover:text-white font-mono text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border font-mono text-xs uppercase tracking-wider transition-colors cursor-pointer ${
+                      isDark
+                        ? 'bg-black/40 hover:bg-white/10 border-white/20 text-slate-300 hover:text-white'
+                        : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800'
+                    }`}
                   >
                     <Satellite className="w-3.5 h-3.5 text-[#a4c639]" />
                     <span>Briefing</span>

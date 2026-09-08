@@ -13,6 +13,7 @@ import {
 } from './data/apiClient';
 import { LiveStreamClient } from './data/wsClient';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import OperatorAuthModal from './components/auth/OperatorAuthModal';
 
 // Components
@@ -32,6 +33,7 @@ import EventReconMedia from './components/EventReconMedia';
 import VanguardLandingPage from './components/landing/VanguardLandingPage';
 
 function AppContent() {
+  const { theme, toggleTheme, isDark } = useTheme();
   const [viewMode, setViewMode] = useState<'landing' | 'console'>('landing');
   const [activeTab, setActiveTab] = useState<NavSection>('overview');
   const [loading, setLoading] = useState(true);
@@ -308,7 +310,11 @@ const handleRunNlQuery = async (query: string) => {
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#05070a] text-slate-200 font-sans">
+    <div
+      className={`flex flex-col h-screen w-screen overflow-hidden ${
+        isDark ? 'bg-[#000000] text-slate-200' : 'bg-[#f8fafc] text-slate-900'
+      } font-sans transition-colors duration-200`}
+    >
       {/* 1. TOP TACTICAL COMMAND HEADER */}
       <TopTacticalHeader
         currentTime={currentTime}
@@ -327,6 +333,8 @@ const handleRunNlQuery = async (query: string) => {
         anomalyCount={anomalyCount}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onNavigateToLanding={() => setViewMode('landing')}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* 2. PRIMARY FULL-WIDTH OPERATIONAL WORKSPACE */}
@@ -482,8 +490,10 @@ const handleRunNlQuery = async (query: string) => {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

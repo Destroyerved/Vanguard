@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useRef, useCallback } from "react"
+import React, { useEffect, useRef, useCallback } from "react"
 import createGlobe from "cobe"
 
 export interface PulseMarker {
   id: string
   location: [number, number]
-  delay: number
+  delay?: number
 }
 
 export interface GlobePulseProps {
@@ -21,9 +21,10 @@ export interface GlobePulseProps {
   mapBrightness?: number
   arcColor?: [number, number, number]
   pulseColor?: string
+  showOverlayPulses?: boolean
 }
 
-const defaultMarkers: PulseMarker[] = [
+const DEFAULT_MARKERS: PulseMarker[] = [
   { id: "pulse-1", location: [51.51, -0.13], delay: 0 },
   { id: "pulse-2", location: [40.71, -74.01], delay: 0.5 },
   { id: "pulse-3", location: [35.68, 139.65], delay: 1 },
@@ -31,7 +32,7 @@ const defaultMarkers: PulseMarker[] = [
 ]
 
 export function GlobePulse({
-  markers = defaultMarkers,
+  markers = DEFAULT_MARKERS,
   className = "",
   speed = 0.003,
   baseColor = [0.5, 0.5, 0.5],
@@ -41,14 +42,59 @@ export function GlobePulse({
   diffuse = 1.5,
   mapBrightness = 10,
   arcColor = [0.3, 0.85, 0.95],
-  pulseColor = "#33ccdd",
+  pulseColor = "#a4c639",
+  showOverlayPulses = false,
 }: GlobePulseProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const globeRef = useRef<ReturnType<typeof createGlobe> | null>(null)
   const pointerInteracting = useRef<{ x: number; y: number } | null>(null)
   const dragOffset = useRef({ phi: 0, theta: 0 })
   const phiOffsetRef = useRef(0)
   const thetaOffsetRef = useRef(0)
   const isPausedRef = useRef(false)
+  const phiRef = useRef(0)
+  const animIdRef = useRef<number>(0)
+
+  // Keep latest configuration in ref to avoid destroying & recreating WebGL context
+  const configRef = useRef({
+    markers,
+    speed,
+    baseColor,
+    markerColor,
+    glowColor,
+    dark,
+    diffuse,
+    mapBrightness,
+    arcColor,
+  })
+
+  // Update configRef and trigger smooth globe.update when props change
+  useEffect(() => {
+    configRef.current = {
+      markers,
+      speed,
+      baseColor,
+      markerColor,
+      glowColor,
+      dark,
+      diffuse,
+      mapBrightness,
+      arcColor,
+    }
+
+    if (globeRef.current) {
+      globeRef.current.update({
+        dark,
+        diffuse,
+        mapBrightness,
+        baseColor,
+        markerColor,
+        glowColor,
+        arcColor,
+        markers: markers.map((m) => ({ location: m.location, size: 0.035, id: m.id })),
+      })
+    }
+  }, [markers, speed, baseColor, markerColor, glowColor, dark, diffuse, mapBrightness, arcColor])
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     pointerInteracting.current = { x: e.clientX, y: e.clientY }
@@ -84,77 +130,94 @@ export function GlobePulse({
     }
   }, [handlePointerUp])
 
+  // Single WebGL initialization on mount
   useEffect(() => {
-    if (!canvasRef.current) return
     const canvas = canvasRef.current
-    let globe: ReturnType<typeof createGlobe> | null = null
-    let animationId: number
-    let phi = 0
+    if (!canvas) return
 
-    function init() {
+    let currentWidth = 0
+
+    function initGlobe() {
+      if (!canvas) return
       const width = canvas.offsetWidth
-      if (width === 0 || globe) return
+      if (width === 0 || globeRef.current) return
+      currentWidth = width
 
-      globe = createGlobe(canvas, {
+      const cfg = configRef.current
+      globeRef.current = createGlobe(canvas, {
         devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
         width: width * 2,
         height: width * 2,
         phi: 0,
         theta: 0.2,
-        dark,
-        diffuse,
+        dark: cfg.dark,
+        diffuse: cfg.diffuse,
         mapSamples: 16000,
-        mapBrightness,
-        baseColor,
-        markerColor,
-        glowColor,
+        mapBrightness: cfg.mapBrightness,
+        baseColor: cfg.baseColor,
+        markerColor: cfg.markerColor,
+        glowColor: cfg.glowColor,
         markerElevation: 0,
-        markers: markers.map((m) => ({ location: m.location, size: 0.025, id: m.id })),
+        markers: cfg.markers.map((m) => ({ location: m.location, size: 0.035, id: m.id })),
         arcs: [],
-        arcColor,
+        arcColor: cfg.arcColor,
         arcWidth: 0.5,
         arcHeight: 0.25,
-        opacity: 0.85,
+        opacity: 0.9,
       })
 
       function animate() {
-        if (!isPausedRef.current) phi += speed
-        globe!.update({
-          phi: phi + phiOffsetRef.current + dragOffset.current.phi,
-          theta: 0.2 + thetaOffsetRef.current + dragOffset.current.theta,
-        })
-        animationId = requestAnimationFrame(animate)
+        if (!isPausedRef.current) {
+          phiRef.current += configRef.current.speed
+        }
+        if (globeRef.current) {
+          globeRef.current.update({
+            phi: phiRef.current + phiOffsetRef.current + dragOffset.current.phi,
+            theta: 0.2 + thetaOffsetRef.current + dragOffset.current.theta,
+          })
+        }
+        animIdRef.current = requestAnimationFrame(animate)
       }
+
       animate()
-      setTimeout(() => canvas && (canvas.style.opacity = "1"))
     }
 
     if (canvas.offsetWidth > 0) {
-      init()
-    } else {
-      const ro = new ResizeObserver((entries) => {
-        if (entries[0]?.contentRect.width > 0) {
-          ro.disconnect()
-          init()
-        }
-      })
-      ro.observe(canvas)
+      initGlobe()
     }
 
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width
+      if (w && w > 0 && Math.abs(w - currentWidth) > 30) {
+        if (globeRef.current) {
+          globeRef.current.destroy()
+          globeRef.current = null
+        }
+        initGlobe()
+      }
+    })
+    ro.observe(canvas)
+
     return () => {
-      if (animationId) cancelAnimationFrame(animationId)
-      if (globe) globe.destroy()
+      ro.disconnect()
+      if (animIdRef.current) cancelAnimationFrame(animIdRef.current)
+      if (globeRef.current) {
+        globeRef.current.destroy()
+        globeRef.current = null
+      }
     }
-  }, [markers, speed, baseColor, markerColor, glowColor, dark, diffuse, mapBrightness, arcColor])
+  }, []) // Empty dependency array: NEVER tears down on parent re-renders!
 
   return (
     <div className={`relative aspect-square select-none ${className}`}>
-      <style>{`
-        @keyframes pulse-expand {
-          0% { transform: scaleX(0.3) scaleY(0.3); opacity: 0.8; }
-          100% { transform: scaleX(1.5) scaleY(1.5); opacity: 0; }
-        }
-      `}</style>
+      {showOverlayPulses && (
+        <style>{`
+          @keyframes pulse-subtle-glow {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.25); opacity: 0.9; }
+          }
+        `}</style>
+      )}
       <canvas
         ref={canvasRef}
         onPointerDown={handlePointerDown}
@@ -162,63 +225,52 @@ export function GlobePulse({
           width: "100%",
           height: "100%",
           cursor: "grab",
-          opacity: 0,
-          transition: "opacity 1.2s ease",
+          opacity: 1, // Instantly visible with ZERO opacity flicker!
           borderRadius: "50%",
           touchAction: "none",
         }}
       />
-      {markers.map((m) => (
-        <div
-          key={m.id}
-          style={{
-            position: "absolute",
-            positionAnchor: `--cobe-${m.id}`,
-            bottom: "anchor(center)",
-            left: "anchor(center)",
-            translate: "-50% 50%",
-            width: 40,
-            height: 40,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            pointerEvents: "none" as const,
-            opacity: `var(--cobe-visible-${m.id}, 0)`,
-            filter: `blur(calc((1 - var(--cobe-visible-${m.id}, 0)) * 8px))`,
-            transition: "opacity 0.4s, filter 0.4s",
-          }}
-        >
-          <span
+      {showOverlayPulses &&
+        markers.map((m) => (
+          <div
+            key={m.id}
             style={{
               position: "absolute",
-              inset: 0,
-              border: `2px solid ${pulseColor}`,
-              borderRadius: "50%",
-              opacity: 0,
-              animation: `pulse-expand 2s ease-out infinite ${m.delay}s`,
+              positionAnchor: `--cobe-${m.id}`,
+              bottom: "anchor(center)",
+              left: "anchor(center)",
+              translate: "-50% 50%",
+              width: 32,
+              height: 32,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              pointerEvents: "none" as const,
+              opacity: `var(--cobe-visible-${m.id}, 0)`,
+              filter: `blur(calc((1 - var(--cobe-visible-${m.id}, 0)) * 6px))`,
+              transition: "opacity 0.3s ease",
             }}
-          />
-          <span
-            style={{
-              position: "absolute",
-              inset: 0,
-              border: `2px solid ${pulseColor}`,
-              borderRadius: "50%",
-              opacity: 0,
-              animation: `pulse-expand 2s ease-out infinite ${m.delay + 0.5}s`,
-            }}
-          />
-          <span
-            style={{
-              width: 10,
-              height: 10,
-              background: pulseColor,
-              borderRadius: "50%",
-              boxShadow: `0 0 0 3px #111, 0 0 0 5px ${pulseColor}`,
-            }}
-          />
-        </div>
-      ))}
+          >
+            <span
+              style={{
+                position: "absolute",
+                inset: 0,
+                border: `1.5px solid ${pulseColor}`,
+                borderRadius: "50%",
+                animation: `pulse-subtle-glow 3s ease-in-out infinite ${m.delay || 0}s`,
+              }}
+            />
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                background: pulseColor,
+                borderRadius: "50%",
+                boxShadow: `0 0 8px ${pulseColor}`,
+              }}
+            />
+          </div>
+        ))}
     </div>
   )
 }

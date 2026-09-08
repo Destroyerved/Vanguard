@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare, Search, Loader2, X, Sparkles } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 
 interface NlQueryResult {
   interpretation: string;
@@ -15,14 +16,10 @@ interface NlQueryBarProps {
   onClear: () => void;
 }
 
-/**
- * Phase 5 — natural-language omnibar over POST /ai/query.
- * Translates a plain-English operator request into the fusion engine's filter
- * object and narrows the signal stream to the events it matched (App state).
- */
 export default function NlQueryBar({ activeQuery, result, onRun, onClear }: NlQueryBarProps) {
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState(false);
+  const { isDark } = useTheme();
 
   const submit = async (query: string) => {
     const trimmed = query.trim();
@@ -36,20 +33,26 @@ export default function NlQueryBar({ activeQuery, result, onRun, onClear }: NlQu
   };
 
   return (
-    <div className="instrument-panel rounded-sm border border-cyan-500/20 corner-brackets select-none font-mono">
+    <div
+      className={`rounded-sm border corner-brackets select-none font-mono transition-colors ${
+        isDark
+          ? 'instrument-panel border-[#526a27]/30'
+          : 'bg-white border-slate-200 shadow-sm'
+      }`}
+    >
       <div className="p-3 space-y-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-cyan-400 font-bold">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#a4c639] font-bold">
             <MessageSquare className="w-3.5 h-3.5" />
             <span>Natural-Language Intelligence Query</span>
-            <span className="px-1.5 py-0.2 rounded bg-cyan-950/80 border border-cyan-500/40 text-[9px] text-cyan-300">
+            <span className="px-1.5 py-0.2 rounded bg-[#16200d] border border-[#526a27]/60 text-[9px] text-[#a4c639]">
               POST /ai/query
             </span>
           </div>
           {activeQuery && (
             <button
               onClick={onClear}
-              className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-rose-300 transition-colors"
+              className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-rose-400 transition-colors"
             >
               <X className="w-3 h-3" />
               CLEAR FILTER
@@ -58,8 +61,12 @@ export default function NlQueryBar({ activeQuery, result, onRun, onClear }: NlQu
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded bg-[#05070a] border border-white/10 focus-within:border-cyan-500/50 transition-colors">
-            <Search className="w-4 h-4 text-slate-500 shrink-0" />
+          <div
+            className={`flex-1 flex items-center gap-2 px-3 py-2 rounded border focus-within:border-[#526a27] transition-colors ${
+              isDark ? 'bg-[#05070a] border-white/10' : 'bg-slate-50 border-slate-300'
+            }`}
+          >
+            <Search className="w-4 h-4 text-slate-400 shrink-0" />
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
@@ -71,13 +78,15 @@ export default function NlQueryBar({ activeQuery, result, onRun, onClear }: NlQu
                 }
               }}
               placeholder={'e.g. "Show critical radar contacts inside Sector 3 from the last 10 minutes"'}
-              className="flex-1 bg-transparent outline-none text-xs text-slate-200 placeholder:text-slate-600"
+              className={`flex-1 bg-transparent outline-none text-xs ${
+                isDark ? 'text-slate-200 placeholder:text-slate-500' : 'text-slate-900 placeholder:text-slate-400'
+              }`}
             />
           </div>
           <button
             onClick={() => submit(draft)}
             disabled={pending || !draft.trim()}
-            className="flex items-center gap-1.5 px-3 py-2 rounded bg-cyan-950/70 border border-cyan-500/50 text-cyan-200 text-xs font-bold hover:bg-cyan-900 transition-all disabled:opacity-40 shadow-hud-glow"
+            className="flex items-center gap-1.5 px-3 py-2 rounded bg-[#16200d] border border-[#526a27] text-[#a4c639] text-xs font-bold hover:bg-[#33401c] hover:text-white transition-all disabled:opacity-40 shadow-[0_0_12px_rgba(82,106,39,0.3)] cursor-pointer"
           >
             {pending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
             <span className="hidden sm:inline">EXECUTE</span>
@@ -86,21 +95,38 @@ export default function NlQueryBar({ activeQuery, result, onRun, onClear }: NlQu
 
         {result && (
           <div className="space-y-1.5">
-            <div className="p-2 rounded bg-[#070b10] border border-white/10 text-[11px] leading-relaxed text-slate-300 flex items-start gap-2">
+            <div
+              className={`p-2 rounded border text-[11px] leading-relaxed flex items-start gap-2 ${
+                isDark
+                  ? 'bg-[#070b10] border-white/10 text-slate-300'
+                  : 'bg-slate-50 border-slate-200 text-slate-800'
+              }`}
+            >
               <Sparkles className="w-3.5 h-3.5 text-amber-400 mt-0.5 shrink-0" />
               <span>
-                <span className="text-amber-300 font-bold uppercase text-[10px]">Interpretation: </span>
+                <span className="text-amber-400 font-bold uppercase text-[10px]">Interpretation: </span>
                 {result.interpretation}
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
-              <span className="px-1.5 py-0.2 rounded bg-[#05070a] border border-white/10 text-slate-400">
-                PARSER: <b className={result.parser === 'gemini' ? 'text-cyan-300' : 'text-emerald-300'}>{result.parser.toUpperCase()}</b>
+              <span
+                className={`px-1.5 py-0.2 rounded border ${
+                  isDark ? 'bg-[#05070a] border-white/10 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'
+                }`}
+              >
+                PARSER:{' '}
+                <b className={result.parser === 'gemini' ? 'text-[#a4c639]' : 'text-emerald-400'}>
+                  {result.parser.toUpperCase()}
+                </b>
               </span>
-              <span className="px-1.5 py-0.2 rounded bg-[#05070a] border border-white/10 text-slate-400">
-                LATENCY: <b className="text-slate-200">{result.latencyMs}ms</b>
+              <span
+                className={`px-1.5 py-0.2 rounded border ${
+                  isDark ? 'bg-[#05070a] border-white/10 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'
+                }`}
+              >
+                LATENCY: <b className={isDark ? 'text-slate-200' : 'text-slate-800'}>{result.latencyMs}ms</b>
               </span>
-              <span className="px-1.5 py-0.2 rounded bg-cyan-950/60 border border-cyan-500/40 text-cyan-300">
+              <span className="px-1.5 py-0.2 rounded bg-[#16200d] border border-[#526a27]/60 text-[#a4c639]">
                 MATCHED <b>{result.matchedEventIds.length}</b> EVENTS — stream narrowed
               </span>
             </div>
@@ -108,7 +134,7 @@ export default function NlQueryBar({ activeQuery, result, onRun, onClear }: NlQu
         )}
 
         {!result && activeQuery && (
-          <div className="text-[10px] text-rose-300">
+          <div className="text-[10px] text-rose-400">
             Query failed — backend /ai/query unreachable. Stream unchanged.
           </div>
         )}
