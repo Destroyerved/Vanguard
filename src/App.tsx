@@ -24,6 +24,7 @@ import {
 import { explainEvent } from './data/eventExplainer';
 import { UnifiedEvent } from './types/schema';
 import TacticalMap from './components/TacticalMap';
+import { getScenarioDataset, DemoScenarioMode } from './data/scenarioEngine';
 
 const BACKEND_URL = 'http://localhost:3001/api/v1';
 
@@ -40,6 +41,21 @@ export default function App() {
   const [sourceHealth, setSourceHealth] = useState<any[]>([]);
   const [selectedRawJson, setSelectedRawJson] = useState<{ title: string; data: any } | null>(null);
   const [selectedEventExplanation, setSelectedEventExplanation] = useState<UnifiedEvent | null>(null);
+
+  const handleInjectScenario = (mode: DemoScenarioMode) => {
+    const scenario = getScenarioDataset(mode);
+    setSituation({
+      threatLevel: scenario.threatLevel,
+      threatScore: scenario.events.reduce((acc, e) => acc + (e.severity === 'critical' ? 250 : e.severity === 'high' ? 100 : 25), 0),
+      activeAlertsCount: scenario.events.length,
+      criticalCount: scenario.events.filter(e => e.severity === 'critical').length,
+      totalEvents: scenario.events.length,
+      meanConfidence: Math.round(scenario.events.reduce((acc, e) => acc + e.confidence, 0) / (scenario.events.length || 1)),
+      headline: `${scenario.name} — ${scenario.description}`,
+    });
+    setEvents(scenario.events);
+    setSourceHealth(scenario.sourcesHealth);
+  };
 
   // Search & API tester state
   const [searchQuery, setSearchQuery] = useState('');
@@ -190,12 +206,24 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => handleInjectScenario('AIR_COMBAT_INTERCEPT')}
+              className="px-3 py-1.5 bg-rose-950/80 border border-rose-700 hover:bg-rose-900 text-rose-300 font-mono text-xs rounded-lg flex items-center gap-1.5 transition-all shadow-md font-bold"
+            >
+              <Zap className="w-3.5 h-3.5 text-rose-400" /> AIR COMBAT DOGFIGHT
+            </button>
+            <button
+              onClick={() => handleInjectScenario('NAVAL_WARFARE_STRIKE')}
+              className="px-3 py-1.5 bg-cyan-950/80 border border-cyan-700 hover:bg-cyan-900 text-cyan-300 font-mono text-xs rounded-lg flex items-center gap-1.5 transition-all shadow-md font-bold"
+            >
+              <Globe className="w-3.5 h-3.5 text-cyan-400" /> NAVAL FLEET STRIKE
+            </button>
             <button
               onClick={() => setActiveTab('api_tester')}
-              className="px-4 py-2 bg-cyan-950 border border-cyan-700 hover:bg-cyan-900 text-cyan-300 font-mono text-xs rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-cyan-950/50"
+              className="px-3 py-1.5 bg-slate-950 border border-slate-800 hover:border-cyan-700 text-slate-300 font-mono text-xs rounded-lg flex items-center gap-1.5 transition-all"
             >
-              <Terminal className="w-4 h-4" /> TEST LIVE API ENDPOINTS
+              <Terminal className="w-3.5 h-3.5" /> LIVE API TESTER
             </button>
           </div>
         </div>
