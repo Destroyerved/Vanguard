@@ -206,11 +206,28 @@ export class EventStore {
       return true;
     });
 
-    results.sort((a, b) => toEpochMs(b.timestamp) - toEpochMs(a.timestamp));
+    const epochMap = new Map<string, number>();
+    for (const e of results) {
+      epochMap.set(e.id, toEpochMs(e.timestamp));
+    }
+    results.sort((a, b) => (epochMap.get(b.id) ?? 0) - (epochMap.get(a.id) ?? 0));
 
     const offset = filter.offset ?? 0;
     const limit = filter.limit ?? results.length;
     return results.slice(offset, offset + limit);
+  }
+
+  /** Run a filter over the store and return both paginated results and total count in a single pass. */
+  queryWithCount(filter: EventQuery = {}): { events: UnifiedEvent[]; total: number } {
+    const { limit, offset, ...restFilter } = filter;
+    const allFiltered = this.query({ ...restFilter });
+    const total = allFiltered.length;
+    const start = offset ?? 0;
+    const end = limit !== undefined ? start + limit : total;
+    return {
+      events: allFiltered.slice(start, end),
+      total
+    };
   }
 
   /**
@@ -237,7 +254,13 @@ export class EventStore {
   /** Per-source event counts within the active horizon. */
   countsBySource(): Record<SourceType, number> {
     const counts: Record<SourceType, number> = {
-      radar: 0, weather: 0, personnel: 0, log: 0, incident: 0,
+      radar: 0,
+      weather: 0,
+      personnel: 0,
+      log: 0,
+      incident: 0,
+      social_media: 0,
+      audio_recording: 0,
     };
     for (const e of this.active()) counts[e.sourceType]++;
     return counts;

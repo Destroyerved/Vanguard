@@ -34,7 +34,7 @@ interface TacticalMapProps {
   onSelectEvent: (event: UnifiedEvent) => void;
 }
 
-type MapLayerType = 'dark' | 'satellite' | 'street';
+type MapLayerType = 'dark' | 'satellite' | 'dark_terrain';
 
 // Mercator Projection Math
 function latLngToWorld(lat: number, lng: number, zoom: number) {
@@ -216,11 +216,11 @@ export default function TacticalMap({
 
         let url = '';
         if (activeLayer === 'dark') {
-          url = `https://a.basemaps.cartocdn.com/rastertiles/dark_all/${zoom}/${wrappedX}/${ty}.png`;
+          url = `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/${zoom}/${ty}/${wrappedX}`;
         } else if (activeLayer === 'satellite') {
           url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${ty}/${wrappedX}`;
         } else {
-          url = `https://a.basemaps.cartocdn.com/rastertiles/voyager_labels_under/${zoom}/${wrappedX}/${ty}.png`;
+          url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${zoom}/${ty}/${wrappedX}`;
         }
 
         const screenX = tx * 256 - x0;
@@ -330,7 +330,13 @@ export default function TacticalMap({
               height: '256px',
               imageRendering: 'auto'
             }}
-            className={activeLayer === 'dark' ? 'brightness-90 contrast-125' : 'brightness-95'}
+            className={
+              activeLayer === 'dark_terrain'
+                ? 'invert brightness-75 contrast-150 hue-rotate-180'
+                : activeLayer === 'dark'
+                ? 'brightness-90 contrast-125'
+                : 'brightness-95'
+            }
           />
         ))}
 
@@ -357,8 +363,8 @@ export default function TacticalMap({
           <div className="flex items-center gap-1 pr-1.5 border-r border-white/10">
             {[
               { id: 'dark', label: 'DARK GIS' },
-              { id: 'satellite', label: 'ORBITAL HD' },
-              { id: 'street', label: 'TERRAIN' },
+              { id: 'satellite', label: 'ORBITAL SATELLITE' },
+              { id: 'dark_terrain', label: 'DARK TERRAIN' },
             ].map((lyr) => (
               <button
                 key={lyr.id}

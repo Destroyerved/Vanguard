@@ -44,7 +44,7 @@ async function main(): Promise<void> {
   const health = orchestrator.getSourceHealth();
 
   console.log('\nIngestion');
-  check('all five feeds registered', health.length === 5, `${health.length} feeds`);
+  check('all seven feeds registered', health.length === 7, `${health.length} feeds`);
   check('events ingested', events.length > 0, `${events.length} active events`);
 
   const bySource = orchestrator.store.countsBySource();
@@ -78,6 +78,33 @@ async function main(): Promise<void> {
     'every event carries a confidence breakdown',
     events.every((e) => e.confidenceBreakdown !== undefined),
     'breakdown present',
+  );
+
+  console.log('\nMedia authenticity');
+  const media = events.filter(
+    (e) => e.sourceType === 'social_media' || e.sourceType === 'audio_recording',
+  );
+  check('media feeds produced events', media.length > 0, `${media.length} media events`);
+  check(
+    'every media event carries an authenticity audit',
+    media.every((e) => e.mediaAudit !== undefined),
+    'audit present on all',
+  );
+  const fabricated = media.filter(
+    (e) => e.mediaAudit?.manipulationCategory === 'EVENT_FABRICATING',
+  );
+  const unverified = media.filter(
+    (e) => e.mediaAudit?.manipulationCategory === 'AUTHENTICITY_UNVERIFIED',
+  );
+  check(
+    'fabricated/uncorroborated media is SURFACED, never discarded, and never reads as high-confidence',
+    [...fabricated, ...unverified].every((e) => e.confidence < 80),
+    `${fabricated.length + unverified.length} fabricated/unverified items still in the picture`,
+  );
+  check(
+    'every media confidence carries the authenticity discount in [60, 100]',
+    media.every((e) => (e.confidenceBreakdown?.mediaAuthenticity ?? 100) >= 60),
+    'factor never zeroes an item',
   );
 
   console.log('\nSeverity discipline');

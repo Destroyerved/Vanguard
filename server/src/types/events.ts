@@ -1,16 +1,24 @@
 /**
  * VANGUARD — Unified Event Model v1.1 (authoritative)
  *
- * Every heterogeneous feed (radar, weather, personnel, log, incident) is
- * normalized into `UnifiedEvent` BEFORE it is allowed into the fusion pipeline.
- * Nothing downstream — fusion, AI synthesis, API, WebSocket — is ever permitted
- * to see a raw source payload except through `UnifiedEvent.raw`.
+ * Every heterogeneous feed (radar, weather, personnel, log, incident,
+ * social_media, audio_recording) is normalized into `UnifiedEvent` BEFORE it is
+ * allowed into the fusion pipeline. Nothing downstream — fusion, AI synthesis,
+ * API, WebSocket — is ever permitted to see a raw source payload except through
+ * `UnifiedEvent.raw`.
  *
  * Contract source of truth: Vanguard_PRD.md §7.1
  */
 
-/** The five heterogeneous ingestion streams VANGUARD fuses. */
-export type SourceType = 'radar' | 'weather' | 'personnel' | 'log' | 'incident';
+/** The heterogeneous ingestion streams VANGUARD fuses. */
+export type SourceType =
+  | 'radar'
+  | 'weather'
+  | 'personnel'
+  | 'log'
+  | 'incident'
+  | 'social_media'
+  | 'audio_recording';
 
 /** Operational severity tiers, ascending. */
 export type SeverityLevel = 'low' | 'medium' | 'high' | 'critical';
@@ -37,13 +45,15 @@ export const THREAT_ORDER: readonly ThreatLevel[] = [
   'red',
 ] as const;
 
-/** All five source types, in canonical display order. */
+/** All source types, in canonical display order. */
 export const SOURCE_TYPES: readonly SourceType[] = [
   'radar',
   'weather',
   'personnel',
   'log',
   'incident',
+  'social_media',
+  'audio_recording',
 ] as const;
 
 /**
@@ -82,6 +92,176 @@ export interface ConfidenceBreakdown {
   sourceReliability: number;
   /** Exponential recency decay of the observation, 0-100. */
   dataFreshness: number;
+  /**
+   * Media authenticity discount applied to social-media and audio-recording
+   * events, 0-100. Absent (or 100) when the event carries no media audit.
+   */
+  mediaAuthenticity?: number;
+}
+
+/**
+ * How VANGUARD reads a piece of media after forensic analysis.
+ *
+ * Deliberately NOT a binary "real/fake" verdict. Per the media authenticity
+ * flow, the honest question is "how trustworthy is this media as evidence?",
+ * and that has two degrees of freedom: how much the media itself was
+ * manipulated (authenticityScore) and whether the UNDERLYING EVENT is real
+ * (corroborationScore). The two can disagree — a deepfake video of an event
+ * that happened is possible, and a pristine video of an event that never
+ * happened is easier to make than ever.
+ */
+export type ManipulationCategory =
+  /** No manipulation detected across any check. */
+  | 'NONE_DETECTED'
+  /** Edited/compressed/cropped/stabilized/enhanced, but not fabricated. */
+  | 'LEGITIMATE_ENHANCEMENT'
+  /**
+   * AI-generated or AI-packaged media whose EVENT is nevertheless independently
+   * corroborated by other VANGUARD intelligence. The media is still weak
+   * evidence; the corroboration is what bears the weight.
+   */
+  | 'HYBRID_CORROBORATED'
+  /** AI-generated content describing an event nothing else corroborates. */
+  | 'EVENT_FABRICATING'
+  /** Cannot be determined from the available evidence. */
+  | 'AUTHENTICITY_UNVERIFIED';
+
+/** One forensic check VANGUARD runs. `id` keys the tuning weights. */
+export type MediaCheckId =
+  | 'provenance-c2pa'
+  | 'bitstream-container'
+  | 'visual-frame'
+  | 'temporal-consistency'
+  | 'acoustic-spectrum'
+  | 'sensor-prnu'
+  | 'edit-origin';
+
+/** A concrete artifact or indicator found by a check, with the detector's owns confidence. */
+export interface MediaFinding {
+  code: string;
+  detail: string;
+  /** Detector confidence, 0-100 — NOT the system's belief about the event. */
+  confidence: number;
+}
+
+/** Result of one forensic check. `score` is 0-100, HIGHER = more genuine. */
+export interface MediaCheckResult {
+  id: MediaCheckId;
+  name: string;
+  /** 0-100; 100 = no manipulation evidence in this dimension. */
+  score: number;
+  /** Relative weight in the aggregate scores. Sums to 1 over the 3 + 4 groups. */
+  weight: number;
+  /** False when the check has nothing to analyze (e.g. no audio track). */
+  applicable: boolean;
+  findings: MediaFinding[];
+}
+
+/** Bitstream and container-level metadata extracted from the media. */
+export interface MediaForensicMetadata {
+  container: string;
+  videoCodec: string;
+  audioCodec: string;
+  resolution: string;
+  frameRateFps: number;
+  bitrateKbps: number;
+  durationSec: number;
+  /** ISO timestamp recorded in the container's metadata atom. */
+  creationTimestamp: string;
+  /** Software that last muxed the container, e.g. "Lavf58.76.100". */
+  softwareMuxer: string;
+  /** Ordered processing history, most recent last. */
+  reEncodingHistory: string[];
+  /** C2PA cryptographic signature state. Absent when edited or AI-generated. */
+  c2paManifestIntact: boolean;
+  /** Hardware device / sensor identifier, when one exists. */
+  deviceFingerprint?: string;
+  captureDevice?: string;
+}
+
+/** Frame-level facial and rendering analysis across sampled keyframes. */
+export interface VisualFrameAnalysis {
+  faceConsistencyScore: number;
+  edgeBoundaryBlurScore: number;
+  lightingShadowScore: number;
+  pupilReflectionScore: number;
+  keyframeArtifacts: { frameIndex: number; timestampSec: number; anomalyType: string; confidence: number }[];
+}
+
+/** Inter-frame motion and object-persistence consistency. */
+export interface TemporalConsistencyAnalysis {
+  interFrameWarpingScore: number;
+  morphingDeltaVariance: number;
+  objectPersistenceScore: number;
+  frameJitterPattern: 'NATURAL_CAMERA_SHAKE' | 'AI_GENERATIVE_WARP' | 'STABLE_TRIPOD';
+}
+
+/** Acoustic spectrum and audio/video sync analysis. */
+export interface AcousticSpectrumAnalysis {
+  noiseFloorDbfs: number;
+  harmonicPhaseEnvelopeScore: number;
+  highFrequencyCutoffKhz: number;
+  avSyncOffsetMs: number;
+  voiceCloningProbability: number;
+}
+
+/** Sensor-level characteristics: the camera that "took" the media. */
+export interface CameraSensorCharacteristics {
+  estimatedSensorType: string;
+  prnuSensorFingerprintMatch: number;
+  chromaticAberrationConsistency: number;
+  compressionPattern: string;
+}
+
+/** One link in the preserved provenance chain. */
+export interface ProvenanceEntry {
+  step: string;
+  tool?: string;
+  /** True when this step originated from a physical hardware capture. */
+  hardwareCapture: boolean;
+  /** True when this step introduced synthetic content (AI generation/voice). */
+  syntheticGeneration: boolean;
+  /** True when this step is ordinary legitimate editing (cut, crop, grade). */
+  legitimateEditing: boolean;
+}
+
+/**
+ * The full media authenticity assessment attached to a media event.
+ * Populated by the media engine at normalization time and refreshed by the
+ * fusion pipeline whenever corroboration changes — the classification depends
+ * on it, so it is a live quantity, not a forensic archive.
+ */
+export interface MediaAuthenticityAudit {
+  /** ISO when the media engine evaluated this item. */
+  evaluatedAt: string;
+  /** How trustworthy this media is AS EVIDENCE, 0-100. */
+  authenticityScore: number;
+  /** How much manipulation the checks believe is present, 0-100. */
+  manipulationRisk: number;
+  manipulationCategory: ManipulationCategory;
+  /** Probability the content itself is AI-synthesized, 0-100. */
+  aiSyntheticScore: number;
+  /** Container/bitstream/provenance-chain integrity, 0-100. */
+  provenanceScore: number;
+  /** Intrinsic (content-level) consistency, 0-100. */
+  intrinsicConsistency: number;
+  /** Cross-source agreement computed by the fusion pipeline, 0-100. */
+  corroborationScore: number;
+  /** Artifacts found across all applicable checks, for the operator. */
+  deepfakeArtifacts: MediaFinding[];
+  /** The ground truth that survives the media regardless of manipulation. */
+  factualCoreExtracted: string;
+  /** Provenance chain as structured data for the evidence registry. */
+  provenanceChain: ProvenanceEntry[];
+  /** Source reliability used when evaluating, 0..1. */
+  sourceReliability: number;
+  /** Every check that ran, with its score, weight and findings. */
+  checks: MediaCheckResult[];
+  metadata?: MediaForensicMetadata;
+  visualFrames?: VisualFrameAnalysis;
+  temporalConsistency?: TemporalConsistencyAnalysis;
+  acousticSpectrum?: AcousticSpectrumAnalysis;
+  cameraCharacteristics?: CameraSensorCharacteristics;
 }
 
 /**
@@ -90,7 +270,7 @@ export interface ConfidenceBreakdown {
 export interface UnifiedEvent {
   /** Stable unique identifier, e.g. "EV-RAD-004091". */
   id: string;
-  /** Which of the five feeds produced this observation. */
+  /** Which of the feeds produced this observation. */
   sourceType: SourceType;
   /** Human-readable feed instance, e.g. "RADAR-PRIMARY". */
   sourceName: string;
@@ -127,6 +307,13 @@ export interface UnifiedEvent {
   isAnomaly: boolean;
   /** Why the anomaly detector fired, for explainability. */
   anomalyReason?: string;
+  /**
+   * Media authenticity assessment, present on every social-media and
+   * audio-recording event. Never an auto-discard trigger — it discounts how
+   * much the media is worth as evidence, while independent corroboration can
+   * still carry the event.
+   */
+  mediaAudit?: MediaAuthenticityAudit;
   /** Untouched original source payload — the audit trail. */
   raw: Record<string, unknown>;
 }

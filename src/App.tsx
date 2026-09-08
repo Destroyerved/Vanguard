@@ -70,8 +70,8 @@ function AppContent() {
         setTimeline(Array.isArray(timeData) ? timeData : timeData.timeline || []);
       }
 
-      // 3. Events (Fetch all unconstrained in-memory events)
-      const evtRes = await fetch(`${BACKEND_URL}/events?limit=5000`);
+      // 3. Events (Fetch active in-memory events)
+      const evtRes = await fetch(`${BACKEND_URL}/events?limit=500`);
       if (evtRes.ok) {
         const evtData = await evtRes.json();
         if (!activeScenario || isManualSync) {

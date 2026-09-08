@@ -4,6 +4,7 @@ import { explainEvent } from '../data/eventExplainer';
 import { evaluateMediaAuthenticity } from '../data/authenticityEngine';
 import EventReconMedia from './EventReconMedia';
 import LiveNewsFeed from './LiveNewsFeed';
+import { generateEventPdfReport } from '../utils/generatePdfReport';
 import {
   X,
   Zap,
@@ -18,7 +19,8 @@ import {
   Code,
   CheckCircle2,
   Mic,
-  Satellite
+  Satellite,
+  Download
 } from 'lucide-react';
 
 interface EventExplainerModalProps {
@@ -272,12 +274,20 @@ export default function EventExplainerModal({
 
         {/* 3. MODAL FOOTER */}
         <div className="flex items-center justify-between border-t border-slate-800 pt-4 text-xs">
-          <button
-            onClick={() => onInspectJson(event)}
-            className="px-3.5 py-1.5 bg-slate-950 border border-slate-800 hover:border-cyan-700 text-cyan-400 rounded-lg flex items-center gap-1.5 transition-colors font-mono"
-          >
-            <Code className="w-4 h-4" /> Inspect Raw Payload JSON
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => generateEventPdfReport(event)}
+              className="px-3.5 py-1.5 bg-cyan-950 border border-cyan-500/60 hover:bg-cyan-900 text-cyan-300 rounded-lg flex items-center gap-1.5 transition-colors font-mono font-bold shadow-hud-glow"
+            >
+              <Download className="w-4 h-4 text-cyan-400" /> Export PDF Dossier
+            </button>
+            <button
+              onClick={() => onInspectJson(event)}
+              className="px-3.5 py-1.5 bg-slate-950 border border-slate-800 hover:border-cyan-700 text-slate-300 rounded-lg flex items-center gap-1.5 transition-colors font-mono"
+            >
+              <Code className="w-4 h-4 text-cyan-400" /> Inspect JSON
+            </button>
+          </div>
 
           <button
             onClick={onClose}

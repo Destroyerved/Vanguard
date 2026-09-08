@@ -137,7 +137,15 @@ export class SourceHealthRegistry {
   /** Effective reliability for every source type, for the fusion pipeline. */
   reliabilityMap(): Partial<Record<SourceType, number>> {
     const map: Partial<Record<SourceType, number>> = {};
-    for (const type of ['radar', 'weather', 'personnel', 'log', 'incident'] as SourceType[]) {
+    for (const type of [
+      'radar',
+      'weather',
+      'personnel',
+      'log',
+      'incident',
+      'social_media',
+      'audio_recording',
+    ] as SourceType[]) {
       map[type] = this.effectiveReliability(type);
     }
     return map;

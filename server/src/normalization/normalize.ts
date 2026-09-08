@@ -1,10 +1,10 @@
 /**
  * VANGUARD — Normalization layer.
  *
- * The single choke point where five incompatible feed shapes become one
+ * The single choke point where seven incompatible feed shapes become one
  * `UnifiedEvent`. Every downstream module — fusion, AI, API, WebSocket — is
  * written against that one type and has no knowledge of radar payloads or WMO
- * codes. Adding a sixth feed means adding one normalizer here.
+ * codes. Adding another feed means adding one normalizer here.
  *
  * Normalizers assign a BASE severity from what the source reported. They never
  * assign confidence: that is the fusion engine's job, and every event leaves
@@ -14,6 +14,7 @@
  */
 
 import { decodeWmo, type WeatherPayload } from '../ingestion/weather.openMeteo.js';
+import { evaluateMediaAuthenticity } from '../media/authenticity.js';
 import type { RawObservation } from '../ingestion/SourceAdapter.js';
 import type { GeoLocation, SeverityLevel, UnifiedEvent } from '../types/events.js';
 import { nextEventId, stableEventId } from '../util/ids.js';
@@ -368,6 +369,102 @@ export function normalizeIncident(observation: RawObservation): UnifiedEvent {
 }
 
 /* ------------------------------------------------------------------ *
+ * SOCIAL MEDIA
+ * ------------------------------------------------------------------ */
+
+/**
+ * The least-trusted feed. Every claim here is a claim, so reported severity is
+ * discounted by the account's reputation and never by the drama of the subject:
+ *
+ *   - a low-reputation account's high claim is downgraded one tier — if the
+ *     event is real, radar or personnel intelligence will corroborate it and
+ *     the fusion rules promote it back on evidence;
+ *   - a neural-generated clip claiming the most dramatic thing is capped at
+ *     MEDIUM — a deepfake telling a scary story must not set command posture,
+ *     and no amount of "looking threatening" is itself proof.
+ *
+ * Crucially this normalizer does NOT discard anything. Every post is surfaced,
+ * with a full media-authenticity audit attached, so the operator sees WHY it is
+ * weak — and the gold rule of the flow holds: uncertain media is presented,
+ * never silently dropped.
+ */
+export function normalizeSocialMedia(observation: RawObservation): UnifiedEvent {
+  const p = observation.payload;
+
+  const reported = severityOf(p['claimedSeverity'], 'medium');
+  const credibility = num(p, 'accountReputation', 0.5);
+
+  let severity = reported;
+  if (credibility < 0.5) {
+    const order: SeverityLevel[] = ['low', 'medium', 'high', 'critical'];
+    severity = order[Math.max(0, order.indexOf(reported) - 1)]!;
+  }
+  const synthetic = p['deepfakeVideo'] === true || p['syntheticVideo'] === true;
+  if (synthetic && (severity === 'critical' || severity === 'high')) {
+    severity = 'medium';
+  }
+
+  const handle = str(p, 'handle', 'unknown account');
+  const subject = str(p, 'subject', 'Unattributed social media report');
+
+  const event = base(
+    observation,
+    { lat: num(p, 'lat', 0), lng: num(p, 'lng', 0) },
+    severity,
+    `${handle} — ${subject}`,
+    `${subject}. Posted to ${str(p, 'platform', 'unknown platform')} ` +
+      `(account credibility ${(credibility * 100).toFixed(0)}%). ` +
+      'Media authenticity assessment attached; treat as unverified until corroborated.',
+  );
+
+  event.mediaAudit = evaluateMediaAuthenticity(event);
+
+  event.description =
+    `${event.description} Forensic read: authenticity ${event.mediaAudit.authenticityScore}/100, ` +
+    `category ${event.mediaAudit.manipulationCategory}.`;
+
+  return event;
+}
+
+/* ------------------------------------------------------------------ *
+ * AUDIO RECORDING
+ * ------------------------------------------------------------------ */
+
+/**
+ * Instrumented acoustic capture (hydrophone array). More credible than any
+ * social post — the sim's teleryphony gives these genuine sensor provenance —
+ * but still subject to the same rules: a synthetic waveform is a fabricated
+ * transmission, and the audit is attached exactly as it is for video.
+ */
+export function normalizeAudioRecording(observation: RawObservation): UnifiedEvent {
+  const p = observation.payload;
+
+  const reported = severityOf(p['claimedSeverity'], 'low');
+  const synthetic = p['syntheticWaveform'] === true;
+  let severity = reported;
+  if (synthetic && (severity === 'critical' || severity === 'high')) severity = 'medium';
+
+  const subject = str(p, 'subject', 'Unattributed acoustic recording');
+
+  const event = base(
+    observation,
+    { lat: num(p, 'lat', 0), lng: num(p, 'lng', 0) },
+    severity,
+    subject,
+    `${subject}. ${str(p, 'recordingKind', 'acoustic')} capture received. ` +
+      'Media authenticity assessment attached.',
+  );
+
+  event.mediaAudit = evaluateMediaAuthenticity(event);
+
+  event.description =
+    `${event.description} Forensic read: authenticity ${event.mediaAudit.authenticityScore}/100, ` +
+    `category ${event.mediaAudit.manipulationCategory}.`;
+
+  return event;
+}
+
+/* ------------------------------------------------------------------ *
  * Dispatch
  * ------------------------------------------------------------------ */
 
@@ -385,6 +482,10 @@ export function normalizeObservation(observation: RawObservation): UnifiedEvent 
         return normalizeLog(observation);
       case 'incident':
         return normalizeIncident(observation);
+      case 'social_media':
+        return normalizeSocialMedia(observation);
+      case 'audio_recording':
+        return normalizeAudioRecording(observation);
       default: {
         // Exhaustiveness guard: adding a SourceType without a normalizer
         // becomes a compile error here rather than a silent data loss.

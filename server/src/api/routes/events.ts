@@ -36,7 +36,7 @@ export function eventRoutes(orchestrator: Orchestrator): Router {
   router.get('/', (req, res) => {
     const { limit, offset } = pagination(req);
 
-    const events = orchestrator.store.query({
+    const { events, total } = orchestrator.store.queryWithCount({
       sourceTypes: sourceTypes(req),
       severities: severities(req),
       minConfidence: int(req, 'minConfidence', { min: 0, max: 100 }),
@@ -48,18 +48,6 @@ export function eventRoutes(orchestrator: Orchestrator): Router {
       limit,
       offset,
     });
-
-    // Total before pagination, so the client can render "showing 100 of 412".
-    const total = orchestrator.store.query({
-      sourceTypes: sourceTypes(req),
-      severities: severities(req),
-      minConfidence: int(req, 'minConfidence', { min: 0, max: 100 }),
-      withinSeconds: int(req, 'withinSeconds', { min: 1 }),
-      anomaliesOnly: bool(req, 'anomalies'),
-      minCorroborations: int(req, 'minCorroborations', { min: 0 }),
-      near: near(req),
-      text: str(req, 'q'),
-    }).length;
 
     res.json({ events, count: events.length, total, limit, offset });
   });
@@ -150,7 +138,7 @@ export function eventRoutes(orchestrator: Orchestrator): Router {
         breakdown: scored.breakdown,
         factors: scored.factors,
         formula:
-          'confidence = min(100, round(sourceReliability x recencyDecay x corroborationBoost x 100))',
+          'confidence = min(100, round(sourceReliability x recencyDecay x mediaAuthenticity x corroborationBoost x 100))',
         explanation: scored.explanation,
       },
       counterfactual: {

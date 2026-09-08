@@ -15,8 +15,7 @@ export interface OperatorProfile {
   email: string;
   photoURL?: string;
   clearanceLevel: 'TS-SCI' | 'SECRET' | 'RESTRICTED' | 'OPERATOR';
-  role: 'COMMANDER' | 'INTEL_OFFICER' | 'TACTICAL_OPERATOR' | 'GUEST_RECON';
-  isGuest: boolean;
+  role: 'COMMANDER' | 'INTEL_OFFICER' | 'TACTICAL_OPERATOR';
 }
 
 interface AuthContextType {
@@ -26,28 +25,14 @@ interface AuthContextType {
   loginWithEmail: (e: string, p: string) => Promise<void>;
   signupWithEmail: (e: string, p: string, name?: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
-  loginAsGuest: (guestName?: string) => void;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const DEFAULT_GUEST_OPERATOR: OperatorProfile = {
-  uid: 'GUEST-OP-7741',
-  displayName: 'Guest Operator Delta',
-  email: 'operator.guest@vanguard.c2',
-  clearanceLevel: 'TS-SCI',
-  role: 'COMMANDER',
-  isGuest: true
-};
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [operatorProfile, setOperatorProfile] = useState<OperatorProfile | null>(() => {
-    // Check if guest operator profile is saved locally
-    const saved = localStorage.getItem('vanguard_guest_operator');
-    return saved ? JSON.parse(saved) : DEFAULT_GUEST_OPERATOR;
-  });
+  const [operatorProfile, setOperatorProfile] = useState<OperatorProfile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -60,19 +45,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: firebaseUser.email || 'operator@vanguard.c2',
           photoURL: firebaseUser.photoURL || undefined,
           clearanceLevel: 'TS-SCI',
-          role: 'COMMANDER',
-          isGuest: false
+          role: 'COMMANDER'
         });
-        localStorage.removeItem('vanguard_guest_operator');
       } else {
         setUser(null);
-        // If not logged in via Firebase, fallback to guest operator profile so app is accessible
-        const savedGuest = localStorage.getItem('vanguard_guest_operator');
-        if (savedGuest) {
-          setOperatorProfile(JSON.parse(savedGuest));
-        } else {
-          setOperatorProfile(DEFAULT_GUEST_OPERATOR);
-        }
+        setOperatorProfile(null);
       }
       setLoading(false);
     });
@@ -105,8 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 displayName: name,
                 email,
                 clearanceLevel: 'TS-SCI',
-                role: 'COMMANDER',
-                isGuest: false
+                role: 'COMMANDER'
               }
         );
       }
@@ -130,26 +106,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginAsGuest = (guestName = 'Tactical Operator Alpha') => {
-    const profile: OperatorProfile = {
-      uid: `GUEST-OP-${Math.floor(1000 + Math.random() * 9000)}`,
-      displayName: guestName,
-      email: `${guestName.toLowerCase().replace(/\s+/g, '.')}@vanguard.c2`,
-      clearanceLevel: 'TS-SCI',
-      role: 'COMMANDER',
-      isGuest: true
-    };
-    setOperatorProfile(profile);
-    localStorage.setItem('vanguard_guest_operator', JSON.stringify(profile));
-  };
-
   const logout = async () => {
     setLoading(true);
     try {
       if (auth.currentUser) {
         await signOut(auth);
       }
-      localStorage.removeItem('vanguard_guest_operator');
       setUser(null);
       setOperatorProfile(null);
     } catch (err) {
@@ -168,7 +130,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginWithEmail,
         signupWithEmail,
         loginWithGoogle,
-        loginAsGuest,
         logout
       }}
     >

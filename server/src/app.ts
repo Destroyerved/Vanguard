@@ -14,6 +14,7 @@ import { aiRoutes } from './api/routes/ai.js';
 import { eventRoutes } from './api/routes/events.js';
 import { intelligenceRoutes } from './api/routes/intelligence.js';
 import { mapRoutes } from './api/routes/map.js';
+import { mediaRoutes } from './api/routes/media.js';
 import { simulationRoutes } from './api/routes/simulation.js';
 import { situationRoutes } from './api/routes/situation.js';
 import { errorHandler, notFoundHandler, requestLogger } from './api/middleware/errors.js';
@@ -80,6 +81,11 @@ export function createApp(orchestrator: Orchestrator): Express {
           'GET /api/v1/events/:id/correlations',
           'GET /api/v1/events/:id/candidates',
         ],
+        media: [
+          'GET /api/v1/media?category=&minAuthenticity=',
+          'GET /api/v1/media/categories',
+          'GET /api/v1/media/:id',
+        ],
         map: [
           'GET /api/v1/map/assets',
           'GET /api/v1/map/alerts',
@@ -117,6 +123,7 @@ export function createApp(orchestrator: Orchestrator): Express {
 
   app.use('/api/v1/situation', situationRoutes(orchestrator));
   app.use('/api/v1/events', eventRoutes(orchestrator));
+  app.use('/api/v1/media', mediaRoutes(orchestrator));
   app.use('/api/v1/map', mapRoutes(orchestrator));
   app.use('/api/v1/ai', aiRoutes(orchestrator));
   app.use('/api/v1/intelligence', intelligenceRoutes(orchestrator));

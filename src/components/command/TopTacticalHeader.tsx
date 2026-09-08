@@ -17,6 +17,7 @@ import {
   Play,
   User,
   LogOut,
+  LogIn,
   ChevronDown,
   Key
 } from 'lucide-react';
@@ -152,62 +153,61 @@ export default function TopTacticalHeader({
         <div className="flex items-center gap-2">
           {/* OPERATOR CLEARANCE PROFILE BADGE */}
           <div className="relative">
-            <button
-              onClick={() => {
-                if (onOpenAuthModal) onOpenAuthModal();
-                else setProfileDropdownOpen(!profileDropdownOpen);
-              }}
-              className="flex items-center gap-2 px-2.5 py-1 rounded bg-[#05070a] border border-cyan-500/40 hover:border-cyan-500/70 text-slate-200 text-xs font-semibold transition-all shadow-sm group"
-            >
-              <div className="w-5 h-5 rounded-full bg-cyan-950 border border-cyan-500/60 flex items-center justify-center text-[10px] font-bold text-cyan-300 uppercase">
-                {operatorProfile?.displayName ? operatorProfile.displayName.charAt(0) : 'OP'}
-              </div>
-              <div className="hidden lg:flex flex-col text-left leading-none">
-                <span className="text-[11px] font-bold text-cyan-300 group-hover:text-cyan-100 truncate max-w-[110px]">
-                  {operatorProfile?.displayName || 'Guest Operator'}
-                </span>
-                <span className="text-[9px] text-slate-400 font-mono">
-                  [{operatorProfile?.clearanceLevel || 'TS-SCI'}]
-                </span>
-              </div>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
-            </button>
+            {!operatorProfile ? (
+              <button
+                onClick={() => {
+                  if (onOpenAuthModal) onOpenAuthModal();
+                }}
+                className="flex items-center gap-2 px-3 py-1 rounded bg-cyan-950/80 border border-cyan-500/60 hover:bg-cyan-900 text-cyan-300 text-xs font-bold transition-all shadow-hud-glow"
+              >
+                <LogIn className="w-3.5 h-3.5 text-cyan-400" />
+                <span>SIGN IN / REGISTER</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                className="flex items-center gap-2 px-2.5 py-1 rounded bg-[#05070a] border border-cyan-500/40 hover:border-cyan-500/70 text-slate-200 text-xs font-semibold transition-all shadow-sm group"
+              >
+                <div className="w-5 h-5 rounded-full bg-cyan-950 border border-cyan-500/60 flex items-center justify-center text-[10px] font-bold text-cyan-300 uppercase">
+                  {operatorProfile.displayName ? operatorProfile.displayName.charAt(0) : 'OP'}
+                </div>
+                <div className="hidden lg:flex flex-col text-left leading-none">
+                  <span className="text-[11px] font-bold text-cyan-300 group-hover:text-cyan-100 truncate max-w-[110px]">
+                    {operatorProfile.displayName}
+                  </span>
+                  <span className="text-[9px] text-slate-400 font-mono">
+                    [{operatorProfile.clearanceLevel || 'TS-SCI'}]
+                  </span>
+                </div>
+                <ChevronDown className="w-3 h-3 text-slate-400" />
+              </button>
+            )}
 
-            {/* OPERATOR DROPDOWN MENU */}
-            {profileDropdownOpen && (
+            {/* OPERATOR DROPDOWN MENU - ONLY LOGOUT WHEN LOGGED IN */}
+            {profileDropdownOpen && operatorProfile && (
               <div className="absolute right-0 mt-2 w-56 bg-[#070b10] border border-cyan-500/50 rounded-xl shadow-2xl p-2 z-50 space-y-2 font-mono text-xs animate-in fade-in duration-100">
                 <div className="p-2 rounded bg-cyan-950/40 border border-cyan-500/30 space-y-1">
                   <div className="text-[10px] text-cyan-400 font-bold uppercase">
-                    {operatorProfile?.isGuest ? 'GUEST OPERATOR' : 'AUTHENTICATED OPERATOR'}
+                    AUTHENTICATED OPERATOR
                   </div>
                   <div className="font-bold text-slate-100 text-xs truncate">
-                    {operatorProfile?.displayName}
+                    {operatorProfile.displayName}
                   </div>
                   <div className="text-[10px] text-slate-400 truncate">
-                    {operatorProfile?.email}
+                    {operatorProfile.email}
                   </div>
                 </div>
 
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     setProfileDropdownOpen(false);
+                    await logout();
                     if (onOpenAuthModal) onOpenAuthModal();
                   }}
-                  className="w-full text-left p-2 rounded hover:bg-white/10 text-slate-300 flex items-center gap-2 text-xs transition-colors"
+                  className="w-full text-left p-2.5 rounded hover:bg-rose-950/60 text-rose-300 flex items-center gap-2 text-xs font-bold transition-colors border border-rose-500/30"
                 >
-                  <Key className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Switch Operator Account</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setProfileDropdownOpen(false);
-                    logout();
-                  }}
-                  className="w-full text-left p-2 rounded hover:bg-rose-950/60 text-rose-300 flex items-center gap-2 text-xs transition-colors border-t border-white/10"
-                >
-                  <LogOut className="w-3.5 h-3.5 text-rose-400" />
-                  <span>Sign Out Operator</span>
+                  <LogOut className="w-4 h-4 text-rose-400" />
+                  <span>SIGN OUT OPERATOR</span>
                 </button>
               </div>
             )}
