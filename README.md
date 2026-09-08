@@ -1,4 +1,4 @@
-# 🛡️ VANGUARD
+# 🛡️ GANGUARD
 ### Multi-Source Defence Situational Awareness System
 
 > **One picture. Every source. Zero delay.**  
