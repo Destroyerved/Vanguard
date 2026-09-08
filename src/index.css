@@ -1,0 +1,166 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-tactical-cyan: #00f0ff;
+    --color-tactical-amber: #ffaa00;
+    --color-tactical-green: #00ff66;
+    --color-tactical-red: #ff2a4b;
+    --bg-tactical-panel: rgba(9, 14, 21, 0.85);
+  }
+
+  body {
+    background-color: #04070b;
+    color: #c9d8e6;
+    font-family: 'JetBrains Mono', monospace;
+    overflow: hidden;
+  }
+}
+
+/* Tactical HUD corner accents */
+.tactical-box {
+  position: relative;
+  background: rgba(9, 15, 24, 0.78);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tactical-box::before,
+.tactical-box::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  pointer-events: none;
+}
+
+.tactical-box::before {
+  top: -1px;
+  left: -1px;
+  border-top: 2px solid #00f0ff;
+  border-left: 2px solid #00f0ff;
+}
+
+.tactical-box::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 2px solid #00f0ff;
+  border-right: 2px solid #00f0ff;
+}
+
+/* Alert state variants */
+.tactical-box-red {
+  border-color: rgba(255, 42, 75, 0.4);
+}
+.tactical-box-red::before {
+  border-color: #ff2a4b;
+}
+.tactical-box-red::after {
+  border-color: #ff2a4b;
+}
+
+.tactical-box-amber {
+  border-color: rgba(255, 170, 0, 0.4);
+}
+.tactical-box-amber::before {
+  border-color: #ffaa00;
+}
+.tactical-box-amber::after {
+  border-color: #ffaa00;
+}
+
+/* Scanline and CRT Overlay */
+.scanlines {
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.25) 50%
+  ), linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.03),
+    rgba(0, 255, 0, 0.01),
+    rgba(0, 0, 255, 0.03)
+  );
+  background-size: 100% 3px, 6px 100%;
+  pointer-events: none;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(5, 8, 12, 0.8);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.25);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 255, 0.6);
+}
+
+/* Map Dark Styling */
+.leaflet-container {
+  background: #05080c !important;
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+.leaflet-tile {
+  filter: brightness(0.4) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: rgba(9, 15, 24, 0.95) !important;
+  color: #c9d8e6 !important;
+  border: 1px solid rgba(0, 240, 255, 0.4) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.2) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.leaflet-popup-tip {
+  background: rgba(9, 15, 24, 0.95) !important;
+}
+
+/* CRT Screen Glow */
+.crt-glow {
+  text-shadow: 0 0 4px rgba(0, 240, 255, 0.6);
+}
+
+.crt-glow-red {
+  text-shadow: 0 0 5px rgba(255, 42, 75, 0.8);
+}
+
+.crt-glow-amber {
+  text-shadow: 0 0 5px rgba(255, 170, 0, 0.8);
+}
+
+/* Nuclear screen flash animation */
+@keyframes nukeFlash {
+  0% { opacity: 0; }
+  10% { opacity: 0.95; }
+  35% { opacity: 0.75; }
+  100% { opacity: 0; }
+}
+
+.animate-nuke-flash {
+  animation: nukeFlash 3.5s ease-out forwards;
+}
+
+/* Screen shake for detonation */
+@keyframes screenShake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  10%, 30%, 50%, 70%, 90% { transform: translate(-3px, 2px) rotate(-0.5deg); }
+  20%, 40%, 60%, 80% { transform: translate(3px, -2px) rotate(0.5deg); }
+}
+
+.animate-screen-shake {
+  animation: screenShake 1.2s ease-in-out infinite;
+}
