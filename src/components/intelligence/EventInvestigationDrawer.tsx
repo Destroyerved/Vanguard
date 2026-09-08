@@ -3,6 +3,7 @@ import { UnifiedEvent } from '../../types/schema';
 import { explainEvent } from '../../data/eventExplainer';
 import EventReconMedia from '../EventReconMedia';
 import LiveNewsFeed from '../LiveNewsFeed';
+import { generateEventPdfReport } from '../../utils/generatePdfReport';
 import {
   X,
   ShieldCheck,
@@ -21,7 +22,8 @@ import {
   Zap,
   Info,
   Camera,
-  Newspaper
+  Newspaper,
+  Download
 } from 'lucide-react';
 
 interface EventInvestigationDrawerProps {
@@ -94,6 +96,14 @@ export default function EventInvestigationDrawer({
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => generateEventPdfReport(event)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-cyan-950 border border-cyan-500/60 text-cyan-300 hover:bg-cyan-900 shadow-hud-glow transition-all font-bold text-[10px]"
+            title="Generate & Export Detailed Intelligence PDF Dossier"
+          >
+            <Download className="w-3.5 h-3.5 text-cyan-400" />
+            <span>EXPORT PDF</span>
+          </button>
           <button
             onClick={handleCopyJson}
             className="p-1.5 rounded hover:bg-white/10 text-slate-400 hover:text-slate-200"
