@@ -23,11 +23,12 @@ import {
 
 import { explainEvent } from './data/eventExplainer';
 import { UnifiedEvent } from './types/schema';
+import TacticalMap from './components/TacticalMap';
 
 const BACKEND_URL = 'http://localhost:3001/api/v1';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'timeline' | 'sources' | 'api_tester'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'map' | 'events' | 'timeline' | 'sources' | 'api_tester'>('overview');
   const [loading, setLoading] = useState(true);
   const [serverOnline, setServerOnline] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date().toUTCString());
@@ -200,13 +201,19 @@ export default function App() {
         </div>
 
         {/* NAVIGATION TABS */}
-        <div className="flex items-center gap-2 border-b border-slate-800/80 pb-2">
+        <div className="flex items-center gap-2 border-b border-slate-800/80 pb-2 overflow-x-auto">
           <TabBtn id="overview" label="SITUATION OVERVIEW" icon={<Activity className="w-4 h-4" />} active={activeTab} onClick={setActiveTab} />
+          <TabBtn id="map" label={`TACTICAL MAP (${events.length})`} icon={<Globe className="w-4 h-4 text-cyan-400" />} active={activeTab} onClick={setActiveTab} />
           <TabBtn id="events" label={`INGESTED EVENTS (${events.length})`} icon={<Layers className="w-4 h-4" />} active={activeTab} onClick={setActiveTab} />
           <TabBtn id="timeline" label={`THREAT TIMELINE (${Array.isArray(timeline) ? timeline.length : 0})`} icon={<TrendingUp className="w-4 h-4" />} active={activeTab} onClick={setActiveTab} />
           <TabBtn id="sources" label={`SOURCE HEALTH (${sourceHealth.length})`} icon={<Radio className="w-4 h-4" />} active={activeTab} onClick={setActiveTab} />
           <TabBtn id="api_tester" label="LIVE API TESTER" icon={<Terminal className="w-4 h-4" />} active={activeTab} onClick={setActiveTab} />
         </div>
+
+        {/* TAB 2: TACTICAL GEOSPATIAL MAP */}
+        {activeTab === 'map' && (
+          <TacticalMap events={events} onSelectEvent={setSelectedEventExplanation} />
+        )}
 
         {/* TAB 1: SITUATION OVERVIEW */}
         {activeTab === 'overview' && (
@@ -570,17 +577,29 @@ export default function App() {
               </div>
 
               {/* MODAL FOOTER */}
-              <div className="flex items-center justify-between border-t border-slate-800 pt-4 text-xs">
-                <button
-                  onClick={() => {
-                    const payload = evt;
-                    setSelectedEventExplanation(null);
-                    setSelectedRawJson({ title: `Event Payload — ${payload.title}`, data: payload });
-                  }}
-                  className="px-3 py-1.5 bg-slate-950 border border-slate-800 hover:border-cyan-700 text-cyan-400 rounded-lg flex items-center gap-1.5 transition-colors"
-                >
-                  <Code className="w-4 h-4" /> Inspect Raw Payload JSON
-                </button>
+              <div className="flex flex-wrap items-center justify-between border-t border-slate-800 pt-4 text-xs gap-2">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const payload = evt;
+                      setSelectedEventExplanation(null);
+                      setSelectedRawJson({ title: `Event Payload — ${payload.title}`, data: payload });
+                    }}
+                    className="px-3 py-1.5 bg-slate-950 border border-slate-800 hover:border-cyan-700 text-cyan-400 rounded-lg flex items-center gap-1.5 transition-colors"
+                  >
+                    <Code className="w-4 h-4" /> Inspect Raw Payload JSON
+                  </button>
+
+                  <a
+                    href={`https://www.openstreetmap.org/?mlat=${evt.location?.lat}&mlon=${evt.location?.lng}#map=13/${evt.location?.lat}/${evt.location?.lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 bg-slate-950 border border-slate-800 hover:border-cyan-500 text-cyan-300 rounded-lg flex items-center gap-1.5 transition-colors font-bold"
+                  >
+                    <Globe className="w-4 h-4 text-cyan-400" /> Open Coordinates in OpenStreetMap
+                  </a>
+                </div>
+
                 <button
                   onClick={() => setSelectedEventExplanation(null)}
                   className="px-4 py-1.5 bg-cyan-950 border border-cyan-700 hover:bg-cyan-900 text-cyan-300 font-bold rounded-lg transition-colors"
