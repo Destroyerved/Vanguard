@@ -8,12 +8,12 @@ const env = (import.meta as any).env || {};
 // Firebase Web SDK Configuration
 // Uses Vite environment variables with resilient fallback config for local development
 const firebaseConfig = {
-  apiKey: env.VITE_FIREBASE_API_KEY || 'AIzaSyDemoVanguardApiKeyForLocalTesting',
-  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || 'vanguard-c2-cop.firebaseapp.com',
-  projectId: env.VITE_FIREBASE_PROJECT_ID || 'vanguard-c2-cop',
-  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || 'vanguard-c2-cop.appspot.com',
-  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || '109283746501',
-  appId: env.VITE_FIREBASE_APP_ID || '1:109283746501:web:a1b2c3d4e5f6g7h8'
+  apiKey: env.VITE_FIREBASE_API_KEY || 'AIzaSyAzoXSBz4bHLrleXSP2bE-5X-P858ifdQE',
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || 'vanguard-7fece.firebaseapp.com',
+  projectId: env.VITE_FIREBASE_PROJECT_ID || 'vanguard-7fece',
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || 'vanguard-7fece.firebasestorage.app',
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || '316058828672',
+  appId: env.VITE_FIREBASE_APP_ID || '1:316058828672:web:403293aa40383c0350cb65'
 };
 
 // Initialize Firebase App singleton safely
