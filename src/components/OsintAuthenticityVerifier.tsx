@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UnifiedEvent } from '../types/schema';
 import { evaluateMediaAuthenticity } from '../data/authenticityEngine';
+import SocialOsintSearchExtractor from './intelligence/SocialOsintSearchExtractor';
 import {
   ShieldCheck,
   ShieldAlert,
@@ -24,14 +25,22 @@ import {
   Check,
   Clock,
   Radio,
+  Search,
+  Youtube
 } from 'lucide-react';
 
 interface OsintAuthenticityVerifierProps {
   events: UnifiedEvent[];
   onSelectEvent?: (evt: UnifiedEvent) => void;
+  onInjectEvent?: (newEvent: UnifiedEvent) => void;
 }
 
-export default function OsintAuthenticityVerifier({ events, onSelectEvent }: OsintAuthenticityVerifierProps) {
+export default function OsintAuthenticityVerifier({
+  events,
+  onSelectEvent,
+  onInjectEvent
+}: OsintAuthenticityVerifierProps) {
+  const [activeMainSection, setActiveMainSection] = useState<'EXTRACTOR' | 'FORENSICS'>('EXTRACTOR');
   const [selectedEventId, setSelectedEventId] = useState<string>(events[0]?.id || '');
   const [filterType, setFilterType] = useState<string>('ALL');
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'METADATA' | 'VISION_TEMPORAL' | 'ACOUSTIC' | 'SENSOR_PRNU' | 'ENSEMBLE'>('OVERVIEW');
@@ -56,51 +65,83 @@ export default function OsintAuthenticityVerifier({ events, onSelectEvent }: Osi
 
   return (
     <div className="space-y-6 font-mono">
-      {/* HEADER BANNER */}
-      <div className="hud-card p-6 rounded-2xl border border-cyan-500/40 bg-slate-900/90 shadow-2xl space-y-3">
+      {/* 1. TOP CONTROL & MODE SWITCHER */}
+      <div className="hud-card p-5 rounded-2xl border border-cyan-500/40 bg-slate-900/90 shadow-2xl space-y-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[10px] bg-cyan-950 border border-cyan-700 text-cyan-400 font-bold px-2.5 py-0.5 rounded tracking-widest uppercase flex items-center gap-1">
                 <Cpu className="w-3.5 h-3.5 text-cyan-400" /> VANGUARD MULTI-PARAMETER FORENSIC & OSINT ENGINE
               </span>
-              <span className="text-xs text-slate-400 font-mono">Full Bitstream, Vision, Acoustic & Sensor Corroboration</span>
+              <span className="text-xs text-slate-400 font-mono">YouTube & Social Discovery • 8-Layer Forensic Analysis</span>
             </div>
             <h2 className="font-hud font-bold text-2xl text-slate-100">
-              Multi-Source Media, Metadata & Deepfake Forensic Intelligence Center
+              OSINT Discovery, YouTube Search & Multi-Layer Deepfake Forensics
             </h2>
-            <p className="text-xs text-slate-300 font-sans mt-1 max-w-3xl">
-              Extracts 8 forensic layers across incoming feeds: bitstream container metadata, frame-level boundary blur, temporal consistency, acoustic FFT spectrum, camera PRNU noise, and multi-model detector ensemble fused with orbital satellites.
-            </p>
           </div>
-        </div>
 
-        {/* FEED FILTER BUTTONS */}
-        <div className="flex items-center gap-2 pt-2 border-t border-slate-800 overflow-x-auto text-xs">
-          <span className="text-slate-400 font-bold mr-1 flex items-center gap-1">
-            <Filter className="w-3.5 h-3.5 text-amber-400" /> STREAM FILTER:
-          </span>
-          {[
-            { id: 'ALL', label: '🌍 ALL FEEDS' },
-            { id: 'SOCIAL', label: '📱 INSTAGRAM / SOCIAL' },
-            { id: 'AUDIO', label: '🎙️ HYDROPHONE / AUDIO' },
-            { id: 'HYBRID', label: '🟡 HYBRID AI (FACT VERIFIED)' },
-            { id: 'DEEPFAKE', label: '🚨 DEEPFAKE DISINFO' },
-          ].map((btn) => (
+          {/* MAIN TAB SWITCHER: SEARCH EXTRACTOR VS FORENSIC AUDIT */}
+          <div className="flex items-center gap-2 bg-[#05070a] p-1 rounded-xl border border-white/10 shrink-0">
             <button
-              key={btn.id}
-              onClick={() => setFilterType(btn.id)}
-              className={`px-3 py-1.5 rounded-lg border font-bold transition-all ${
-                filterType === btn.id
-                  ? 'bg-cyan-950 border-cyan-500 text-cyan-300 shadow-md shadow-cyan-950/50'
-                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+              onClick={() => setActiveMainSection('EXTRACTOR')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${
+                activeMainSection === 'EXTRACTOR'
+                  ? 'bg-cyan-950 border border-cyan-500/60 text-cyan-300 shadow-hud-glow'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              {btn.label}
+              <Youtube className="w-4 h-4 text-red-400" />
+              <span>YOUTUBE & OSINT SEARCH</span>
             </button>
-          ))}
+            <button
+              onClick={() => setActiveMainSection('FORENSICS')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${
+                activeMainSection === 'FORENSICS'
+                  ? 'bg-cyan-950 border border-cyan-500/60 text-cyan-300 shadow-hud-glow'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>8-LAYER FORENSIC AUDIT</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* 2. ACTIVE SECTION VIEW */}
+      {activeMainSection === 'EXTRACTOR' ? (
+        <SocialOsintSearchExtractor
+          onInjectEvent={onInjectEvent}
+          onSelectEvent={onSelectEvent}
+        />
+      ) : (
+        /* FORENSIC VERIFIER SECTION */
+        <div className="space-y-6">
+          {/* FEED FILTER BUTTONS */}
+          <div className="hud-card p-4 rounded-xl border border-white/10 bg-slate-900/80 flex items-center gap-2 overflow-x-auto text-xs">
+            <span className="text-slate-400 font-bold mr-1 flex items-center gap-1">
+              <Filter className="w-3.5 h-3.5 text-amber-400" /> STREAM FILTER:
+            </span>
+            {[
+              { id: 'ALL', label: '🌍 ALL FEEDS' },
+              { id: 'SOCIAL', label: '📱 INSTAGRAM / SOCIAL' },
+              { id: 'AUDIO', label: '🎙️ HYDROPHONE / AUDIO' },
+              { id: 'HYBRID', label: '🟡 HYBRID AI (FACT VERIFIED)' },
+              { id: 'DEEPFAKE', label: '🚨 DEEPFAKE DISINFO' },
+            ].map((btn) => (
+              <button
+                key={btn.id}
+                onClick={() => setFilterType(btn.id)}
+                className={`px-3 py-1.5 rounded-lg border font-bold transition-all ${
+                  filterType === btn.id
+                    ? 'bg-cyan-950 border-cyan-500 text-cyan-300 shadow-md shadow-cyan-950/50'
+                    : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                {btn.label}
+              </button>
+            ))}
+          </div>
 
       {/* MAIN TWO-COLUMN INSPECTION LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -630,5 +671,7 @@ export default function OsintAuthenticityVerifier({ events, onSelectEvent }: Osi
         )}
       </div>
     </div>
+  )}
+</div>
   );
 }

@@ -55,7 +55,7 @@ export default function CommandRail({
     { id: 'news', label: 'Verified News Hub', category: 'INTELLIGENCE', icon: Newspaper, badge: 'REUTERS/AP', badgeColor: 'bg-cyan-950 text-cyan-300 border-cyan-500/30', shortcut: 'N' },
     { id: 'recon', label: 'Satellite Recon', category: 'INTELLIGENCE', icon: Globe, badge: 'ESRI HD', badgeColor: 'bg-indigo-950 text-indigo-300 border-indigo-500/30', shortcut: 'R' },
     { id: 'events', label: 'Signal Stream', category: 'INTELLIGENCE', icon: Radio, badge: eventCount > 0 ? eventCount : undefined, shortcut: 'E' },
-    { id: 'osint', label: 'OSINT Veracity', category: 'INTELLIGENCE', icon: ShieldCheck, badge: anomalyCount > 0 ? `${anomalyCount} Anom` : undefined, badgeColor: 'bg-rose-500/20 text-rose-400 border-rose-500/40', shortcut: 'V' },
+    { id: 'osint', label: 'YouTube & OSINT', category: 'INTELLIGENCE', icon: ShieldCheck, badge: 'YT/INSTA', badgeColor: 'bg-red-950/80 text-red-300 border-red-500/40', shortcut: 'V' },
     { id: 'timeline', label: 'Threat Timeline', category: 'INTELLIGENCE', icon: Clock, shortcut: 'T' },
 
     // SOURCES & SYSTEM
