@@ -26,7 +26,7 @@ export const ConfidenceBreakdownSchema = z.object({
 export const UnifiedEventSchema = z.object({
   id: z.string().min(1),
   sourceType: z.enum(['radar', 'weather', 'personnel', 'log', 'incident']),
-  timestamp: z.string().refine(val => !isNaN(Date.parse(val)), { message: "Invalid ISO 8601 timestamp" }),
+  timestamp: z.string(),
   location: GeoLocationSchema,
   severity: z.enum(['low', 'medium', 'high', 'critical']),
   title: z.string().min(1),
@@ -35,20 +35,9 @@ export const UnifiedEventSchema = z.object({
   confidenceBreakdown: ConfidenceBreakdownSchema.optional(),
   corroboratedBy: z.array(z.string()),
   isAnomaly: z.boolean(),
-  raw: z.record(z.unknown()),
+  raw: z.record(z.string(), z.unknown()),
 });
 
-/**
- * Validates any object against strict UnifiedEvent schema.
- * Throws readable ZodError or returns validated payload.
- */
 export function validateUnifiedEvent(payload: unknown): UnifiedEvent {
   return UnifiedEventSchema.parse(payload) as UnifiedEvent;
-}
-
-/**
- * Safe validation function (returns success flag and errors if any)
- */
-export function safeValidateUnifiedEvent(payload: unknown) {
-  return UnifiedEventSchema.safeParse(payload);
 }

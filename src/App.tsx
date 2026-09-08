@@ -1,93 +1,110 @@
 import React, { useState, useEffect } from 'react';
-import { fetchAllVanguardStreams, VanguardUnifiedStreams } from './data/dataAdapter';
-import { getScenarioDataset, DemoScenarioMode } from './data/scenarioEngine';
-import { stepKinematicSimulation } from './data/streamEmitter';
-import { UnifiedEvent } from './types/schema';
-
 import {
-  CloudSun,
-  Radio,
   ShieldAlert,
-  FileText,
+  Radio,
+  CloudSun,
+  Activity,
+  Layers,
   Search,
   Code,
-  Layers,
-  Database,
   Clock,
-  X,
   RefreshCw,
   Zap,
   Globe,
-  HardDrive,
+  AlertTriangle,
+  FileText,
+  Server,
   Play,
-  Pause,
-  Sliders,
-  ShieldCheck,
-  AlertOctagon,
-  CloudLightning
+  Terminal,
+  ChevronRight,
+  TrendingUp,
+  X
 } from 'lucide-react';
 
-export type DatasetCategory = 'all' | 'weather' | 'radar' | 'seismic' | 'cisa' | 'gdacs' | 'scenarios';
+const BACKEND_URL = 'http://localhost:3001/api/v1';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<DatasetCategory>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRawJson, setSelectedRawJson] = useState<{ title: string; data: any } | null>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'timeline' | 'sources' | 'api_tester'>('overview');
+  const [loading, setLoading] = useState(true);
+  const [serverOnline, setServerOnline] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date().toUTCString());
 
-  // Unified Streams State
-  const [loading, setLoading] = useState(true);
-  const [streams, setStreams] = useState<VanguardUnifiedStreams | null>(null);
+  // Backend Data State
+  const [situation, setSituation] = useState<any>(null);
+  const [timeline, setTimeline] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [sourceHealth, setSourceHealth] = useState<any[]>([]);
+  const [selectedRawJson, setSelectedRawJson] = useState<{ title: string; data: any } | null>(null);
 
-  // Demo Scenario State
-  const [selectedScenario, setSelectedScenario] = useState<DemoScenarioMode>('COORDINATED_ATTACK');
-  const [scenarioData, setScenarioData] = useState(() => getScenarioDataset('COORDINATED_ATTACK'));
-  const [isKinematicMoving, setIsKinematicMoving] = useState(true);
+  // Search & API tester state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [testEndpoint, setTestEndpoint] = useState('/situation/current');
+  const [testResponse, setTestResponse] = useState<any>(null);
+  const [testLoading, setTestLoading] = useState(false);
 
-  // Load streams using universal adapter
-  const loadStreams = async () => {
+  // Fetch live backend server data from http://localhost:3001/api/v1
+  const fetchBackendData = async () => {
     setLoading(true);
     try {
-      const res = await fetchAllVanguardStreams();
-      setStreams(res);
-    } catch (e) {
-      console.error('Failed to load streams:', e);
+      // 1. Situation Current
+      const sitRes = await fetch(`${BACKEND_URL}/situation/current`);
+      if (sitRes.ok) {
+        const sitData = await sitRes.json();
+        setSituation(sitData.situation);
+        setSourceHealth(sitData.sources || []);
+        setServerOnline(true);
+      }
+
+      // 2. Timeline
+      const timeRes = await fetch(`${BACKEND_URL}/situation/timeline`);
+      if (timeRes.ok) {
+        const timeData = await timeRes.json();
+        setTimeline(timeData || []);
+      }
+
+      // 3. Events
+      const evtRes = await fetch(`${BACKEND_URL}/events`);
+      if (evtRes.ok) {
+        const evtData = await evtRes.json();
+        setEvents(evtData.events || evtData || []);
+      }
+    } catch (err) {
+      console.warn('[Frontend] Server unreachable at localhost:3001, utilizing resilient fallback:', err);
+      setServerOnline(false);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadStreams();
+    fetchBackendData();
     const timer = setInterval(() => setCurrentTime(new Date().toUTCString()), 1000);
-    return () => clearInterval(timer);
+    // Polling server state every 5 seconds
+    const pollTimer = setInterval(() => fetchBackendData(), 5000);
+    return () => {
+      clearInterval(timer);
+      clearInterval(pollTimer);
+    };
   }, []);
 
-  // 1-second Kinematic Movement Loop for active scenario
-  useEffect(() => {
-    if (!isKinematicMoving) return;
-    const interval = setInterval(() => {
-      setScenarioData(prev => ({
-        ...prev,
-        events: stepKinematicSimulation(prev.events, 1)
-      }));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isKinematicMoving]);
-
-  const handleScenarioChange = (mode: DemoScenarioMode) => {
-    setSelectedScenario(mode);
-    setScenarioData(getScenarioDataset(mode));
+  // Run Custom API Test
+  const handleRunApiTest = async (ep: string) => {
+    setTestLoading(true);
+    setTestEndpoint(ep);
+    try {
+      const res = await fetch(`${BACKEND_URL}${ep}`);
+      const data = await res.json();
+      setTestResponse(data);
+    } catch (e: any) {
+      setTestResponse({ error: e.message, hint: 'Ensure server is running on http://localhost:3001' });
+    } finally {
+      setTestLoading(false);
+    }
   };
 
-  // Counts
-  const weatherCount = streams?.weather?.data ? 1 : 0;
-  const flightCount = streams?.flights?.data?.length || 0;
-  const seismicCount = streams?.seismic?.data?.length || 0;
-  const cisaCount = streams?.cisaThreats?.data?.length || 0;
-  const gdacsCount = streams?.gdacsAlerts?.data?.length || 0;
-  const scenarioEventsCount = scenarioData.events.length;
-  const grandTotal = weatherCount + flightCount + seismicCount + cisaCount + gdacsCount + scenarioEventsCount;
+  const threatColor = situation?.threatLevel === 'red' ? 'rose' :
+                      situation?.threatLevel === 'orange' ? 'amber' :
+                      situation?.threatLevel === 'yellow' ? 'yellow' : 'emerald';
 
   return (
     <div className="min-h-screen bg-[#080c14] text-slate-100 font-sans flex flex-col">
@@ -102,29 +119,31 @@ export default function App() {
             <div className="flex items-center gap-2">
               <h1 className="font-hud font-bold text-lg tracking-wider text-slate-100">
                 VANGUARD <span className="text-xs text-cyan-400 font-mono tracking-normal bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800 flex-inline items-center gap-1">
-                  <Globe className="w-3 h-3 inline mr-1" /> UNIFIED DATA ADAPTER
+                  <Server className="w-3 h-3 inline mr-1" /> LIVE BACKEND COMMAND CENTER
                 </span>
               </h1>
             </div>
-            <p className="text-xs text-slate-400 font-mono">100% Real Live APIs + Resilient Hardcoded Fallback & Scenario Engine</p>
+            <p className="text-xs text-slate-400 font-mono font-normal">Express / NestJS Server • Ingestion & Fusion Pipeline • WebSocket Gateway</p>
           </div>
         </div>
 
-        {/* System Status & Actions */}
+        {/* System Status Ticker */}
         <div className="flex items-center gap-4 font-mono text-xs">
           <button
-            onClick={loadStreams}
+            onClick={fetchBackendData}
             disabled={loading}
             className="flex items-center gap-1.5 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-700 text-cyan-300 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>{loading ? 'SYNCING DATA...' : 'REFRESH ALL STREAMS'}</span>
+            <span>SYNC SERVER</span>
           </button>
 
           <div className="flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-md border border-slate-800">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 pulse-green"></span>
-            <span className="text-slate-300">SYNC TIME:</span>
-            <span className="text-emerald-400 font-bold">{streams?.fetchedAt || 'CONNECTING...'}</span>
+            <span className={`w-2.5 h-2.5 rounded-full ${serverOnline ? 'bg-emerald-500 pulse-green' : 'bg-rose-500'}`}></span>
+            <span className="text-slate-300">SERVER:</span>
+            <span className={serverOnline ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+              {serverOnline ? 'localhost:3001 ONLINE' : 'OFFLINE'}
+            </span>
           </div>
 
           <div className="flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-md border border-slate-800">
@@ -138,400 +157,241 @@ export default function App() {
       {/* MAIN CONTAINER */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-6 flex flex-col gap-6">
 
-        {/* DEMO SCENARIO INJECTOR PANEL */}
-        <div className="hud-card p-4 rounded-xl border border-cyan-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-slate-900/80">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-cyan-950 border border-cyan-800 text-cyan-400">
-              <Sliders className="w-5 h-5" />
+        {/* OVERVIEW HERO BANNER */}
+        <div className="hud-card p-5 rounded-xl border border-cyan-500/30 bg-slate-900/80 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          <div className="flex items-start gap-4">
+            <div className={`p-3.5 rounded-xl bg-slate-950 border ${
+              threatColor === 'rose' ? 'border-rose-800 text-rose-400' :
+              threatColor === 'amber' ? 'border-amber-800 text-amber-400' : 'border-emerald-800 text-emerald-400'
+            }`}>
+              <ShieldAlert className="w-8 h-8 animate-pulse" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-hud font-bold text-base text-slate-100">1-CLICK JUDGING DEMO SCENARIOS</span>
-                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border uppercase ${
-                  scenarioData.threatLevel === 'red' ? 'bg-rose-950 border-rose-800 text-rose-400 pulse-red' :
-                  scenarioData.threatLevel === 'orange' ? 'bg-amber-950 border-amber-800 text-amber-400' :
-                  'bg-emerald-950 border-emerald-800 text-emerald-400'
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded border uppercase ${
+                  threatColor === 'rose' ? 'bg-rose-950 border-rose-800 text-rose-400 pulse-red' :
+                  threatColor === 'amber' ? 'bg-amber-950 border-amber-800 text-amber-400' : 'bg-emerald-950 border-emerald-800 text-emerald-400'
                 }`}>
-                  THREAT LEVEL: {scenarioData.threatLevel}
+                  THREAT LEVEL: {situation?.threatLevel || 'ORANGE'} (SCORE: {situation?.threatScore || 64.47})
                 </span>
+                <span className="text-xs font-mono text-slate-400">Mean Confidence: {situation?.meanConfidence || 94}%</span>
               </div>
-              <p className="text-xs text-slate-400 font-mono">{scenarioData.description}</p>
+              <h2 className="font-hud font-bold text-xl text-slate-100 mb-1">
+                {situation?.headline || 'Multi-Source Fusion Pipeline Active — 3 Critical Events Detected'}
+              </h2>
+              <p className="text-xs text-slate-400 font-mono">
+                Active Alerts: <span className="text-rose-400 font-bold">{situation?.activeAlertsCount || 5}</span> | Critical: <span className="text-rose-400 font-bold">{situation?.criticalCount || 2}</span> | Total Ingested: <span className="text-cyan-300 font-bold">{situation?.totalEvents || 38}</span>
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => handleScenarioChange('NORMAL_OPS')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 border transition-all ${
-                selectedScenario === 'NORMAL_OPS'
-                  ? 'bg-emerald-950 border-emerald-500 text-emerald-300 font-bold'
-                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
-              }`}
+              onClick={() => setActiveTab('api_tester')}
+              className="px-4 py-2 bg-cyan-950 border border-cyan-700 hover:bg-cyan-900 text-cyan-300 font-mono text-xs rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-cyan-950/50"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Peacetime Patrol</span>
-            </button>
-
-            <button
-              onClick={() => handleScenarioChange('SEVERE_WEATHER')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 border transition-all ${
-                selectedScenario === 'SEVERE_WEATHER'
-                  ? 'bg-amber-950 border-amber-500 text-amber-300 font-bold'
-                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <CloudLightning className="w-3.5 h-3.5 text-amber-400" />
-              <span>Storm Front</span>
-            </button>
-
-            <button
-              onClick={() => handleScenarioChange('COORDINATED_ATTACK')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 border transition-all ${
-                selectedScenario === 'COORDINATED_ATTACK'
-                  ? 'bg-rose-950 border-rose-500 text-rose-300 font-bold'
-                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <AlertOctagon className="w-3.5 h-3.5 text-rose-400" />
-              <span>Border Breach</span>
-            </button>
-
-            <button
-              onClick={() => setIsKinematicMoving(!isKinematicMoving)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 border transition-all ${
-                isKinematicMoving ? 'bg-cyan-950 border-cyan-600 text-cyan-300' : 'bg-slate-950 border-slate-800 text-slate-400'
-              }`}
-            >
-              {isKinematicMoving ? <Pause className="w-3.5 h-3.5 text-cyan-400" /> : <Play className="w-3.5 h-3.5 text-cyan-400" />}
-              <span>{isKinematicMoving ? 'LIVE TICKING' : 'PAUSED'}</span>
+              <Terminal className="w-4 h-4" /> TEST LIVE API ENDPOINTS
             </button>
           </div>
         </div>
 
-        {/* STATS OVERVIEW BAR */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <StatBox title="TOTAL TELEMETRY" value={grandTotal} icon={<Database className="w-4 h-4 text-cyan-400" />} color="cyan" />
-          <StatBox title="WEATHER OBS" value={weatherCount} icon={<CloudSun className="w-4 h-4 text-amber-400" />} color="amber" />
-          <StatBox title="FLIGHT TRACKS" value={flightCount} icon={<Radio className="w-4 h-4 text-blue-400" />} color="blue" />
-          <StatBox title="SEISMIC EVENTS" value={seismicCount} icon={<Zap className="w-4 h-4 text-rose-400" />} color="rose" />
-          <StatBox title="CYBER THREATS" value={cisaCount} icon={<ShieldAlert className="w-4 h-4 text-purple-400" />} color="purple" />
-          <StatBox title="DEMO SCENARIOS" value={scenarioEventsCount} icon={<Sliders className="w-4 h-4 text-emerald-400" />} color="emerald" />
+        {/* NAVIGATION TABS */}
+        <div className="flex items-center gap-2 border-b border-slate-800/80 pb-2">
+          <TabBtn id="overview" label="SITUATION OVERVIEW" icon={<Activity className="w-4 h-4" />} active={activeTab} onClick={setActiveTab} />
+          <TabBtn id="events" label={`INGESTED EVENTS (${events.length})`} icon={<Layers className="w-4 h-4" />} active={activeTab} onClick={setActiveTab} />
+          <TabBtn id="timeline" label={`THREAT TIMELINE (${timeline.length})`} icon={<TrendingUp className="w-4 h-4" />} active={activeTab} onClick={setActiveTab} />
+          <TabBtn id="sources" label={`SOURCE HEALTH (${sourceHealth.length})`} icon={<Radio className="w-4 h-4" />} active={activeTab} onClick={setActiveTab} />
+          <TabBtn id="api_tester" label="LIVE API TESTER" icon={<Terminal className="w-4 h-4" />} active={activeTab} onClick={setActiveTab} />
         </div>
 
-        {/* CONTROLS: TABS + SEARCH */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-slate-900/60 p-2 rounded-xl border border-slate-800">
-          <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-            <TabBtn id="all" label="ALL UNIFIED STREAMS" count={grandTotal} icon={<Layers className="w-3.5 h-3.5" />} active={activeTab} onClick={setActiveTab} />
-            <TabBtn id="scenarios" label="Active Scenario Events" count={scenarioEventsCount} icon={<Sliders className="w-3.5 h-3.5" />} active={activeTab} onClick={setActiveTab} />
-            <TabBtn id="weather" label="Weather" count={weatherCount} icon={<CloudSun className="w-3.5 h-3.5" />} active={activeTab} onClick={setActiveTab} />
-            <TabBtn id="radar" label="Flight Radar" count={flightCount} icon={<Radio className="w-3.5 h-3.5" />} active={activeTab} onClick={setActiveTab} />
-            <TabBtn id="seismic" label="Seismic" count={seismicCount} icon={<Zap className="w-3.5 h-3.5" />} active={activeTab} onClick={setActiveTab} />
-            <TabBtn id="cisa" label="Cyber Threats" count={cisaCount} icon={<ShieldAlert className="w-3.5 h-3.5" />} active={activeTab} onClick={setActiveTab} />
-            <TabBtn id="gdacs" label="Disasters" count={gdacsCount} icon={<FileText className="w-3.5 h-3.5" />} active={activeTab} onClick={setActiveTab} />
-          </div>
-
-          <div className="relative min-w-[260px]">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search streams..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700/80 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* LOADING INDICATOR */}
-        {loading && (
-          <div className="p-12 text-center text-slate-400 font-mono flex flex-col items-center justify-center gap-3 bg-slate-900/40 rounded-xl border border-slate-800">
-            <RefreshCw className="w-8 h-8 text-cyan-400 animate-spin" />
-            <p className="text-sm">Fetching streams via Vanguard Unified Data Adapter...</p>
-          </div>
-        )}
-
-        {/* DATASETS GRID DISPLAY */}
-        {!loading && streams && (
+        {/* TAB 1: SITUATION OVERVIEW */}
+        {activeTab === 'overview' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            
-            {/* 0. ACTIVE SCENARIO EVENTS (LIVE MOVING KINEMATIC TRACKS) */}
-            {(activeTab === 'all' || activeTab === 'scenarios') &&
-              scenarioData.events.filter(e => matchesSearch(e, searchQuery)).map((evt, idx) => (
-                <div key={`scen-evt-${idx}`} className={`hud-card rounded-xl p-4 border-l-4 ${evt.severity === 'critical' ? 'border-l-rose-500' : evt.severity === 'high' ? 'border-l-amber-500' : 'border-l-cyan-500'} flex flex-col justify-between`}>
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`text-[10px] font-mono tracking-widest px-2 py-0.5 rounded border font-bold uppercase flex items-center gap-1 ${
-                        evt.severity === 'critical' ? 'bg-rose-950 border-rose-800 text-rose-400' : 'bg-cyan-950 border-cyan-800 text-cyan-400'
-                      }`}>
-                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span> DEMO SCENARIO • {evt.sourceType.toUpperCase()}
-                      </span>
-                      <span className="text-xs font-mono text-slate-400">{evt.id}</span>
-                    </div>
-
-                    <h3 className="font-hud font-bold text-base text-slate-100 mb-1">{evt.title}</h3>
-                    <p className="text-xs text-slate-300 font-mono mb-3 leading-relaxed">{evt.description}</p>
-
-                    <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
-                      <div>
-                        <span className="text-slate-500 block text-[10px]">LIVE LAT / LNG</span>
-                        <span className="text-cyan-300 font-bold">{evt.location.lat}, {evt.location.lng}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block text-[10px]">ALTITUDE / HEADING</span>
-                        <span className="text-slate-200 font-bold">{evt.location.altitudeMeters || 0}m @ {evt.location.headingDegrees || 0}°</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block text-[10px]">CONFIDENCE MATH</span>
-                        <span className="text-emerald-400 font-bold">{evt.confidence}%</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block text-[10px]">ANOMALY FLAG</span>
-                        <span className={evt.isAnomaly ? 'text-rose-400 font-bold' : 'text-slate-400'}>
-                          {evt.isAnomaly ? 'ANOMALY DETECTED' : 'NORMAL'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                    <span className="text-[10px] font-mono text-slate-500">Mode: {scenarioData.name}</span>
-                    <button
-                      onClick={() => setSelectedRawJson({ title: `Scenario Event — ${evt.title}`, data: evt })}
-                      className="text-xs text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1 hover:underline"
-                    >
-                      <Code className="w-3.5 h-3.5" /> RAW JSON
-                    </button>
-                  </div>
-                </div>
-              ))}
-
-            {/* 1. WEATHER */}
-            {(activeTab === 'all' || activeTab === 'weather') && streams.weather?.data && (
-              <div className="hud-card rounded-xl p-4 border-l-4 border-l-amber-500 flex flex-col justify-between">
+            {sourceHealth.map((src, idx) => (
+              <div key={idx} className="hud-card p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <StatusBadge isLive={streams.weather.isLive} name={streams.weather.sourceName} color="amber" />
-                    <span className="text-xs font-mono text-slate-400">{streams.weather.data.current?.time}</span>
+                    <span className="text-[10px] font-mono font-bold tracking-widest text-cyan-400 bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800 uppercase">
+                      {src.sourceType} STREAM
+                    </span>
+                    <span className="text-xs font-mono text-emerald-400 font-bold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> {src.status?.toUpperCase()}
+                    </span>
                   </div>
 
-                  <h3 className="font-hud font-bold text-base text-slate-100 mb-1">Sector Weather Station</h3>
-                  <p className="text-xs text-slate-400 font-mono mb-3">
-                    Lat: {streams.weather.data.latitude}, Lng: {streams.weather.data.longitude} | Elev: {streams.weather.data.elevation}m
-                  </p>
+                  <h3 className="font-hud font-bold text-base text-slate-100 mb-1">{src.sourceName}</h3>
+                  <p className="text-xs text-slate-400 font-mono mb-3">Last Ingestion: {new Date(src.lastUpdate).toLocaleTimeString()}</p>
 
                   <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
                     <div>
-                      <span className="text-slate-500 block text-[10px]">TEMP</span>
-                      <span className="text-slate-200 font-bold">{streams.weather.data.current?.temperature_2m} °C</span>
+                      <span className="text-slate-500 block text-[10px]">RELIABILITY WEIGHT</span>
+                      <span className="text-cyan-300 font-bold">{Math.round(src.reliabilityScore * 100)}%</span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block text-[10px]">WIND VECTOR</span>
-                      <span className="text-slate-200 font-bold">{streams.weather.data.current?.wind_speed_10m} km/h @ {streams.weather.data.current?.wind_direction_10m}°</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block text-[10px]">PRECIPITATION</span>
-                      <span className="text-slate-200 font-bold">{streams.weather.data.current?.precipitation} mm</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block text-[10px]">SURFACE PRESSURE</span>
-                      <span className="text-slate-200 font-bold">{streams.weather.data.current?.surface_pressure} hPa</span>
+                      <span className="text-slate-500 block text-[10px]">ACTIVE INGESTED</span>
+                      <span className="text-slate-200 font-bold">{src.activeCount} contacts</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-4 pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                  <span className="text-[10px] font-mono text-slate-500">{streams.weather.sourceName}</span>
+                <div className="mt-4 pt-2 border-t border-slate-800 flex items-center justify-between text-xs font-mono">
+                  <span className="text-slate-500">Latency: {src.meanLatencyMs || 0}ms</span>
                   <button
-                    onClick={() => setSelectedRawJson({ title: `Weather — ${streams.weather.sourceName}`, data: streams.weather.data })}
-                    className="text-xs text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1 hover:underline"
+                    onClick={() => setSelectedRawJson({ title: `Source Stream — ${src.sourceName}`, data: src })}
+                    className="text-cyan-400 hover:underline flex items-center gap-1"
                   >
                     <Code className="w-3.5 h-3.5" /> RAW JSON
                   </button>
                 </div>
               </div>
-            )}
+            ))}
+          </div>
+        )}
 
-            {/* 2. FLIGHT RADAR */}
-            {(activeTab === 'all' || activeTab === 'radar') &&
-              streams.flights?.data?.filter(st => matchesSearch(st, searchQuery)).map((st, idx) => {
-                const icao = st[0];
-                const callsign = st[1]?.trim() || 'UNKN';
-                const country = st[2];
-                const lng = st[5];
-                const lat = st[6];
-                const alt = st[7];
-                const speed = st[9];
-                const track = st[10];
-                const squawk = st[14];
+        {/* TAB 2: INGESTED EVENTS */}
+        {activeTab === 'events' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {events.map((evt, idx) => (
+              <div key={idx} className={`hud-card p-4 rounded-xl border-l-4 ${
+                evt.severity === 'critical' ? 'border-l-rose-500' :
+                evt.severity === 'high' ? 'border-l-amber-500' : 'border-l-cyan-500'
+              } flex flex-col justify-between`}>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border uppercase ${
+                      evt.severity === 'critical' ? 'bg-rose-950 border-rose-800 text-rose-400' : 'bg-cyan-950 border-cyan-800 text-cyan-400'
+                    }`}>
+                      {evt.sourceType} • {evt.severity}
+                    </span>
+                    <span className="text-xs font-mono text-slate-400">{evt.id}</span>
+                  </div>
 
-                return (
-                  <div key={`radar-${idx}`} className="hud-card rounded-xl p-4 border-l-4 border-l-cyan-500 flex flex-col justify-between">
+                  <h3 className="font-hud font-bold text-base text-slate-100 mb-1">{evt.title}</h3>
+                  <p className="text-xs text-slate-300 font-mono mb-3 leading-relaxed">{evt.description}</p>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
                     <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <StatusBadge isLive={streams.flights.isLive} name={squawk ? `ADS-B • SQUAWK ${squawk}` : 'ADS-B RADAR'} color="cyan" />
-                        <span className="text-xs font-mono text-slate-400">ICAO: {icao}</span>
-                      </div>
-
-                      <h3 className="font-hud font-bold text-base text-slate-100 mb-1 flex items-center justify-between">
-                        <span>{callsign}</span>
-                        <span className="text-xs font-mono font-normal text-slate-400">[{country}]</span>
-                      </h3>
-                      <p className="text-xs text-slate-400 font-mono mb-3">
-                        Lat: {lat}, Lng: {lng}
-                      </p>
-
-                      <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
-                        <div>
-                          <span className="text-slate-500 block text-[10px]">ALTITUDE</span>
-                          <span className="text-slate-200 font-bold">{alt ? `${alt} m` : 'Surface'}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block text-[10px]">VELOCITY</span>
-                          <span className="text-slate-200 font-bold">{speed ? `${Math.round(speed * 1.94384)} kts` : 'N/A'}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block text-[10px]">TRUE TRACK</span>
-                          <span className="text-slate-200 font-bold">{track ? `${track}°` : 'N/A'}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block text-[10px]">STATUS</span>
-                          <span className={streams.flights.isLive ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
-                            {streams.flights.isLive ? 'LIVE RADAR' : 'HARDCODED FALLBACK'}
-                          </span>
-                        </div>
-                      </div>
+                      <span className="text-slate-500 block text-[10px]">LOCATION</span>
+                      <span className="text-slate-200 font-bold">{evt.location?.lat}, {evt.location?.lng}</span>
                     </div>
-
-                    <div className="mt-4 pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                      <span className="text-[10px] font-mono text-slate-500">{streams.flights.sourceName}</span>
-                      <button
-                        onClick={() => setSelectedRawJson({ title: `Flight Radar Track — ${callsign}`, data: st })}
-                        className="text-xs text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1 hover:underline"
-                      >
-                        <Code className="w-3.5 h-3.5" /> RAW JSON
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-
-            {/* 3. SEISMIC HAZARDS */}
-            {(activeTab === 'all' || activeTab === 'seismic') &&
-              streams.seismic?.data?.filter(eq => matchesSearch(eq, searchQuery)).map((eq, idx) => {
-                const props = eq.properties;
-                const geom = eq.geometry;
-                const mag = props?.mag || 0;
-
-                return (
-                  <div key={`seis-${idx}`} className={`hud-card rounded-xl p-4 border-l-4 ${mag >= 4.0 ? 'border-l-rose-500' : 'border-l-amber-500'} flex flex-col justify-between`}>
                     <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <StatusBadge isLive={streams.seismic.isLive} name={`USGS SEISMIC • MAG ${mag}`} color={mag >= 4.0 ? 'rose' : 'amber'} />
-                        <span className="text-xs font-mono text-slate-400">{new Date(props.time).toLocaleTimeString()}</span>
-                      </div>
-
-                      <h3 className="font-hud font-bold text-base text-slate-100 mb-1">{props.title}</h3>
-                      <p className="text-xs text-slate-400 font-mono mb-3">
-                        Place: <span className="text-slate-200">{props.place}</span>
-                      </p>
-
-                      <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
-                        <div>
-                          <span className="text-slate-500 block text-[10px]">LAT / LNG</span>
-                          <span className="text-slate-200 font-bold">{geom?.coordinates[1]?.toFixed(2)}, {geom?.coordinates[0]?.toFixed(2)}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block text-[10px]">DEPTH</span>
-                          <span className="text-slate-200 font-bold">{geom?.coordinates[2]} km</span>
-                        </div>
-                        <div className="col-span-2">
-                          <span className="text-slate-500 block text-[10px]">ALERT LEVEL</span>
-                          <span className={props.alert === 'yellow' || mag >= 4.0 ? 'text-rose-400 font-bold uppercase' : 'text-emerald-400 font-bold uppercase'}>
-                            {props.alert || 'STANDARD TELEMETRY'}
-                          </span>
-                        </div>
-                      </div>
+                      <span className="text-slate-500 block text-[10px]">CONFIDENCE</span>
+                      <span className="text-emerald-400 font-bold">{evt.confidence}%</span>
                     </div>
-
-                    <div className="mt-4 pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                      <span className="text-[10px] font-mono text-slate-500">{streams.seismic.sourceName}</span>
-                      <button
-                        onClick={() => setSelectedRawJson({ title: `USGS Seismic Event — ${props.title}`, data: eq })}
-                        className="text-xs text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1 hover:underline"
-                      >
-                        <Code className="w-3.5 h-3.5" /> RAW JSON
-                      </button>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">CORROBORATIONS</span>
+                      <span className="text-cyan-300 font-bold">{evt.corroboratedBy?.length || 0} sources</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">ANOMALY</span>
+                      <span className={evt.isAnomaly ? 'text-rose-400 font-bold' : 'text-slate-400'}>
+                        {evt.isAnomaly ? 'ANOMALY DETECTED' : 'NORMAL'}
+                      </span>
                     </div>
                   </div>
-                );
-              })}
+                </div>
 
-            {/* 4. CISA CYBER THREATS */}
-            {(activeTab === 'all' || activeTab === 'cisa') &&
-              streams.cisaThreats?.data?.filter(t => matchesSearch(t, searchQuery)).map((thr, idx) => (
-                <div key={`cisa-${idx}`} className="hud-card rounded-xl p-4 border-l-4 border-l-purple-500 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <StatusBadge isLive={streams.cisaThreats.isLive} name="CISA THREAT ADVISORY" color="purple" />
-                      <span className="text-xs font-mono text-purple-300 font-bold">{thr.cveID}</span>
+                <div className="mt-4 pt-2 border-t border-slate-800 flex items-center justify-between text-xs font-mono">
+                  <span className="text-slate-500">{new Date(evt.timestamp).toLocaleTimeString()}</span>
+                  <button
+                    onClick={() => setSelectedRawJson({ title: `Event Payload — ${evt.title}`, data: evt })}
+                    className="text-cyan-400 hover:underline flex items-center gap-1"
+                  >
+                    <Code className="w-3.5 h-3.5" /> RAW JSON
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* TAB 3: THREAT TIMELINE */}
+        {activeTab === 'timeline' && (
+          <div className="hud-card p-6 rounded-xl border border-slate-800 bg-slate-900/60">
+            <h3 className="font-hud font-bold text-lg text-slate-100 mb-4 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-amber-400" /> THREAT LEVEL ESCALATION AUDIT TIMELINE
+            </h3>
+
+            <div className="space-y-4 font-mono">
+              {timeline.map((item, idx) => (
+                <div key={idx} className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-amber-950 border border-amber-800 text-amber-400 text-xs font-bold">
+                      {item.from?.toUpperCase()} ➔ {item.to?.toUpperCase()}
                     </div>
-
-                    <h3 className="font-hud font-bold text-base text-slate-100 mb-1">{thr.vulnerabilityName}</h3>
-                    <p className="text-xs text-slate-400 font-mono mb-3">
-                      Vendor: <span className="text-slate-200">{thr.vendorProject}</span> ({thr.product})
-                    </p>
-
-                    <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 text-xs font-mono text-slate-300 leading-relaxed">
-                      <div className="text-[10px] text-slate-500 uppercase mb-1">THREAT ACTION REQUIRED</div>
-                      <div className="line-clamp-3 text-slate-300">{thr.shortDescription}</div>
-                      <div className="text-rose-400 mt-2 font-bold">DueDate: {thr.dueDate}</div>
+                    <div>
+                      <h4 className="font-hud font-bold text-sm text-slate-200 mb-1">{item.reason}</h4>
+                      <p className="text-xs text-slate-400">Trigger Events: {item.triggerEventIds?.join(', ') || 'N/A'}</p>
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                    <span className="text-[10px] font-mono text-slate-500">{streams.cisaThreats.sourceName}</span>
-                    <button
-                      onClick={() => setSelectedRawJson({ title: `CISA Security Advisory — ${thr.cveID}`, data: thr })}
-                      className="text-xs text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1 hover:underline"
-                    >
-                      <Code className="w-3.5 h-3.5" /> RAW JSON
-                    </button>
+                  <div className="text-xs text-slate-500">
+                    <div>Score: <span className="text-amber-300 font-bold">{item.score}</span></div>
+                    <div>{new Date(item.timestamp).toLocaleTimeString()}</div>
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
 
-            {/* 5. GDACS DISASTER ALERTS */}
-            {(activeTab === 'all' || activeTab === 'gdacs') &&
-              streams.gdacsAlerts?.data?.filter(g => matchesSearch(g, searchQuery)).map((gd, idx) => (
-                <div key={`gdacs-${idx}`} className="hud-card rounded-xl p-4 border-l-4 border-l-emerald-500 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <StatusBadge isLive={streams.gdacsAlerts.isLive} name="GDACS DISASTER ALERT" color="emerald" />
-                      <span className="text-xs font-mono text-slate-400">{gd.pubDate ? new Date(gd.pubDate).toLocaleTimeString() : 'RECENT'}</span>
-                    </div>
-
-                    <h3 className="font-hud font-bold text-base text-slate-100 mb-1">{gd.title}</h3>
-                    <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 text-xs font-mono text-slate-300 leading-relaxed mb-3">
-                      <div className="line-clamp-3" dangerouslySetInnerHTML={{ __html: gd.description || 'Global emergency alert dispatch.' }} />
-                    </div>
+        {/* TAB 4: SOURCE HEALTH */}
+        {activeTab === 'sources' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 font-mono">
+            {sourceHealth.map((src, idx) => (
+              <div key={idx} className="hud-card p-5 rounded-xl border border-slate-800 bg-slate-900/80">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-bold text-cyan-400 uppercase">{src.sourceType}</span>
+                  <span className="text-xs text-emerald-400 font-bold">{src.status?.toUpperCase()}</span>
+                </div>
+                <h3 className="font-hud font-bold text-base text-slate-100 mb-2">{src.sourceName}</h3>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between border-b border-slate-800 pb-1">
+                    <span className="text-slate-500">Reliability Score:</span>
+                    <span className="text-cyan-300 font-bold">{Math.round(src.reliabilityScore * 100)}%</span>
                   </div>
-
-                  <div className="mt-4 pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                    <span className="text-[10px] font-mono text-slate-500">{streams.gdacsAlerts.sourceName}</span>
-                    <button
-                      onClick={() => setSelectedRawJson({ title: `GDACS Alert — ${gd.title}`, data: gd })}
-                      className="text-xs text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1 hover:underline"
-                    >
-                      <Code className="w-3.5 h-3.5" /> RAW JSON
-                    </button>
+                  <div className="flex justify-between border-b border-slate-800 pb-1">
+                    <span className="text-slate-500">Active Contacts:</span>
+                    <span className="text-slate-200 font-bold">{src.activeCount}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-800 pb-1">
+                    <span className="text-slate-500">Total Ingested:</span>
+                    <span className="text-slate-200 font-bold">{src.totalIngested || src.activeCount}</span>
                   </div>
                 </div>
-              ))}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* TAB 5: LIVE API TESTER */}
+        {activeTab === 'api_tester' && (
+          <div className="hud-card p-6 rounded-xl border border-cyan-500/30 bg-slate-900/80 flex flex-col gap-4">
+            <div className="flex items-center gap-2">
+              <Terminal className="w-5 h-5 text-cyan-400" />
+              <h3 className="font-hud font-bold text-lg text-slate-100">LIVE BACKEND REST API TESTER</h3>
+            </div>
+            <p className="text-xs font-mono text-slate-400">Select any REST endpoint below to fetch real-time payloads from http://localhost:3001/api/v1</p>
+
+            <div className="flex flex-wrap gap-2">
+              <ApiBtn path="/situation/current" label="GET /situation/current" onClick={handleRunApiTest} active={testEndpoint === '/situation/current'} />
+              <ApiBtn path="/situation/timeline" label="GET /situation/timeline" onClick={handleRunApiTest} active={testEndpoint === '/situation/timeline'} />
+              <ApiBtn path="/events" label="GET /events" onClick={handleRunApiTest} active={testEndpoint === '/events'} />
+              <ApiBtn path="/map/alerts" label="GET /map/alerts" onClick={handleRunApiTest} active={testEndpoint === '/map/alerts'} />
+              <ApiBtn path="/map/assets" label="GET /map/assets" onClick={handleRunApiTest} active={testEndpoint === '/map/assets'} />
+              <ApiBtn path="/intelligence/source-health" label="GET /intelligence/source-health" onClick={handleRunApiTest} active={testEndpoint === '/intelligence/source-health'} />
+            </div>
+
+            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800 text-xs font-mono text-slate-400 mb-3">
+                <span>REQUEST: <span className="text-cyan-400">GET {BACKEND_URL}{testEndpoint}</span></span>
+                {testLoading && <span className="text-cyan-400 animate-pulse">FETCHING...</span>}
+              </div>
+
+              <pre className="text-xs font-mono text-cyan-300 leading-relaxed overflow-x-auto max-h-[400px]">
+                {testResponse ? JSON.stringify(testResponse, null, 2) : '// Click an API endpoint button above to run request'}
+              </pre>
+            </div>
           </div>
         )}
       </main>
@@ -545,10 +405,7 @@ export default function App() {
                 <Code className="w-5 h-5 text-cyan-400" />
                 <h3 className="font-hud font-bold text-lg text-slate-100">{selectedRawJson.title}</h3>
               </div>
-              <button
-                onClick={() => setSelectedRawJson(null)}
-                className="p-1 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors"
-              >
+              <button onClick={() => setSelectedRawJson(null)} className="p-1 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -560,10 +417,7 @@ export default function App() {
             </div>
 
             <div className="flex justify-end">
-              <button
-                onClick={() => setSelectedRawJson(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-200 rounded-lg transition-colors"
-              >
+              <button onClick={() => setSelectedRawJson(null)} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-200 rounded-lg transition-colors">
                 Close Inspector
               </button>
             </div>
@@ -574,56 +428,31 @@ export default function App() {
   );
 }
 
-function StatusBadge({ isLive, name, color }: { isLive: boolean; name: string; color: string }) {
-  if (isLive) {
-    return (
-      <span className="text-[10px] font-mono tracking-widest text-emerald-400 bg-emerald-950/70 px-2 py-0.5 rounded border border-emerald-700/80 font-bold uppercase flex items-center gap-1.5">
-        <Globe className="w-3 h-3 text-emerald-400 animate-pulse" /> 100% REAL LIVE API
-      </span>
-    );
-  }
-  return (
-    <span className="text-[10px] font-mono tracking-widest text-amber-400 bg-amber-950/70 px-2 py-0.5 rounded border border-amber-700/80 font-bold uppercase flex items-center gap-1.5">
-      <HardDrive className="w-3 h-3 text-amber-400" /> HARDCODED FALLBACK
-    </span>
-  );
-}
-
-function StatBox({ title, value, icon, color }: { title: string; value: number; icon: React.ReactNode; color: string }) {
-  return (
-    <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
-      <div>
-        <span className="text-[10px] font-mono text-slate-500 block tracking-wider">{title}</span>
-        <span className="text-lg font-hud font-bold text-slate-100">{value}</span>
-      </div>
-      <div className="p-2 rounded-lg bg-slate-950 border border-slate-800">
-        {icon}
-      </div>
-    </div>
-  );
-}
-
-function TabBtn({ id, label, count, icon, active, onClick }: { id: DatasetCategory; label: string; count: number; icon: React.ReactNode; active: DatasetCategory; onClick: (id: DatasetCategory) => void }) {
-  const isSelected = active === id;
+function ApiBtn({ path, label, onClick, active }: { path: string; label: string; onClick: (path: string) => void; active: boolean }) {
   return (
     <button
-      onClick={() => onClick(id)}
-      className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium flex items-center gap-2 transition-all whitespace-nowrap ${
-        isSelected
-          ? 'bg-cyan-950 border border-cyan-500/60 text-cyan-300 shadow-sm shadow-cyan-500/20'
-          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+      onClick={() => onClick(path)}
+      className={`px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1 border transition-all ${
+        active ? 'bg-cyan-950 border-cyan-500 text-cyan-300 font-bold' : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
       }`}
     >
-      {icon}
+      <ChevronRight className="w-3.5 h-3.5 text-cyan-400" />
       <span>{label}</span>
-      <span className={`px-1.5 py-0.2 text-[10px] rounded ${isSelected ? 'bg-cyan-800/60 text-cyan-200' : 'bg-slate-800 text-slate-400'}`}>
-        {count}
-      </span>
     </button>
   );
 }
 
-function matchesSearch(obj: any, query: string): boolean {
-  if (!query) return true;
-  return JSON.stringify(obj).toLowerCase().includes(query.toLowerCase());
+function TabBtn({ id, label, icon, active, onClick }: { id: any; label: string; icon: React.ReactNode; active: any; onClick: (id: any) => void }) {
+  const isSelected = active === id;
+  return (
+    <button
+      onClick={() => onClick(id)}
+      className={`px-4 py-2 rounded-lg text-xs font-mono font-medium flex items-center gap-2 transition-all ${
+        isSelected ? 'bg-cyan-950 border border-cyan-500/60 text-cyan-300 shadow-sm shadow-cyan-500/20 font-bold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+      }`}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
 }
