@@ -44,7 +44,10 @@ export default function App() {
       setRefreshing(true);
       setActiveScenario(null);
     }
-    setLoading(true);
+    // Only set full loading indicator on initial first load or manual sync
+    if (events.length === 0 || isManualSync) {
+      setLoading(true);
+    }
     try {
       // 1. Situation Current
       const sitRes = await fetch(`${BACKEND_URL}/situation/current`);
@@ -315,6 +318,7 @@ export default function App() {
           event={selectedEvent}
           onClose={() => setSelectedEvent(null)}
           onSelectCorrelatedEvent={handleSelectEventId}
+          easyMode={easyMode}
         />
       )}
 

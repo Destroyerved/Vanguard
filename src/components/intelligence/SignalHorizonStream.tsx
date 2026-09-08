@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { UnifiedEvent } from '../../types/schema';
+import { explainEvent } from '../../data/eventExplainer';
 import { Radio, Search, Filter, AlertTriangle, ChevronRight, Activity, Clock, ShieldAlert } from 'lucide-react';
 
 interface SignalHorizonStreamProps {
@@ -116,6 +117,11 @@ export default function SignalHorizonStream({
                       )}
                     </div>
                     <span className="text-slate-300 text-xs truncate max-w-sm">{evt.title}</span>
+                    {easyMode && (
+                      <span className="text-[11px] text-amber-300/90 italic truncate max-w-md font-sans">
+                        💡 {explainEvent(evt).easy.simpleDescription}
+                      </span>
+                    )}
                   </div>
                 </div>
 

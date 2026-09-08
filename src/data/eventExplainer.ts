@@ -257,12 +257,20 @@ export function explainEvent(evt: UnifiedEvent): EventExplanation {
       simpleDescription = `Microphone / hydrophone acoustic sensors recorded audio frequency signatures. Audio waveform audit: ${mediaAudit.acousticSpectrumScore}% natural match.`;
       break;
     case 'incident':
-      simpleHeadline = `🚨 Security Incident Reported`;
-      simpleDescription = `A field officer reported a suspicious activity or unusual sighting on the ground that requires attention.`;
+      simpleHeadline = `🚨 Field Incident: ${title}`;
+      if (title.toLowerCase().includes('medical')) {
+        simpleDescription = `Medical assistance requested: A field unit urgently requires emergency medical support, first aid, or medical evacuation at these coordinates.`;
+      } else if (title.toLowerCase().includes('fire') || title.toLowerCase().includes('smoke')) {
+        simpleDescription = `Fire or heat hazard reported: Thermal or smoke sensors detected an active fire hazard requiring immediate containment.`;
+      } else if (title.toLowerCase().includes('breach') || title.toLowerCase().includes('fence')) {
+        simpleDescription = `Perimeter fence alert: Sensors or patrol units detected potential movement across the boundary line.`;
+      } else {
+        simpleDescription = `Field incident logged: "${title}". ${description ? description : 'Local responders or duty officers need to verify the situation.'}`;
+      }
       break;
     default:
-      simpleHeadline = `📌 General System Notice`;
-      simpleDescription = `An event was recorded in the system for general tracking.`;
+      simpleHeadline = `📌 ${title}`;
+      simpleDescription = description || `Event '${title}' was recorded for operational monitoring.`;
       break;
   }
 
