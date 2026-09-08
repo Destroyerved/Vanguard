@@ -271,10 +271,6 @@ export default function App() {
             <OsintAuthenticityVerifier
               events={events}
               onSelectEvent={(evt) => setSelectedEvent(evt)}
-              onInjectEvent={(newEvent) => {
-                setEvents((prev) => [newEvent, ...prev.filter((e) => e.id !== newEvent.id)]);
-                setSelectedEvent(newEvent);
-              }}
             />
           )}
 
