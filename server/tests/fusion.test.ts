@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { correlateEvents, eventsCorrelate } from '../src/fusion/correlate.js';
-import { selectCorroborators, sourceAffinity } from '../src/fusion/corroborate.js';
+import { selectCorroborators, corroborateCluster, sourceAffinity } from '../src/fusion/corroborate.js';
 import { dedupeEvents, isDuplicate } from '../src/fusion/dedupe.js';
 import {
   applyHysteresis,
@@ -193,6 +193,41 @@ describe('corroboration selection', () => {
     // Despite three nearer radar returns, the first three picks span three
     // distinct source types.
     expect(types.size).toBe(3);
+  });
+
+  it('records only directly-correlating neighbours, not the whole transitive cluster', () => {
+    // A—B—C chain: A and C are 5.8 km apart (beyond the correlation radius) but
+    // both correlate with B (2.9 km apart), so all three land in one cluster.
+    const a = ev({ source: 'radar', offsetMeters: 2_900, bearing: 0 });
+    const b = ev({ source: 'log' });
+    const c = ev({ source: 'incident', offsetMeters: 2_900, bearing: 180 });
+
+    const { clusters, neighborsByEvent } = correlateEvents([a, b, c]);
+    expect(clusters).toHaveLength(1);
+
+    expect(neighborsByEvent.get(a.id)).toEqual([b.id]);
+    expect(neighborsByEvent.get(b.id)).toHaveLength(2);
+    expect(neighborsByEvent.get(c.id)).toEqual([b.id]);
+  });
+
+  it('an event chained into a cluster by transitivity gains no false corroboration', () => {
+    const a = ev({ source: 'radar', offsetMeters: 2_900, bearing: 0 });
+    const b = ev({ source: 'log' });
+    const c = ev({ source: 'incident', offsetMeters: 2_900, bearing: 180 });
+
+    const members = [a, b, c];
+    const { neighborsByEvent } = correlateEvents(members);
+
+    const pruned = corroborateCluster(members, neighborsByEvent);
+    const full = corroborateCluster(members);
+
+    // The out-of-window pair (A↔C) contributes nothing in either path, so the
+    // direct-neighbour pruning produces the same corroboration as scoring the
+    // whole cluster — the invariant the mega-cluster fast path relies on.
+    expect(full.get(a.id)!.map((l) => l.eventId)).toEqual([b.id]);
+    expect(pruned.get(a.id)!.map((l) => l.eventId)).toEqual(full.get(a.id)!.map((l) => l.eventId));
+    expect(pruned.get(c.id)!.map((l) => l.eventId)).toEqual([b.id]);
+    expect(pruned.get(b.id)!.map((l) => l.eventId)).toHaveLength(2);
   });
 });
 

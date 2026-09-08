@@ -45,6 +45,30 @@ export function isDuplicate(a: UnifiedEvent, b: UnifiedEvent): boolean {
 }
 
 /**
+ * One event's dedupe-relevant fields, expanded once instead of re-derived
+ * inside every pairwise comparison. `dedupeEvents` runs an O(n^2) survivor
+ * scan; caching the title normalization and timestamp parse turns that from a
+ * per-comparison regex into a couple of string and arithmetic checks.
+ */
+interface PreparedEvent {
+  event: UnifiedEvent;
+  normalizedTitle: string;
+  epochMs: number;
+}
+
+function prepare(e: UnifiedEvent): PreparedEvent {
+  return { event: e, normalizedTitle: normalizeTitle(e.title), epochMs: toEpochMs(e.timestamp) };
+}
+
+/** Duplicate predicate over precomputed fields; same geometry as `isDuplicate`. */
+function isPreparedDuplicate(a: PreparedEvent, b: PreparedEvent): boolean {
+  if (a.event.sourceType !== b.event.sourceType) return false;
+  if (a.normalizedTitle !== b.normalizedTitle) return false;
+  if (Math.abs(a.epochMs - b.epochMs) / 1000 > DEDUPE_WINDOW_SECONDS) return false;
+  return haversineMeters(a.event.location, b.event.location) <= DEDUPE_RADIUS_METERS;
+}
+
+/**
  * Collapse duplicate observations.
  *
  * The survivor of a group is the NEWEST event, because operationally the latest
@@ -54,16 +78,14 @@ export function isDuplicate(a: UnifiedEvent, b: UnifiedEvent): boolean {
  */
 export function dedupeEvents(events: UnifiedEvent[]): DedupeResult {
   // Newest first, so the first member of each group is the natural survivor.
-  const sorted = [...events].sort(
-    (a, b) => toEpochMs(b.timestamp) - toEpochMs(a.timestamp),
-  );
+  const sorted = events.map(prepare).sort((a, b) => b.epochMs - a.epochMs);
 
-  const survivors: UnifiedEvent[] = [];
+  const survivors: PreparedEvent[] = [];
   const merged = new Map<string, string[]>();
   let removed = 0;
 
   for (const candidate of sorted) {
-    const survivor = survivors.find((s) => isDuplicate(s, candidate));
+    const survivor = survivors.find((s) => isPreparedDuplicate(s, candidate));
 
     if (!survivor) {
       survivors.push(candidate);
@@ -71,28 +93,33 @@ export function dedupeEvents(events: UnifiedEvent[]): DedupeResult {
     }
 
     removed++;
-    const absorbed = merged.get(survivor.id) ?? [];
-    absorbed.push(candidate.id);
-    merged.set(survivor.id, absorbed);
+    const survivorEvent = survivor.event;
+    const absorbed = merged.get(survivorEvent.id) ?? [];
+    absorbed.push(candidate.event.id);
+    merged.set(survivorEvent.id, absorbed);
 
     // The survivor keeps the strongest confidence observed in the group: the
     // best look you got at the contact, not the most recent noisy one.
-    if (candidate.confidence > survivor.confidence) {
-      survivor.confidence = candidate.confidence;
+    if (candidate.event.confidence > survivorEvent.confidence) {
+      survivorEvent.confidence = candidate.event.confidence;
     }
 
     // Preserve the anomaly flag — a duplicate that was flagged still matters.
-    if (candidate.isAnomaly && !survivor.isAnomaly) {
-      survivor.isAnomaly = true;
-      survivor.anomalyReason = candidate.anomalyReason;
+    if (candidate.event.isAnomaly && !survivorEvent.isAnomaly) {
+      survivorEvent.isAnomaly = true;
+      survivorEvent.anomalyReason = candidate.event.anomalyReason;
     }
 
-    survivor.raw = {
-      ...survivor.raw,
+    survivorEvent.raw = {
+      ...survivorEvent.raw,
       mergedFrom: absorbed,
       mergeCount: absorbed.length,
     };
   }
 
-  return { events: survivors, removed, merged };
+  return {
+    events: survivors.map((s) => s.event),
+    removed,
+    merged,
+  };
 }

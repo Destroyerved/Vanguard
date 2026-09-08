@@ -47,7 +47,7 @@ export default function SignalHorizonStream({
 
         {/* QUICK SOURCE FILTER PILLS */}
         <div className="flex items-center gap-1">
-          {['ALL', 'radar', 'personnel', 'log', 'incident', 'weather'].map((src) => (
+          {['ALL', 'radar', 'personnel', 'log', 'incident', 'weather', 'social_media', 'audio_recording'].map((src) => (
             <button
               key={src}
               onClick={() => setFilterSource(src)}
@@ -117,6 +117,22 @@ export default function SignalHorizonStream({
                       )}
                     </div>
                     <span className="text-slate-300 text-xs truncate max-w-sm">{evt.title}</span>
+                    {evt.isAnomaly && evt.anomalyReason && (
+                      <span className="text-[10px] text-rose-300/90 truncate max-w-md">
+                        ⚠ {evt.anomalyReason}
+                      </span>
+                    )}
+                    {evt.mediaAudit && (
+                      <span className="text-[10px] text-violet-300/90 truncate max-w-md">
+                        ◉ MEDIA AUDIT ·{' '}
+                        {evt.mediaAudit.manipulationCategory === 'NONE_DETECTED'
+                          ? 'authentic'
+                          : evt.mediaAudit.manipulationCategory === 'EVENT_FABRICATING'
+                          ? 'fabrication risk'
+                          : evt.mediaAudit.manipulationCategory.toLowerCase().replace(/_/g, ' ')}{' '}
+                        · auth {evt.mediaAudit.authenticityScore}
+                      </span>
+                    )}
                     {easyMode && (
                       <span className="text-[11px] text-amber-300/90 italic truncate max-w-md font-sans">
                         💡 {explainEvent(evt).easy.simpleDescription}

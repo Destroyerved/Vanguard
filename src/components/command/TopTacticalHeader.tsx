@@ -38,6 +38,7 @@ interface TopTacticalHeaderProps {
   currentTime: string;
   situation: any;
   serverOnline: boolean;
+  wsLive?: boolean;
   easyMode: boolean;
   onToggleEasyMode: () => void;
   activeScenario: DemoScenarioMode | null;
@@ -56,6 +57,7 @@ export default function TopTacticalHeader({
   currentTime,
   situation,
   serverOnline,
+  wsLive = false,
   easyMode,
   onToggleEasyMode,
   activeScenario,
@@ -125,6 +127,11 @@ export default function TopTacticalHeader({
             <span className="text-slate-400">CORE:</span>
             <span className={`font-bold ${serverOnline ? 'text-emerald-400' : 'text-rose-400'}`}>
               {serverOnline ? 'ONLINE' : 'FALLBACK'}
+            </span>
+            <span className="text-slate-600">|</span>
+            <span className="text-slate-400">PUSH:</span>
+            <span className={`font-bold ${wsLive ? 'text-emerald-400' : 'text-amber-400'}`}>
+              {wsLive ? 'LIVE' : 'POLL'}
             </span>
           </div>
 

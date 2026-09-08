@@ -127,28 +127,24 @@ export function corroborationStrength(
 }
 
 /**
- * Choose the corroborating links for one event from its cluster neighbours.
+ * Choose the corroborating links for one event from its scored candidates.
  *
  * Selection policy, in order:
- *   1. Score every neighbour.
- *   2. Drop links below MIN_CORROBORATION_STRENGTH.
- *   3. Sort by strength descending.
- *   4. Prefer BREADTH over depth: take the strongest link from each distinct
+ *   1. Drop links below MIN_CORROBORATION_STRENGTH.
+ *   2. Sort by strength descending.
+ *   3. Prefer BREADTH over depth: take the strongest link from each distinct
  *      source type first, then backfill with the remaining strongest links.
  *
- * Step 4 is the important one. Without it, an event sitting in a dense radar
+ * Step 3 is the important one. Without it, an event sitting in a dense radar
  * cluster fills all six slots with radar and the confidence engine sees no
  * cross-source independence — the system would look corroborated while
  * actually being one instrument's opinion repeated six times.
  */
-export function selectCorroborators(
-  event: UnifiedEvent,
-  neighbors: UnifiedEvent[],
+export function selectFromScored(
+  scored: CorroborationLink[],
   limit: number = MAX_CORROBORATORS_PER_EVENT,
 ): CorroborationLink[] {
-  const scored = neighbors
-    .filter((n) => n.id !== event.id)
-    .map((n) => corroborationStrength(event, n))
+  const ordered = scored
     .filter((l) => l.strength >= MIN_CORROBORATION_STRENGTH)
     .sort((a, b) => b.strength - a.strength);
 
@@ -156,7 +152,7 @@ export function selectCorroborators(
   const usedTypes = new Set<SourceType>();
 
   // Pass 1 — breadth: strongest link per distinct source type.
-  for (const link of scored) {
+  for (const link of ordered) {
     if (chosen.length >= limit) break;
     if (usedTypes.has(link.sourceType)) continue;
     usedTypes.add(link.sourceType);
@@ -164,7 +160,7 @@ export function selectCorroborators(
   }
 
   // Pass 2 — depth: backfill remaining slots with the next strongest links.
-  for (const link of scored) {
+  for (const link of ordered) {
     if (chosen.length >= limit) break;
     if (chosen.some((c) => c.eventId === link.eventId)) continue;
     chosen.push(link);
@@ -174,16 +170,92 @@ export function selectCorroborators(
 }
 
 /**
+ * Choose the corroborating links for one event from its cluster neighbours.
+ */
+export function selectCorroborators(
+  event: UnifiedEvent,
+  neighbors: UnifiedEvent[],
+  limit: number = MAX_CORROBORATORS_PER_EVENT,
+): CorroborationLink[] {
+  const scored = neighbors
+    .filter((n) => n.id !== event.id)
+    .map((n) => corroborationStrength(event, n));
+  return selectFromScored(scored, limit);
+}
+
+/**
  * Apply corroboration across a whole cluster, mutating each member's
  * `corroboratedBy` array in place and returning the link detail for the API.
+ *
+ * When `neighborsById` (the direct correlation neighbours produced by the
+ * correlate stage) is supplied, only in-window candidates are scored. A member
+ * outside the spatial or temporal window scores zero under
+ * `corroborationStrength` and is discarded by the strength floor regardless, so
+ * the resulting selection is identical — the pruning only skips the work. Pair
+ * geometry is also computed once per unordered pair and shared between both
+ * directions, which keeps a mega-cluster from re-running the same trig twice.
  */
 export function corroborateCluster(
   members: UnifiedEvent[],
+  neighborsById?: Map<string, string[]>,
 ): Map<string, CorroborationLink[]> {
   const byEvent = new Map<string, CorroborationLink[]>();
+  if (members.length < 2) return byEvent;
+
+  const byId = new Map(members.map((m) => [m.id, m]));
+  const metricCache = new Map<
+    string,
+    { affinity: number; distance: number; dt: number }
+  >();
 
   for (const event of members) {
-    const links = selectCorroborators(event, members);
+    // When `neighborsById` is supplied it is authoritative: it carries exactly
+    // the members that correlate with `event` within both windows, derived from
+    // the correlate stage's union scan. Members outside those windows score
+    // zero under `corroborationStrength` anyway, so this produces the same
+    // selection as scoring the full cluster at a fraction of the work.
+    const candidateIds = neighborsById
+      ? (neighborsById.get(event.id) ?? [])
+      : members.filter((m) => m.id !== event.id).map((m) => m.id);
+
+    const scored: CorroborationLink[] = [];
+    for (const id of candidateIds) {
+      if (id === event.id) continue;
+      const candidate = byId.get(id);
+      if (!candidate) continue;
+
+      const pairKey = event.id < id ? `${event.id}|${id}` : `${id}|${event.id}`;
+      let geometry = metricCache.get(pairKey);
+      if (!geometry) {
+        geometry = {
+          affinity: sourceAffinity(event.sourceType, candidate.sourceType),
+          distance: haversineMeters(event.location, candidate.location),
+          dt: deltaSeconds(event.timestamp, candidate.timestamp),
+        };
+        metricCache.set(pairKey, geometry);
+      }
+
+      const strength =
+        Math.round(
+          geometry.affinity *
+            clamp(1 - geometry.distance / CORRELATION_RADIUS_METERS, 0, 1) *
+            clamp(1 - geometry.dt / CORRELATION_WINDOW_SECONDS, 0, 1) *
+            1000,
+        ) / 1000;
+
+      scored.push({
+        eventId: id,
+        strength,
+        distanceMeters: Math.round(geometry.distance),
+        deltaSeconds: Math.round(geometry.dt),
+        sourceType: candidate.sourceType,
+        rationale:
+          `${candidate.sourceType.toUpperCase()} observation ${Math.round(geometry.distance)}m away, ` +
+          `${Math.round(geometry.dt)}s apart (affinity ${geometry.affinity.toFixed(2)})`,
+      });
+    }
+
+    const links = selectFromScored(scored);
     event.corroboratedBy = links.map((l) => l.eventId);
     byEvent.set(event.id, links);
   }

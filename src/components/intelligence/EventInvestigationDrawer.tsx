@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { UnifiedEvent } from '../../types/schema';
+import React, { useState, useEffect } from 'react';
+import { UnifiedEvent, CorrelationsResponse, CandidatesResponse } from '../../types/schema';
 import { explainEvent } from '../../data/eventExplainer';
+import { getCorrelations, getCandidates } from '../../data/apiClient';
 import EventReconMedia from '../EventReconMedia';
 import LiveNewsFeed from '../LiveNewsFeed';
 import { generateEventPdfReport } from '../../utils/generatePdfReport';
@@ -44,18 +45,49 @@ export default function EventInvestigationDrawer({
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'EXPLAIN' | 'RECON' | 'NEWS' | 'MATH' | 'CORRELATIONS' | 'RAW'>('EXPLAIN');
   const [summaryViewMode, setSummaryViewMode] = useState<'SIMPLE' | 'TACTICAL'>(easyMode ? 'SIMPLE' : 'SIMPLE');
+  const [correlations, setCorrelations] = useState<CorrelationsResponse | null>(null);
+  const [candidates, setCandidates] = useState<CandidatesResponse | null>(null);
+  const [corrLoading, setCorrLoading] = useState(false);
+  const [corrError, setCorrError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!event) return;
+    let cancelled = false;
+    setCorrLoading(true);
+    setCorrError(null);
+    Promise.allSettled([getCorrelations(event.id), getCandidates(event.id)]).then(([c, can]) => {
+      if (cancelled) return;
+      if (c.status === 'fulfilled') setCorrelations(c.value);
+      if (can.status === 'fulfilled') setCandidates(can.value);
+      if (c.status === 'rejected' && can.status === 'rejected') {
+        setCorrError('Correlation engine unreachable — showing local estimates.');
+      }
+      setCorrLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [event]);
 
   if (!event) return null;
 
   const explanation = explainEvent(event);
-  const bd = event.confidenceBreakdown || {
-    overall: event.confidence,
-    sourceReliability: Math.round(event.confidence * 0.9),
-    dataFreshness: 98,
-    sourceAgreement: event.corroboratedBy && event.corroboratedBy.length > 0 ? 95 : 0,
-    spatialAgreement: event.corroboratedBy && event.corroboratedBy.length > 0 ? 80 : 0,
-    temporalAgreement: event.corroboratedBy && event.corroboratedBy.length > 0 ? 90 : 0,
-  };
+
+  // Real confidence breakdown from the server when the event lives on the
+  // backend; a labeled local estimate only for injected scenarios / offline.
+  const bd = correlations
+    ? {
+        ...correlations.confidence.breakdown,
+        overall: correlations.confidence.overall,
+      }
+    : event.confidenceBreakdown || {
+        overall: event.confidence,
+        sourceReliability: Math.round(event.confidence * 0.9),
+        dataFreshness: 98,
+        sourceAgreement: event.corroboratedBy && event.corroboratedBy.length > 0 ? 95 : 0,
+        spatialAgreement: event.corroboratedBy && event.corroboratedBy.length > 0 ? 80 : 0,
+        temporalAgreement: event.corroboratedBy && event.corroboratedBy.length > 0 ? 90 : 0,
+      };
 
   const handleCopyJson = () => {
     navigator.clipboard.writeText(JSON.stringify(event, null, 2));
@@ -287,8 +319,49 @@ export default function EventInvestigationDrawer({
                   STATISTICAL ANOMALY DETECTED
                 </div>
                 <p className="text-rose-200/90 text-xs">
-                  Kinematic speed or spatial density variance exceeds 2.5 sigma from normal baseline.
+                  {event.anomalyReason ||
+                    'Kinematic speed or spatial density variance exceeds 2.5 sigma from normal baseline.'}
                 </p>
+              </div>
+            )}
+
+            {/* MEDIA AUTHENTICITY AUDIT (server forensic pipeline) */}
+            {event.mediaAudit && (
+              <div className="p-3 rounded bg-[#0a0f15] border border-white/10 space-y-1.5">
+                <div className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <Camera className="w-3.5 h-3.5 text-cyan-400" />
+                  MEDIA AUTHENTICITY AUDIT
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <span
+                    className={`px-1.5 py-0.2 rounded text-[9px] font-bold border ${
+                      event.mediaAudit.manipulationCategory === 'NONE_DETECTED'
+                        ? 'bg-emerald-950/70 text-emerald-300 border-emerald-500/40'
+                        : event.mediaAudit.manipulationCategory === 'EVENT_FABRICATING'
+                        ? 'bg-rose-950/70 text-rose-300 border-rose-500/40'
+                        : 'bg-amber-950/70 text-amber-300 border-amber-500/40'
+                    }`}
+                  >
+                    {event.mediaAudit.manipulationCategory}
+                  </span>
+                  <span className="px-1.5 py-0.2 rounded bg-[#05070a] border border-white/10 text-[9px] text-slate-300">
+                    AUTH <b>{event.mediaAudit.authenticityScore}</b>/100
+                  </span>
+                  <span className="px-1.5 py-0.2 rounded bg-[#05070a] border border-white/10 text-[9px] text-slate-300">
+                    AI-SYNTH <b>{event.mediaAudit.aiSyntheticScore}%</b>
+                  </span>
+                  {event.mediaAudit.deepfakeArtifacts?.length > 0 && (
+                    <span className="px-1.5 py-0.2 rounded bg-rose-950/50 border border-rose-500/30 text-[9px] text-rose-300">
+                      {event.mediaAudit.deepfakeArtifacts.length} artifact(s)
+                    </span>
+                  )}
+                </div>
+                {event.mediaAudit.factualCoreExtracted && (
+                  <p className="text-slate-400 text-[11px] leading-snug">
+                    <span className="uppercase text-[9px] text-slate-500">Extracted factual core: </span>
+                    {event.mediaAudit.factualCoreExtracted}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -348,39 +421,152 @@ export default function EventInvestigationDrawer({
             </div>
 
             {/* COUNTERFACTUAL EVIDENCE GAIN */}
-            <div className="p-3 rounded bg-emerald-950/30 border border-emerald-500/30 text-xs space-y-1">
+            <div className="p-3 rounded bg-emerald-950/30 border border-emerald-500/30 text-xs space-y-1.5">
               <span className="font-bold text-emerald-300">COUNTERFACTUAL VERDICT:</span>
-              <p className="text-slate-300">
-                Without cross-source corroboration, this single observation would yield only{' '}
-                <strong className="text-white">{bd.sourceReliability}% confidence</strong>. Multi-sensor corroboration boosted overall certainty by{' '}
-                <strong className="text-emerald-400">+{Math.max(0, bd.overall - bd.sourceReliability)}%</strong>.
-              </p>
+              {correlations ? (
+                <>
+                  <p className="text-slate-300">
+                    Without cross-source corroboration, this observation would yield only{' '}
+                    <strong className="text-white">{correlations.counterfactual.confidenceWithoutCorroboration}% confidence</strong>.
+                    Multi-sensor corroboration boosted overall certainty by{' '}
+                    <strong className="text-emerald-400">+{correlations.counterfactual.confidenceGain.toFixed(1)}%</strong>.
+                  </p>
+                  <p className="text-slate-500 text-[10px]">{correlations.counterfactual.note}</p>
+                </>
+              ) : (
+                <p className="text-slate-300">
+                  Without cross-source corroboration, this single observation would yield only{' '}
+                  <strong className="text-white">{bd.sourceReliability}% confidence</strong>. Multi-sensor corroboration boosted overall certainty by{' '}
+                  <strong className="text-emerald-400">+{Math.max(0, bd.overall - bd.sourceReliability)}%</strong>
+                  {corrError ? ' (local estimate)' : ''}.
+                </p>
+              )}
             </div>
+
+            {/* REAL FORMULA STRIP */}
+            {correlations && (
+              <div className="p-3 rounded bg-[#0a0f15] border border-white/10 space-y-1.5">
+                <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1.5">
+                  <Cpu className="w-3 h-3 text-cyan-400" />
+                  SERVER CONFIDENCE FUNCTION
+                </div>
+                <code className="block text-[10px] text-cyan-200/80 font-mono leading-relaxed break-words">
+                  {correlations.confidence.formula}
+                </code>
+                <p className="text-slate-500 text-[10px]">{correlations.confidence.explanation}</p>
+                {corrLoading && <span className="text-[9px] text-slate-500 animate-pulse">SYNCING FROM FUSION ENGINE…</span>}
+              </div>
+            )}
           </div>
         )}
 
-        {/* TAB 5: CORRELATIONS LIST */}
+{/* TAB 5: CORRELATIONS LIST (SERVER CORRELATION ENGINE) */}
         {activeTab === 'CORRELATIONS' && (
           <div className="space-y-2">
-            <div className="text-xs text-slate-400 pb-1">
-              Corroborating observation IDs clustered via Union-Find (Spatial horizon: ≤ 5.0 km, Time: ≤ 600s):
-            </div>
-            {event.corroboratedBy && event.corroboratedBy.length > 0 ? (
-              event.corroboratedBy.map((corrId) => (
+            {correlations && (
+              <div className="p-2.5 rounded bg-[#0a0f15] border border-cyan-500/20 text-[11px] space-y-1">
+                <div className="flex flex-wrap gap-1.5 text-[10px]">
+                  <span className="px-1.5 py-0.2 rounded bg-cyan-950/70 border border-cyan-500/40 text-cyan-300 font-bold">
+                    {correlations.corroboration.count} CORROBORATORS
+                  </span>
+                  <span className="px-1.5 py-0.2 rounded bg-[#05070a] border border-white/10 text-slate-300">
+                    Horizon: ≤ {correlations.correlationWindows.radiusMeters}m / {correlations.correlationWindows.windowSeconds}s
+                  </span>
+                  <span className="px-1.5 py-0.2 rounded bg-[#05070a] border border-white/10 text-slate-300">
+                    Sources: {[...correlations.corroboration.distinctSources].join(', ')}
+                  </span>
+                </div>
+                <div className="text-[9px] text-slate-500">
+                  {correlations.corroboration.links.length > 0
+                    ? 'Links scored by the fusion engine (strength = spatial × temporal × source-diversity agreement).'
+                    : 'No secondary sensors currently within spatial-temporal correlation horizon.'}
+                </div>
+              </div>
+            )}
+
+            {corrLoading && (
+              <div className="p-3 rounded bg-[#0a0f15] border border-white/10 text-slate-400 animate-pulse text-center text-[10px]">
+                QUERYING CORRELATION ENGINE…
+              </div>
+            )}
+
+            {correlations &&
+              correlations.corroboration.links.map((link) => (
                 <div
-                  key={corrId}
-                  className="flex items-center justify-between p-2.5 rounded bg-[#0a0f15] border border-white/10 hover:border-cyan-500/40"
+                  key={link.event.id}
+                  className="p-2.5 rounded bg-[#0a0f15] border border-white/10 hover:border-cyan-500/40 transition-colors space-y-1"
                 >
-                  <span className="font-bold text-cyan-300">[{corrId}]</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-bold text-cyan-300 shrink-0">[{link.event.id}]</span>
+                      <span className="text-[10px] text-slate-400 truncate">{link.event.title}</span>
+                    </div>
+                    <span className="shrink-0 px-1.5 py-0.2 rounded bg-[#05070a] border border-white/10 text-[9px] text-emerald-300">
+                      {Math.round(link.strength * 100)}% MATCH
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 text-[9px] text-slate-500">
+                    <span>Δ {(link.distanceMeters / 1000).toFixed(1)} km</span>
+                    <span>Δ {(link.deltaSeconds / 60).toFixed(0)} min</span>
+                    <span>{link.event.sourceType.toUpperCase()}</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-snug">{link.rationale}</p>
                   <button
-                    onClick={() => onSelectCorrelatedEvent && onSelectCorrelatedEvent(corrId)}
-                    className="flex items-center gap-1 text-xs text-slate-400 hover:text-cyan-300"
+                    onClick={() => onSelectCorrelatedEvent && onSelectCorrelatedEvent(link.event.id)}
+                    className="flex items-center gap-1 text-[10px] text-cyan-300 hover:text-cyan-100"
                   >
                     Inspect Contact <ExternalLink className="w-3 h-3" />
                   </button>
                 </div>
-              ))
-            ) : (
+              ))}
+
+            {correlations && correlations.corroboration.links.length === 0 && !corrLoading && (
+              <div className="p-4 rounded bg-[#0a0f15] border border-white/10 text-slate-500 italic text-center">
+                Isolated contact: dynamic correlation had no surviving links.
+              </div>
+            )}
+
+            {/* REJECTED CANDIDATES — counterfactual links the engine evaluated */}
+            {candidates && candidates.candidates.length > 0 && (
+              <div className="pt-2 space-y-1.5">
+                <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1.5">
+                  <Cpu className="w-3 h-3 text-amber-400" />
+                  REJECTED CANDIDATE LINKS ({candidates.candidates.length} evaluated)
+                </div>
+                {candidates.candidates.map((cand) => (
+                  <div
+                    key={cand.eventId}
+                    className="p-2 rounded bg-[#070b10] border border-white/5 text-[10px] space-y-0.5"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-300">[{cand.eventId}]</span>
+                      <span className="text-slate-400 truncate">{cand.title}</span>
+                      <span className="ml-auto shrink-0 text-slate-500">
+                        Δ {(cand.distanceMeters / 1000).toFixed(1)} km · {Math.round(cand.strength * 100)}%
+                      </span>
+                    </div>
+                    <div className="text-rose-300/80">{cand.rejectedBecause}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {corrError && !correlations && (
+              <div className="p-3 rounded bg-amber-950/30 border border-amber-500/30 text-[10px] text-amber-200">
+                {corrError} Showing event-local corroboration IDs instead.
+                {event.corroboratedBy?.map((corrId) => (
+                  <button
+                    key={corrId}
+                    onClick={() => onSelectCorrelatedEvent && onSelectCorrelatedEvent(corrId)}
+                    className="mx-1 px-1.5 py-0.2 rounded bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 hover:text-cyan-100"
+                  >
+                    [{corrId}]
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {!correlations && !candidates && !corrLoading && !corrError && (
               <div className="p-4 rounded bg-[#0a0f15] border border-white/10 text-slate-500 italic text-center">
                 Isolated contact: No secondary sensors currently within spatial-temporal correlation horizon.
               </div>

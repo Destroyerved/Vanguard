@@ -47,7 +47,7 @@ export interface CorrelationResult {
   clusters: CorrelationCluster[];
   /** eventId -> clusterId, for O(1) lookup during scoring. */
   clusterByEvent: Map<string, string>;
-  /** eventId -> IDs of every other event in the same cluster. */
+  /** eventId -> IDs of every directly-correlating neighbour (in-window pair). */
   neighborsByEvent: Map<string, string[]>;
   /** Number of pairwise comparisons actually performed, for the metrics panel. */
   comparisons: number;
@@ -176,6 +176,11 @@ export function correlateEvents(
   const ds = new DisjointSet(events.length);
   const index = buildSpatialIndex(events, radius);
   let comparisons = 0;
+  // directByIndex[i] = events that correlate with event i within BOTH windows.
+  // This is the corroboration candidate set: cluster membership is a transitive
+  // closure, so a mega-cluster's colliding members are not all mutually in-window,
+  // and scoring only the direct pairs keeps corroboration from re-running O(m^2).
+  const directByIndex: number[][] = events.map(() => []);
 
   for (let i = 0; i < events.length; i++) {
     const a = events[i]!;
@@ -186,7 +191,11 @@ export function correlateEvents(
         // Compare each unordered pair exactly once.
         if (j <= i) continue;
         comparisons++;
-        if (eventsCorrelate(a, events[j]!, options)) ds.union(i, j);
+        if (eventsCorrelate(a, events[j]!, options)) {
+          ds.union(i, j);
+          directByIndex[i]!.push(j);
+          directByIndex[j]!.push(i);
+        }
       }
     }
   }
@@ -213,11 +222,14 @@ export function correlateEvents(
 
     for (const e of memberEvents) {
       clusterByEvent.set(e.id, cluster.id);
-      neighborsByEvent.set(
-        e.id,
-        memberEvents.filter((o) => o.id !== e.id).map((o) => o.id),
-      );
     }
+  }
+
+  for (let i = 0; i < events.length; i++) {
+    const direct = directByIndex[i]!;
+    if (direct.length === 0) continue;
+    const ids = direct.map((j) => events[j]!.id);
+    neighborsByEvent.set(events[i]!.id, ids);
   }
 
   // Largest, most severe clusters first — the order the feed renders in.

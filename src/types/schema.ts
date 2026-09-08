@@ -98,16 +98,22 @@ export interface AuthenticityAudit {
 export interface UnifiedEvent {
   id: string;
   sourceType: SourceType;
+  sourceName?: string;
   timestamp: string;            // ISO 8601 string
+  firstSeen?: string;
   location: GeoLocation;
   severity: SeverityLevel;
+  baseSeverity?: SeverityLevel;
   title: string;
   description: string;
   confidence: number;           // 0-100
   confidenceBreakdown?: ConfidenceBreakdown;
   authenticityAudit?: AuthenticityAudit;
+  mediaAudit?: MediaAuthenticityAudit;
   corroboratedBy: string[];     // Array of linked event IDs
+  clusterId?: string;
   isAnomaly: boolean;
+  anomalyReason?: string;
   raw: Record<string, unknown>;
 }
 
@@ -140,4 +146,344 @@ export interface ScenarioDefinition {
   events: UnifiedEvent[];
   assets: AssetUnit[];
   sourcesHealth: SourceHealth[];
+}
+
+// ─── Server UnifiedEvent v1.1 additions (server/src/types/events.ts) ────────────
+
+/** How VANGUARD reads media after forensic analysis. Not a binary real/fake verdict. */
+export type ManipulationCategory =
+  | 'NONE_DETECTED'
+  | 'LEGITIMATE_ENHANCEMENT'
+  | 'HYBRID_CORROBORATED'
+  | 'EVENT_FABRICATING'
+  | 'AUTHENTICITY_UNVERIFIED';
+
+export type MediaCheckId =
+  | 'provenance-c2pa'
+  | 'bitstream-container'
+  | 'visual-frame'
+  | 'temporal-consistency'
+  | 'acoustic-spectrum'
+  | 'sensor-prnu'
+  | 'edit-origin';
+
+export interface MediaFinding {
+  code: string;
+  detail: string;
+  confidence: number;
+}
+
+export interface MediaCheckResult {
+  id: MediaCheckId;
+  name: string;
+  /** 0-100; 100 = no manipulation evidence in this dimension. */
+  score: number;
+  weight: number;
+  applicable: boolean;
+  findings: MediaFinding[];
+}
+
+export interface ProvenanceEntry {
+  step: string;
+  tool?: string;
+  hardwareCapture: boolean;
+  syntheticGeneration: boolean;
+  legitimateEditing: boolean;
+}
+
+/**
+ * The server media authenticity assessment attached to social_media /
+ * audio_recording events. Distinct from the local `AuthenticityAudit` used by
+ * the OSINT verifier.
+ */
+export interface MediaAuthenticityAudit {
+  evaluatedAt: string;
+  authenticityScore: number;
+  manipulationRisk: number;
+  manipulationCategory: ManipulationCategory;
+  aiSyntheticScore: number;
+  provenanceScore: number;
+  intrinsicConsistency: number;
+  corroborationScore: number;
+  deepfakeArtifacts: MediaFinding[];
+  factualCoreExtracted: string;
+  provenanceChain: ProvenanceEntry[];
+  sourceReliability: number;
+  checks: MediaCheckResult[];
+  metadata?: MediaForensicMetadata;
+  visualFrames?: VisualFrameAnalysis;
+  temporalConsistency?: TemporalConsistencyAnalysis;
+  acousticSpectrum?: AcousticSpectrumAnalysis;
+  cameraCharacteristics?: CameraSensorCharacteristics;
+}
+
+/** A spatiotemporal correlation cluster produced by the fusion engine. */
+export interface CorrelationCluster {
+  id: string;
+  eventIds: string[];
+  distinctSources: SourceType[];
+  centroid: { lat: number; lng: number };
+  radiusMeters: number;
+  firstSeen: string;
+  lastSeen: string;
+  peakSeverity: SeverityLevel;
+  meanConfidence: number;
+}
+
+/** A live operational unit rendered on the Assets map layer. */
+export interface TacticalAsset {
+  id: string;
+  callsign: string;
+  kind: 'ground' | 'air' | 'naval' | 'static';
+  location: GeoLocation;
+  status: 'ready' | 'engaged' | 'refit' | 'offline';
+  readinessPercent: number;
+  lastUpdate: string;
+}
+
+/** Operational zone rendered on the Zones map layer. */
+export interface OperationalZone {
+  id: string;
+  name: string;
+  kind: 'sector' | 'restricted_airspace' | 'patrol_perimeter' | 'geofence';
+  polygon: [number, number][];
+  severityBias: SeverityLevel;
+}
+
+// ─── Source health / situation (server/src/types/health.ts) ─────────────────────
+
+export interface SourceHealthDetail extends SourceHealth {
+  nominalReliability: number;
+  totalIngested: number;
+  consecutiveFailures: number;
+  meanLatencyMs: number;
+  manuallyDegraded: boolean;
+  note?: string;
+}
+
+export interface EscalationRecord {
+  id: string;
+  timestamp: string;
+  from: ThreatLevel;
+  to: ThreatLevel;
+  score: number;
+  reason: string;
+  triggerEventIds: string[];
+}
+
+/** Top-of-screen situational rollup from GET /situation/current. */
+export interface SituationSnapshot {
+  timestamp: string;
+  threatLevel: ThreatLevel;
+  threatScore: number;
+  activeAlertsCount: number;
+  criticalCount: number;
+  highCount: number;
+  totalEvents: number;
+  anomalyCount: number;
+  correlatedClusters: number;
+  meanConfidence: number;
+  degradedMode: boolean;
+  headline: string;
+}
+
+export interface SystemMetrics {
+  uptimeSeconds: number;
+  ticks: number;
+  eventsIngested: number;
+  eventsDeduplicated: number;
+  clustersFormed: number;
+  meanTickDurationMs: number;
+  lastTickDurationMs: number;
+  wsClients: number;
+  storeSize: number;
+  storeCapacity: number;
+}
+
+// ─── AI synthesis contracts (server/src/types/ai.ts) ────────────────────────────
+
+export interface GroundedClaim {
+  point: string;
+  supportingEventIds: string[];
+}
+
+export interface PrioritizedAction {
+  action: string;
+  /** 1 (routine) .. 5 (immediate). */
+  urgency: number;
+  supportingEventIds: string[];
+}
+
+export interface CourseOfAction {
+  id: string;
+  title: string;
+  description: string;
+  pros: string[];
+  tradeoffs: string[];
+  recommendedUrgency: number;
+  supportingEventIds: string[];
+}
+
+export interface BriefingProvenance {
+  engine: 'gemini' | 'deterministic';
+  model?: string;
+  latencyMs: number;
+  eventsConsidered: number;
+  citationsStripped: number;
+  claimsDiscarded: number;
+  degradedReason?: string;
+}
+
+export interface AISummary {
+  generatedAt: string;
+  threatLevel: ThreatLevel;
+  headline: string;
+  executiveSummary: string;
+  keyDevelopments: GroundedClaim[];
+  prioritizedActions: PrioritizedAction[];
+  coursesOfAction: CourseOfAction[];
+  overallConfidence: number;
+  provenance: BriefingProvenance;
+}
+
+export interface NLQueryFilter {
+  sourceTypes?: SourceType[];
+  severities?: SeverityLevel[];
+  minConfidence?: number;
+  withinMinutes?: number;
+  nearPoint?: { lat: number; lng: number; radiusKm: number };
+  zoneName?: string;
+  anomaliesOnly?: boolean;
+  minCorroborations?: number;
+  textContains?: string;
+}
+
+export interface NLQueryResult {
+  query: string;
+  filter: NLQueryFilter;
+  interpretation: string;
+  matchedEventIds: string[];
+  matchCount: number;
+  parser: 'gemini' | 'heuristic';
+  latencyMs: number;
+}
+
+// ─── REST response envelopes (server/src/api/routes) ────────────────────────────
+
+export interface SituationCurrentResponse {
+  situation: SituationSnapshot;
+  sources: SourceHealthDetail[];
+  clusters: number;
+  lastEscalation: EscalationRecord | null;
+}
+
+export interface SituationTimelineResponse {
+  timeline: EscalationRecord[];
+  count: number;
+  currentLevel: ThreatLevel;
+  currentScore: number;
+  lastChangeAt: string | null;
+}
+
+export interface EventsResponse {
+  events: UnifiedEvent[];
+  count: number;
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface CorrelationsResponse {
+  eventId: string;
+  event: UnifiedEvent;
+  confidence: {
+    overall: number;
+    band: 'high' | 'medium' | 'low';
+    breakdown: ConfidenceBreakdown;
+    factors: Record<string, unknown>;
+    formula: string;
+    explanation: string;
+  };
+  counterfactual: {
+    confidenceWithoutCorroboration: number;
+    confidenceGain: number;
+    note: string;
+  };
+  corroboration: {
+    count: number;
+    distinctSources: SourceType[];
+    links: Array<{
+      event: UnifiedEvent;
+      strength: number;
+      distanceMeters: number;
+      deltaSeconds: number;
+      rationale: string;
+    }>;
+  };
+  correlationWindows: { radiusMeters: number; windowSeconds: number };
+  cluster: CorrelationCluster | null;
+}
+
+export interface CandidatesResponse {
+  eventId: string;
+  considered: number;
+  candidates: Array<{
+    eventId: string;
+    sourceType: SourceType;
+    title: string;
+    distanceMeters: number;
+    deltaSeconds: number;
+    strength: number;
+    rejectedBecause: string;
+  }>;
+}
+
+export interface BriefingLatestResponse {
+  summary: AISummary | null;
+  ageMs: number;
+  generating: boolean;
+  groundingVerified: boolean;
+}
+
+export interface BriefingPostResponse {
+  summary: AISummary;
+  groundingVerified: boolean;
+}
+
+export interface NLQueryResponse extends NLQueryResult {
+  events: UnifiedEvent[];
+}
+
+export interface SourceHealthResponse {
+  sources: SourceHealthDetail[];
+  aggregate: string;
+  degradedMode: boolean;
+  liveCount: number;
+  degradedCount: number;
+  downCount: number;
+}
+
+export interface ClustersResponse {
+  count: number;
+  clusters: Array<
+    CorrelationCluster & {
+      events: UnifiedEvent[];
+      multiSource: boolean;
+      triggeredEscalation: boolean;
+    }
+  >;
+  escalationThreshold: number;
+}
+
+export interface AnomaliesResponse {
+  count: number;
+  threshold: number;
+  byDetector: { rate: number; kinematic: number; spatial: number };
+  anomalies: Array<{
+    eventId: string;
+    detector: 'rate' | 'kinematic' | 'spatial';
+    zScore: number;
+    reason?: string;
+    event: UnifiedEvent | null;
+  }>;
 }

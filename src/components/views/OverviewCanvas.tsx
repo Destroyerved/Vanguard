@@ -1,5 +1,5 @@
 import React from 'react';
-import { UnifiedEvent } from '../../types/schema';
+import { UnifiedEvent, AISummary, CorrelationCluster } from '../../types/schema';
 import TacticalMap from '../TacticalMap';
 import ThreatPostureInstrument from '../intelligence/ThreatPostureInstrument';
 import SituationBriefingCard from '../intelligence/SituationBriefingCard';
@@ -7,6 +7,9 @@ import SituationBriefingCard from '../intelligence/SituationBriefingCard';
 interface OverviewCanvasProps {
   situation: any;
   events: UnifiedEvent[];
+  briefing?: AISummary | null;
+  briefingMeta?: { ageMs: number; generating: boolean; groundingVerified: boolean };
+  clusters?: CorrelationCluster[];
   selectedEventId?: string;
   onSelectEvent: (event: UnifiedEvent) => void;
   onSelectEventId: (eventId: string) => void;
@@ -17,6 +20,9 @@ interface OverviewCanvasProps {
 export default function OverviewCanvas({
   situation,
   events,
+  briefing,
+  briefingMeta,
+  clusters = [],
   selectedEventId,
   onSelectEvent,
   onSelectEventId,
@@ -31,6 +37,7 @@ export default function OverviewCanvas({
       <div className="w-full h-[480px]">
         <TacticalMap
           events={events}
+          clusters={clusters}
           onSelectEvent={onSelectEvent}
           selectedEventId={selectedEventId}
         />
@@ -52,6 +59,8 @@ export default function OverviewCanvas({
         <div className="h-full">
           <SituationBriefingCard
             situation={situation}
+            briefing={briefing}
+            briefingMeta={briefingMeta}
             onSelectEventId={onSelectEventId}
             easyMode={easyMode}
           />
