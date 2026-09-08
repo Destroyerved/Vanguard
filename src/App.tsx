@@ -21,6 +21,9 @@ import {
   X
 } from 'lucide-react';
 
+import { explainEvent } from './data/eventExplainer';
+import { UnifiedEvent } from './types/schema';
+
 const BACKEND_URL = 'http://localhost:3001/api/v1';
 
 export default function App() {
@@ -35,6 +38,7 @@ export default function App() {
   const [events, setEvents] = useState<any[]>([]);
   const [sourceHealth, setSourceHealth] = useState<any[]>([]);
   const [selectedRawJson, setSelectedRawJson] = useState<{ title: string; data: any } | null>(null);
+  const [selectedEventExplanation, setSelectedEventExplanation] = useState<UnifiedEvent | null>(null);
 
   // Search & API tester state
   const [searchQuery, setSearchQuery] = useState('');
@@ -293,12 +297,20 @@ export default function App() {
 
                 <div className="mt-4 pt-2 border-t border-slate-800 flex items-center justify-between text-xs font-mono">
                   <span className="text-slate-500">{new Date(evt.timestamp).toLocaleTimeString()}</span>
-                  <button
-                    onClick={() => setSelectedRawJson({ title: `Event Payload — ${evt.title}`, data: evt })}
-                    className="text-cyan-400 hover:underline flex items-center gap-1"
-                  >
-                    <Code className="w-3.5 h-3.5" /> RAW JSON
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setSelectedEventExplanation(evt)}
+                      className="text-amber-400 hover:text-amber-300 font-bold hover:underline flex items-center gap-1 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800/80 text-[11px]"
+                    >
+                      <FileText className="w-3 h-3" /> EXPLAIN
+                    </button>
+                    <button
+                      onClick={() => setSelectedRawJson({ title: `Event Payload — ${evt.title}`, data: evt })}
+                      className="text-cyan-400 hover:underline flex items-center gap-1 text-[11px]"
+                    >
+                      <Code className="w-3 h-3" /> RAW JSON
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -433,6 +445,154 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* DETAILED EVENT EXPLANATION MODAL */}
+      {selectedEventExplanation && (() => {
+        const explanation = explainEvent(selectedEventExplanation);
+        const evt = selectedEventExplanation;
+        return (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-2xl w-full p-6 shadow-2xl flex flex-col max-h-[90vh] font-mono">
+              
+              {/* MODAL HEADER */}
+              <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase ${
+                      evt.severity === 'critical' ? 'bg-rose-950 border-rose-800 text-rose-400' :
+                      evt.severity === 'high' ? 'bg-amber-950 border-amber-800 text-amber-400' : 'bg-cyan-950 border-cyan-800 text-cyan-400'
+                    }`}>
+                      {evt.sourceType} • {evt.severity}
+                    </span>
+                    <span className="text-xs text-slate-400 font-bold">{evt.id}</span>
+                    {evt.isAnomaly && (
+                      <span className="text-[10px] bg-rose-950 border border-rose-700 text-rose-300 font-bold px-2 py-0.5 rounded animate-pulse">
+                        ANOMALY
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="font-hud font-bold text-xl text-slate-100">{evt.title}</h3>
+                </div>
+                <button
+                  onClick={() => setSelectedEventExplanation(null)}
+                  className="p-1.5 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* MODAL BODY */}
+              <div className="flex-1 overflow-y-auto my-4 space-y-4 pr-1">
+                {/* 1. Executive Overview */}
+                <div className="p-3.5 bg-slate-950/80 rounded-xl border border-slate-800">
+                  <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                    <FileText className="w-4 h-4" /> Tactical Event Overview
+                  </h4>
+                  <p className="text-xs text-slate-200 leading-relaxed">{explanation.summary}</p>
+                </div>
+
+                {/* 2. Tactical Impact & Operational Risk */}
+                <div className="p-3.5 bg-slate-950/80 rounded-xl border border-amber-900/40">
+                  <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4" /> Operational Assessment & Impact
+                  </h4>
+                  <p className="text-xs text-slate-300 leading-relaxed">{explanation.tacticalImpact}</p>
+                </div>
+
+                {/* 3. Verification & Sensor Agreement */}
+                <div className="p-3.5 bg-slate-950/80 rounded-xl border border-slate-800 space-y-3">
+                  <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Activity className="w-4 h-4" /> Fusion Confidence & Sensor Corroboration
+                  </h4>
+                  <p className="text-xs text-slate-300 leading-relaxed">{explanation.verificationAnalysis}</p>
+
+                  {/* Confidence breakdown progress bars */}
+                  {evt.confidenceBreakdown && (
+                    <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-900 text-[11px]">
+                      <div>
+                        <div className="flex justify-between text-slate-400 mb-1">
+                          <span>Source Agreement</span>
+                          <span className="text-cyan-300 font-bold">{evt.confidenceBreakdown.sourceAgreement}%</span>
+                        </div>
+                        <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-cyan-500 h-full rounded-full" style={{ width: `${evt.confidenceBreakdown.sourceAgreement}%` }}></div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-slate-400 mb-1">
+                          <span>Spatial Agreement</span>
+                          <span className="text-cyan-300 font-bold">{evt.confidenceBreakdown.spatialAgreement}%</span>
+                        </div>
+                        <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-cyan-500 h-full rounded-full" style={{ width: `${evt.confidenceBreakdown.spatialAgreement}%` }}></div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-slate-400 mb-1">
+                          <span>Temporal Agreement</span>
+                          <span className="text-cyan-300 font-bold">{evt.confidenceBreakdown.temporalAgreement}%</span>
+                        </div>
+                        <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-cyan-500 h-full rounded-full" style={{ width: `${evt.confidenceBreakdown.temporalAgreement}%` }}></div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-slate-400 mb-1">
+                          <span>Data Freshness</span>
+                          <span className="text-cyan-300 font-bold">{evt.confidenceBreakdown.dataFreshness}%</span>
+                        </div>
+                        <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${evt.confidenceBreakdown.dataFreshness}%` }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 4. Kinematics & Geo Telemetry */}
+                <div className="p-3.5 bg-slate-950/80 rounded-xl border border-slate-800">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                    <Globe className="w-4 h-4 text-cyan-400" /> Sensor Kinematics & Coordinates
+                  </h4>
+                  <p className="text-xs text-slate-300 font-mono">{explanation.telemetryBreakdown}</p>
+                </div>
+
+                {/* 5. Recommended Action Protocol */}
+                <div className="p-3.5 bg-slate-950/80 rounded-xl border border-rose-900/50">
+                  <h4 className="text-xs font-bold text-rose-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                    <Zap className="w-4 h-4" /> Recommended Defense Protocol
+                  </h4>
+                  <p className="text-xs text-slate-200 font-bold leading-relaxed">{explanation.recommendedAction}</p>
+                </div>
+              </div>
+
+              {/* MODAL FOOTER */}
+              <div className="flex items-center justify-between border-t border-slate-800 pt-4 text-xs">
+                <button
+                  onClick={() => {
+                    const payload = evt;
+                    setSelectedEventExplanation(null);
+                    setSelectedRawJson({ title: `Event Payload — ${payload.title}`, data: payload });
+                  }}
+                  className="px-3 py-1.5 bg-slate-950 border border-slate-800 hover:border-cyan-700 text-cyan-400 rounded-lg flex items-center gap-1.5 transition-colors"
+                >
+                  <Code className="w-4 h-4" /> Inspect Raw Payload JSON
+                </button>
+                <button
+                  onClick={() => setSelectedEventExplanation(null)}
+                  className="px-4 py-1.5 bg-cyan-950 border border-cyan-700 hover:bg-cyan-900 text-cyan-300 font-bold rounded-lg transition-colors"
+                >
+                  Close Explanation
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
