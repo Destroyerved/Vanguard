@@ -7,11 +7,103 @@ import { ScenarioDefinition, UnifiedEvent } from '../types/schema';
 import { fuseMultiSourceEvents, calculateGlobalThreatLevel } from './fusionEngine';
 import { getInitialAssets } from './sources/personnelSource';
 
-export type DemoScenarioMode = 'NORMAL_OPS' | 'SEVERE_WEATHER' | 'COORDINATED_ATTACK' | 'AIR_COMBAT_INTERCEPT' | 'NAVAL_WARFARE_STRIKE';
+export type DemoScenarioMode = 'NORMAL_OPS' | 'SEVERE_WEATHER' | 'COORDINATED_ATTACK' | 'AIR_COMBAT_INTERCEPT' | 'NAVAL_WARFARE_STRIKE' | 'SUBMARINE_ASW_HUNT' | 'GROUND_ARMY_COMBAT' | 'OSINT_AI_VERIFICATION';
 
 export function getScenarioDataset(mode: DemoScenarioMode): ScenarioDefinition {
   const now = new Date();
   const assets = getInitialAssets();
+
+  if (mode === 'OSINT_AI_VERIFICATION') {
+    const rawEvents: UnifiedEvent[] = [
+      {
+        id: 'OSINT-INSTA-01',
+        sourceType: 'social_media',
+        timestamp: now.toISOString(),
+        location: { lat: 28.6910, lng: 77.3110 },
+        severity: 'high',
+        title: 'INSTAGRAM OSINT — Low-Altitude Supersonic Jet Flyby (AI Voice + Real Satellite Corroboration)',
+        description: 'Viral Instagram Reel posted by @aero_watcher. Video uses AI-cloned narrator voiceover, BUT satellite orbital passes & radar tracks 100% CORROBORATE the physical aircraft flyby.',
+        confidence: 92,
+        corroboratedBy: ['RAD-FIGHTER-01'],
+        isAnomaly: false,
+        raw: { platform: 'Instagram', handle: '@aero_watcher', aiVoiceover: true, syntheticVideo: false, mediaType: 'VIDEO_REEL' },
+        authenticityAudit: {
+          overallAuthenticityScore: 72,
+          veracityClassification: 'HYBRID_AI_AUTHENTIC_FACT',
+          aiSyntheticScore: 75,
+          deepfakeArtifacts: ['Neural Text-to-Speech (TTS) Voice Model Harmonics Detected'],
+          acousticSpectrumScore: 40,
+          provenanceScore: 78,
+          crossSensorCorroborationScore: 95,
+          factualCoreExtracted: 'VERIFIED GROUND TRUTH: While video voiceover is AI synthetic, physical jet trajectory is 100% CORROBORATED by primary radar and satellite sensors.',
+        }
+      },
+      {
+        id: 'OSINT-AUDIO-02',
+        sourceType: 'audio_recording',
+        timestamp: new Date(now.getTime() - 15000).toISOString(),
+        location: { lat: 18.9100, lng: 72.7800 },
+        severity: 'critical',
+        title: 'ACOUSTIC HYDROPHONE STREAM — Deep Ocean Submarine Cavitation (100% Authentic Natural Sound)',
+        description: 'Sub-surface acoustic array recorded 120Hz acoustic spectrum match. Zero synthetic audio generation signatures. Natural physical sound floor verified.',
+        confidence: 96,
+        corroboratedBy: ['SUB-ASW-01'],
+        isAnomaly: true,
+        raw: { audioStream: 'HYDROPHONE_CH_4', acousticFreqHz: '120Hz Cavitation', syntheticWaveform: false },
+        authenticityAudit: {
+          overallAuthenticityScore: 94,
+          veracityClassification: 'VERIFIED_AUTHENTIC',
+          aiSyntheticScore: 10,
+          deepfakeArtifacts: [],
+          acousticSpectrumScore: 98,
+          provenanceScore: 92,
+          crossSensorCorroborationScore: 96,
+          factualCoreExtracted: 'AUTHENTIC ACOUSTIC SIGNAL: Intact hydrophone sound spectrum, physical oceanic reverberation, and multi-sensor sonar correlation.',
+        }
+      },
+      {
+        id: 'OSINT-FAKE-03',
+        sourceType: 'social_media',
+        timestamp: new Date(now.getTime() - 40000).toISOString(),
+        location: { lat: 18.9600, lng: 72.7700 },
+        severity: 'critical',
+        title: 'X/TWITTER DEEPFAKE WARNING — Fabricated Coastal Explosion Claim (Zero Satellite Match)',
+        description: 'Viral video clip on X claiming coastal explosion. Neural render boundaries and generative video noise detected. Zero satellite, radar, or seismic corroboration.',
+        confidence: 25,
+        corroboratedBy: [],
+        isAnomaly: true,
+        raw: { platform: 'X_Twitter', deepfakeVideo: true, syntheticAudio: true },
+        authenticityAudit: {
+          overallAuthenticityScore: 18,
+          veracityClassification: 'SYNTHETIC_DISINFORMATION',
+          aiSyntheticScore: 94,
+          deepfakeArtifacts: [
+            'Generative AI Video Artifact (Inter-frame warping at 30fps)',
+            'Synthetic Facial Mask / Neural Render Boundary Unnatural Blur',
+            'Zero Background Ambient Noise Floor (AI Sound Generator)'
+          ],
+          acousticSpectrumScore: 20,
+          provenanceScore: 15,
+          crossSensorCorroborationScore: 10,
+          factualCoreExtracted: 'FABRICATED MEDIA: Zero physical sensor corroboration. Complete AI deepfake generation.',
+        }
+      }
+    ];
+
+    const events = fuseMultiSourceEvents(rawEvents);
+    return {
+      id: 'SCENARIO-8',
+      name: 'Multi-Source OSINT Social Media & AI Authenticity Audit',
+      description: 'AI MEDIA & OSINT VERIFICATION. Demonstrates AI deepfake detection, hydrophone acoustic sound spectrum audit, and hybrid AI-fact sorting.',
+      threatLevel: calculateGlobalThreatLevel(events),
+      events,
+      assets,
+      sourcesHealth: [
+        { sourceType: 'social_media', sourceName: 'Instagram / X OSINT Stream', status: 'live', lastUpdate: now.toISOString(), reliabilityScore: 0.70, activeCount: 2 },
+        { sourceType: 'audio_recording', sourceName: 'Hydrophone Sound Array', status: 'live', lastUpdate: now.toISOString(), reliabilityScore: 0.95, activeCount: 1 },
+      ]
+    };
+  }
 
   if (mode === 'NORMAL_OPS') {
     const rawEvents: UnifiedEvent[] = [
@@ -238,7 +330,124 @@ export function getScenarioDataset(mode: DemoScenarioMode): ScenarioDefinition {
     };
   }
 
-  // NAVAL_WARFARE_STRIKE Scenario
+  if (mode === 'SUBMARINE_ASW_HUNT') {
+    const rawEvents: UnifiedEvent[] = [
+      {
+        id: 'SUB-ASW-01',
+        sourceType: 'submarine',
+        timestamp: now.toISOString(),
+        location: { lat: 18.9100, lng: 72.7800, altitudeMeters: -180, speedKnots: 22, headingDegrees: 120 },
+        severity: 'critical',
+        title: 'HOSTILE ATTACK SUBMARINE CONTACT — Akula-class Sub-Surface Track',
+        description: 'Passive hydrophone towed array locked onto 120Hz acoustic cavitation signature at depth 180m. Speed 22 kts.',
+        confidence: 94,
+        corroboratedBy: ['SUB-PATROL-03'],
+        isAnomaly: true,
+        raw: { depthMeters: 180, acousticFreqHz: '120Hz Cavitation', contactClass: 'AKULA_SSN', sonarType: 'PASSIVE_TOWED_ARRAY', iffTag: 'HOSTILE' },
+      },
+      {
+        id: 'SUB-TORP-02',
+        sourceType: 'submarine',
+        timestamp: new Date(now.getTime() - 20000).toISOString(),
+        location: { lat: 18.9300, lng: 72.8000, altitudeMeters: -45, speedKnots: 48, headingDegrees: 110 },
+        severity: 'critical',
+        title: 'ACOUSTIC TORPEDO LAUNCH TRACK — Active Homing Sonar Ping',
+        description: 'High-frequency active sonar ping detected 533mm heavy acoustic homing torpedo on intercept trajectory towards naval asset.',
+        confidence: 96,
+        corroboratedBy: ['SUB-ASW-01'],
+        isAnomaly: true,
+        raw: { depthMeters: 45, speedKnots: 48, torpedoType: '533mm_HEAVY_ACOUSTIC', homingMode: 'ACTIVE_PING', iffTag: 'HOSTILE' },
+      },
+      {
+        id: 'SUB-PATROL-03',
+        sourceType: 'personnel',
+        timestamp: new Date(now.getTime() - 45000).toISOString(),
+        location: { lat: 18.9500, lng: 72.8200, altitudeMeters: 150, speedKnots: 110, headingDegrees: 180 },
+        severity: 'high',
+        title: 'ASW HELICOPTER SONOBUOY PATROL — P-8I / Sea King ASW-1',
+        description: 'Anti-Submarine Airborne Patrol deployed active acoustic sonobuoy grid across Sector Bravo.',
+        confidence: 91,
+        corroboratedBy: ['SUB-ASW-01'],
+        isAnomaly: false,
+        raw: { unitCallsign: 'ASW-HELO-01', sonobuoysActive: 12, status: 'SEARCH_LOCK' },
+      }
+    ];
+
+    const events = fuseMultiSourceEvents(rawEvents);
+    return {
+      id: 'SCENARIO-6',
+      name: 'Submarine ASW Sonar Hunt & Torpedo Tracking',
+      description: 'SUB-SURFACE ANTI-SUBMARINE WARFARE. Towed array hydrophones tracking hostile submarine at 180m depth with acoustic torpedo launch detection.',
+      threatLevel: calculateGlobalThreatLevel(events),
+      events,
+      assets: assets.map(a => ({ ...a, branch: 'NAVY', status: 'ENGAGED' })),
+      sourcesHealth: [
+        { sourceType: 'submarine', sourceName: 'Towed Hydrophone Sonar Array', status: 'live', lastUpdate: now.toISOString(), reliabilityScore: 0.95, activeCount: 2 },
+        { sourceType: 'personnel', sourceName: 'ASW Sonobuoy Airborne Grid', status: 'live', lastUpdate: now.toISOString(), reliabilityScore: 0.90, activeCount: 3 },
+      ]
+    };
+  }
+
+  if (mode === 'GROUND_ARMY_COMBAT') {
+    const rawEvents: UnifiedEvent[] = [
+      {
+        id: 'GND-ARMOR-01',
+        sourceType: 'ground_conflict',
+        timestamp: now.toISOString(),
+        location: { lat: 28.6500, lng: 77.2500, altitudeMeters: 0, speedKnots: 20, headingDegrees: 180 },
+        severity: 'critical',
+        title: 'ARMORED TANK COLUMN ADVANCE — T-90 / Leopard Heavy Main Battle Tanks',
+        description: 'Ground Surveillance Radar (GSR) detected armored column of 14 MBTs advancing along Axis Alpha at 35 km/h.',
+        confidence: 93,
+        corroboratedBy: ['GND-INFANTRY-03'],
+        isAnomaly: true,
+        raw: { unitType: 'Main Battle Tank Column', vehicleCount: 14, radarCrossSection: 'HEAVY_ARMOR', saluteCode: 'S-ARMOR-014', iffTag: 'HOSTILE' },
+      },
+      {
+        id: 'GND-ARTY-02',
+        sourceType: 'ground_conflict',
+        timestamp: new Date(now.getTime() - 15000).toISOString(),
+        location: { lat: 28.6750, lng: 77.2600, altitudeMeters: 0, speedKnots: 0, headingDegrees: 0 },
+        severity: 'critical',
+        title: 'COUNTER-BATTERY RADAR LOCK — 155mm Heavy Artillery Barrage',
+        description: 'Weapon Locating Radar (WLR) tracked 6 incoming 155mm artillery shell trajectories. Impact sector calculated within 45 seconds.',
+        confidence: 97,
+        corroboratedBy: ['GND-ARMOR-01'],
+        isAnomaly: true,
+        raw: { artilleryCaliber: '155mm High Explosive', roundTrajectoryCount: 6, batteryOrigin: '28.6750°N, 77.2600°E', impactEtaSeconds: 45, iffTag: 'HOSTILE' },
+      },
+      {
+        id: 'GND-INFANTRY-03',
+        sourceType: 'personnel',
+        timestamp: new Date(now.getTime() - 30000).toISOString(),
+        location: { lat: 28.6350, lng: 77.2400, altitudeMeters: 0, speedKnots: 0, headingDegrees: 90 },
+        severity: 'high',
+        title: 'FORWARD INFANTRY BATTALION ENGAGEMENT — Bravo Company QRF',
+        description: 'Forward defense infantry company engaged in heavy fire exchange at Sector 4 Outpost. Requesting counter-battery support.',
+        confidence: 90,
+        corroboratedBy: ['GND-ARMOR-01'],
+        isAnomaly: false,
+        raw: { unitCallsign: 'BRAVO-CO-QRF', readiness: 'ENGAGED', ammoCapacityPct: 65, status: 'ENGAGED' },
+      }
+    ];
+
+    const events = fuseMultiSourceEvents(rawEvents);
+    return {
+      id: 'SCENARIO-7',
+      name: 'Ground Army Conflict & Counter-Battery Artillery combat',
+      description: 'GROUND COMBAT ZONE. Heavy main battle tank column invasion push supported by 155mm counter-battery artillery radar tracking.',
+      threatLevel: calculateGlobalThreatLevel(events),
+      events,
+      assets: assets.map(a => ({ ...a, branch: 'ARMY', status: 'ENGAGED' })),
+      sourcesHealth: [
+        { sourceType: 'ground_conflict', sourceName: 'Ground Surveillance Radar (GSR)', status: 'live', lastUpdate: now.toISOString(), reliabilityScore: 0.94, activeCount: 2 },
+        { sourceType: 'ground_conflict', sourceName: 'Weapon Locating Radar (WLR)', status: 'live', lastUpdate: now.toISOString(), reliabilityScore: 0.97, activeCount: 1 },
+        { sourceType: 'personnel', sourceName: 'Infantry Field Telemetry', status: 'live', lastUpdate: now.toISOString(), reliabilityScore: 0.90, activeCount: 4 },
+      ]
+    };
+  }
+
+  // NAVAL_WARFARE_STRIKE Scenario (default fallback)
   const rawEvents: UnifiedEvent[] = [
     {
       id: 'RAD-WARSHIP-01',

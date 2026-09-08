@@ -18,6 +18,8 @@ import {
   Terminal,
   ChevronRight,
   TrendingUp,
+  Newspaper,
+  Cpu,
   X
 } from 'lucide-react';
 
@@ -25,12 +27,15 @@ import { explainEvent } from './data/eventExplainer';
 import { UnifiedEvent } from './types/schema';
 import TacticalMap from './components/TacticalMap';
 import EventReconMedia from './components/EventReconMedia';
+import LiveNewsFeed from './components/LiveNewsFeed';
+import VerifiedNewsHub from './components/VerifiedNewsHub';
+import OsintAuthenticityVerifier from './components/OsintAuthenticityVerifier';
 import { getScenarioDataset, DemoScenarioMode } from './data/scenarioEngine';
 
 const BACKEND_URL = 'http://localhost:3001/api/v1';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'map' | 'events' | 'timeline' | 'sources' | 'api_tester'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'map' | 'events' | 'news' | 'osint' | 'timeline' | 'sources' | 'api_tester'>('overview');
   const [loading, setLoading] = useState(true);
   const [serverOnline, setServerOnline] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date().toUTCString());
@@ -42,8 +47,11 @@ export default function App() {
   const [sourceHealth, setSourceHealth] = useState<any[]>([]);
   const [selectedRawJson, setSelectedRawJson] = useState<{ title: string; data: any } | null>(null);
   const [selectedEventExplanation, setSelectedEventExplanation] = useState<UnifiedEvent | null>(null);
+  const [easyMode, setEasyMode] = useState<boolean>(true);
+  const [activeScenario, setActiveScenario] = useState<DemoScenarioMode | null>(null);
 
   const handleInjectScenario = (mode: DemoScenarioMode) => {
+    setActiveScenario(mode);
     const scenario = getScenarioDataset(mode);
     setSituation({
       threatLevel: scenario.threatLevel,
@@ -65,16 +73,21 @@ export default function App() {
   const [testLoading, setTestLoading] = useState(false);
 
   // Fetch live backend server data from http://localhost:3001/api/v1
-  const fetchBackendData = async () => {
+  const fetchBackendData = async (isManualSync = false) => {
+    if (isManualSync) {
+      setActiveScenario(null);
+    }
     setLoading(true);
     try {
       // 1. Situation Current
       const sitRes = await fetch(`${BACKEND_URL}/situation/current`);
       if (sitRes.ok) {
         const sitData = await sitRes.json();
-        setSituation(sitData.situation);
-        setSourceHealth(sitData.sources || []);
         setServerOnline(true);
+        if (!activeScenario || isManualSync) {
+          setSituation(sitData.situation);
+          setSourceHealth(sitData.sources || []);
+        }
       }
 
       // 2. Timeline
@@ -88,7 +101,9 @@ export default function App() {
       const evtRes = await fetch(`${BACKEND_URL}/events`);
       if (evtRes.ok) {
         const evtData = await evtRes.json();
-        setEvents(evtData.events || evtData || []);
+        if (!activeScenario || isManualSync) {
+          setEvents(evtData.events || evtData || []);
+        }
       }
     } catch (err) {
       console.warn('[Frontend] Server unreachable at localhost:3001, utilizing resilient fallback:', err);
@@ -101,13 +116,13 @@ export default function App() {
   useEffect(() => {
     fetchBackendData();
     const timer = setInterval(() => setCurrentTime(new Date().toUTCString()), 1000);
-    // Polling server state every 5 seconds
-    const pollTimer = setInterval(() => fetchBackendData(), 5000);
+    // Polling server state every 5 seconds (will not overwrite active injected scenario)
+    const pollTimer = setInterval(() => fetchBackendData(false), 5000);
     return () => {
       clearInterval(timer);
       clearInterval(pollTimer);
     };
-  }, []);
+  }, [activeScenario]);
 
   // Run Custom API Test
   const handleRunApiTest = async (ep: string) => {
@@ -150,9 +165,20 @@ export default function App() {
         </div>
 
         {/* System Status Ticker */}
-        <div className="flex items-center gap-4 font-mono text-xs">
+        <div className="flex flex-wrap items-center gap-3 font-mono text-xs">
           <button
-            onClick={fetchBackendData}
+            onClick={() => setEasyMode(!easyMode)}
+            className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold flex items-center gap-1.5 border transition-all ${
+              easyMode
+                ? 'bg-amber-950/90 border-amber-500 text-amber-300 shadow-md shadow-amber-950/50'
+                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span>{easyMode ? '💡 PLAIN ENGLISH MODE (ON)' : '⚡ TACTICAL HUD MODE'}</span>
+          </button>
+
+          <button
+            onClick={() => fetchBackendData(true)}
             disabled={loading}
             className="flex items-center gap-1.5 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-700 text-cyan-300 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
           >
@@ -196,6 +222,11 @@ export default function App() {
                 }`}>
                   THREAT LEVEL: {situation?.threatLevel || 'ORANGE'} (SCORE: {situation?.threatScore || 64.47})
                 </span>
+                {activeScenario && (
+                  <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded border bg-blue-950 border-blue-500 text-blue-300 animate-pulse">
+                    INJECTED SCENARIO ACTIVE
+                  </span>
+                )}
                 <span className="text-xs font-mono text-slate-400">Mean Confidence: {situation?.meanConfidence || 94}%</span>
               </div>
               <h2 className="font-hud font-bold text-xl text-slate-100 mb-1">
@@ -210,15 +241,46 @@ export default function App() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => handleInjectScenario('AIR_COMBAT_INTERCEPT')}
-              className="px-3 py-1.5 bg-rose-950/80 border border-rose-700 hover:bg-rose-900 text-rose-300 font-mono text-xs rounded-lg flex items-center gap-1.5 transition-all shadow-md font-bold"
+              className={`px-3 py-1.5 border font-mono text-xs rounded-lg flex items-center gap-1.5 transition-all shadow-md font-bold ${
+                activeScenario === 'AIR_COMBAT_INTERCEPT' ? 'bg-rose-900 border-rose-400 text-white ring-2 ring-rose-500' : 'bg-rose-950/80 border-rose-700 hover:bg-rose-900 text-rose-300'
+              }`}
             >
               <Zap className="w-3.5 h-3.5 text-rose-400" /> AIR COMBAT DOGFIGHT
             </button>
             <button
               onClick={() => handleInjectScenario('NAVAL_WARFARE_STRIKE')}
-              className="px-3 py-1.5 bg-cyan-950/80 border border-cyan-700 hover:bg-cyan-900 text-cyan-300 font-mono text-xs rounded-lg flex items-center gap-1.5 transition-all shadow-md font-bold"
+              className={`px-3 py-1.5 border font-mono text-xs rounded-lg flex items-center gap-1.5 transition-all shadow-md font-bold ${
+                activeScenario === 'NAVAL_WARFARE_STRIKE' ? 'bg-cyan-900 border-cyan-400 text-white ring-2 ring-cyan-500' : 'bg-cyan-950/80 border-cyan-700 hover:bg-cyan-900 text-cyan-300'
+              }`}
             >
               <Globe className="w-3.5 h-3.5 text-cyan-400" /> NAVAL FLEET STRIKE
+            </button>
+            <button
+              onClick={() => handleInjectScenario('SUBMARINE_ASW_HUNT')}
+              className={`px-3 py-1.5 border font-mono text-xs rounded-lg flex items-center gap-1.5 transition-all shadow-md font-bold ${
+                activeScenario === 'SUBMARINE_ASW_HUNT' ? 'bg-blue-900 border-blue-400 text-white ring-2 ring-blue-500' : 'bg-blue-950/80 border-blue-700 hover:bg-blue-900 text-blue-300'
+              }`}
+            >
+              <span>🌊 SUBMARINE HUNT</span>
+            </button>
+            <button
+              onClick={() => handleInjectScenario('GROUND_ARMY_COMBAT')}
+              className={`px-3 py-1.5 border font-mono text-xs rounded-lg flex items-center gap-1.5 transition-all shadow-md font-bold ${
+                activeScenario === 'GROUND_ARMY_COMBAT' ? 'bg-emerald-900 border-emerald-400 text-white ring-2 ring-emerald-500' : 'bg-emerald-950/80 border-emerald-700 hover:bg-emerald-900 text-emerald-300'
+              }`}
+            >
+              <span>🪖 GROUND COMBAT</span>
+            </button>
+            <button
+              onClick={() => {
+                handleInjectScenario('OSINT_AI_VERIFICATION');
+                setActiveTab('osint');
+              }}
+              className={`px-3 py-1.5 border font-mono text-xs rounded-lg flex items-center gap-1.5 transition-all shadow-md font-bold ${
+                activeScenario === 'OSINT_AI_VERIFICATION' ? 'bg-purple-900 border-purple-400 text-white ring-2 ring-purple-500' : 'bg-purple-950/80 border-purple-700 hover:bg-purple-900 text-purple-300'
+              }`}
+            >
+              <Cpu className="w-3.5 h-3.5 text-purple-400" /> OSINT & AI VERIFIER
             </button>
             <button
               onClick={() => setActiveTab('api_tester')}
@@ -234,6 +296,8 @@ export default function App() {
           <TabBtn id="overview" label="SITUATION OVERVIEW" icon={<Activity className="w-4 h-4" />} active={activeTab} onClick={setActiveTab} />
           <TabBtn id="map" label={`TACTICAL MAP (${events.length})`} icon={<Globe className="w-4 h-4 text-cyan-400" />} active={activeTab} onClick={setActiveTab} />
           <TabBtn id="events" label={`INGESTED EVENTS (${events.length})`} icon={<Layers className="w-4 h-4" />} active={activeTab} onClick={setActiveTab} />
+          <TabBtn id="news" label="VERIFIED NEWS" icon={<Newspaper className="w-4 h-4 text-amber-400" />} active={activeTab} onClick={setActiveTab} />
+          <TabBtn id="osint" label="OSINT & AI VERIFIER" icon={<Cpu className="w-4 h-4 text-purple-400" />} active={activeTab} onClick={setActiveTab} />
           <TabBtn id="timeline" label={`THREAT TIMELINE (${Array.isArray(timeline) ? timeline.length : 0})`} icon={<TrendingUp className="w-4 h-4" />} active={activeTab} onClick={setActiveTab} />
           <TabBtn id="sources" label={`SOURCE HEALTH (${sourceHealth.length})`} icon={<Radio className="w-4 h-4" />} active={activeTab} onClick={setActiveTab} />
           <TabBtn id="api_tester" label="LIVE API TESTER" icon={<Terminal className="w-4 h-4" />} active={activeTab} onClick={setActiveTab} />
@@ -242,6 +306,16 @@ export default function App() {
         {/* TAB 2: TACTICAL GEOSPATIAL MAP */}
         {activeTab === 'map' && (
           <TacticalMap events={events} onSelectEvent={setSelectedEventExplanation} />
+        )}
+
+        {/* TAB: VERIFIED GLOBAL NEWS HUB */}
+        {activeTab === 'news' && (
+          <VerifiedNewsHub isStandaloneTab={true} />
+        )}
+
+        {/* TAB: OSINT & AI MEDIA AUTHENTICITY VERIFIER */}
+        {activeTab === 'osint' && (
+          <OsintAuthenticityVerifier events={events} onSelectEvent={setSelectedEventExplanation} />
         )}
 
         {/* TAB 1: SITUATION OVERVIEW */}
@@ -297,38 +371,63 @@ export default function App() {
                 evt.severity === 'high' ? 'border-l-amber-500' : 'border-l-cyan-500'
               } flex flex-col justify-between`}>
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border uppercase ${
-                      evt.severity === 'critical' ? 'bg-rose-950 border-rose-800 text-rose-400' : 'bg-cyan-950 border-cyan-800 text-cyan-400'
-                    }`}>
-                      {evt.sourceType} • {evt.severity}
-                    </span>
-                    <span className="text-xs font-mono text-slate-400">{evt.id}</span>
-                  </div>
+                  {easyMode ? (() => {
+                    const exp = explainEvent(evt);
+                    return (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border uppercase bg-amber-950/80 border-amber-700 text-amber-300">
+                            {exp.easy.simpleSeverityLabel}
+                          </span>
+                          <span className="text-xs font-mono text-slate-400">{evt.id}</span>
+                        </div>
 
-                  <h3 className="font-hud font-bold text-base text-slate-100 mb-1">{evt.title}</h3>
-                  <p className="text-xs text-slate-300 font-mono mb-3 leading-relaxed">{evt.description}</p>
+                        <h3 className="font-hud font-bold text-base text-slate-100 mb-1">{exp.easy.simpleHeadline}</h3>
+                        <p className="text-xs text-slate-200 font-sans mb-3 leading-relaxed">{exp.easy.simpleDescription}</p>
 
-                  <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+                        <div className="bg-slate-950/80 p-2.5 rounded-lg border border-slate-800 space-y-1.5 text-xs font-mono">
+                          <div className="text-emerald-400 font-bold">{exp.easy.simpleCertainty}</div>
+                          <div className="text-slate-300">{exp.easy.simpleTelemetry}</div>
+                          <div className="text-amber-300 font-bold pt-1 border-t border-slate-900">{exp.easy.simpleActionStep}</div>
+                        </div>
+                      </div>
+                    );
+                  })() : (
                     <div>
-                      <span className="text-slate-500 block text-[10px]">LOCATION</span>
-                      <span className="text-slate-200 font-bold">{evt.location?.lat}, {evt.location?.lng}</span>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border uppercase ${
+                          evt.severity === 'critical' ? 'bg-rose-950 border-rose-800 text-rose-400' : 'bg-cyan-950 border-cyan-800 text-cyan-400'
+                        }`}>
+                          {evt.sourceType} • {evt.severity}
+                        </span>
+                        <span className="text-xs font-mono text-slate-400">{evt.id}</span>
+                      </div>
+
+                      <h3 className="font-hud font-bold text-base text-slate-100 mb-1">{evt.title}</h3>
+                      <p className="text-xs text-slate-300 font-mono mb-3 leading-relaxed">{evt.description}</p>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+                        <div>
+                          <span className="text-slate-500 block text-[10px]">LOCATION</span>
+                          <span className="text-slate-200 font-bold">{evt.location?.lat}, {evt.location?.lng}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[10px]">CONFIDENCE</span>
+                          <span className="text-emerald-400 font-bold">{evt.confidence}%</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[10px]">CORROBORATIONS</span>
+                          <span className="text-cyan-300 font-bold">{evt.corroboratedBy?.length || 0} sources</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[10px]">ANOMALY</span>
+                          <span className={evt.isAnomaly ? 'text-rose-400 font-bold' : 'text-slate-400'}>
+                            {evt.isAnomaly ? 'ANOMALY DETECTED' : 'NORMAL'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-slate-500 block text-[10px]">CONFIDENCE</span>
-                      <span className="text-emerald-400 font-bold">{evt.confidence}%</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block text-[10px]">CORROBORATIONS</span>
-                      <span className="text-cyan-300 font-bold">{evt.corroboratedBy?.length || 0} sources</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block text-[10px]">ANOMALY</span>
-                      <span className={evt.isAnomaly ? 'text-rose-400 font-bold' : 'text-slate-400'}>
-                        {evt.isAnomaly ? 'ANOMALY DETECTED' : 'NORMAL'}
-                      </span>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 <div className="mt-4 pt-2 border-t border-slate-800 flex items-center justify-between text-xs font-mono">
@@ -519,8 +618,33 @@ export default function App() {
 
               {/* MODAL BODY */}
               <div className="flex-1 overflow-y-auto my-4 space-y-4 pr-1">
+                {/* Easy Mode Plain-English Card */}
+                {easyMode && (
+                  <div className="p-4 bg-amber-950/40 rounded-xl border border-amber-500/50 space-y-2 font-sans">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono font-bold text-amber-300 uppercase flex items-center gap-1.5">
+                        <Zap className="w-4 h-4 text-amber-400" /> EASY TO UNDERSTAND SUMMARY (PLAIN ENGLISH)
+                      </span>
+                      <span className="text-[10px] font-mono text-emerald-400 font-bold">
+                        {explanation.easy.simpleCertainty}
+                      </span>
+                    </div>
+
+                    <h4 className="text-base font-bold text-slate-100">{explanation.easy.simpleHeadline}</h4>
+                    <p className="text-xs text-slate-200 leading-relaxed">{explanation.easy.simpleDescription}</p>
+
+                    <div className="pt-2 border-t border-amber-900/60 text-xs font-mono space-y-1">
+                      <div className="text-amber-300 font-bold">{explanation.easy.simpleActionStep}</div>
+                      <div className="text-slate-400 text-[11px]">{explanation.easy.simpleTelemetry}</div>
+                    </div>
+                  </div>
+                )}
+
                 {/* 0. Sensor Reconnaissance Media & Source Citation */}
                 <EventReconMedia event={evt} />
+
+                {/* 0b. Live OSINT News & Intelligence Bulletins */}
+                <LiveNewsFeed event={evt} />
 
                 {/* 1. Executive Overview */}
                 <div className="p-3.5 bg-slate-950/80 rounded-xl border border-slate-800">
