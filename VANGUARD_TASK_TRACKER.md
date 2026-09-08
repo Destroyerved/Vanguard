@@ -96,14 +96,14 @@ Every team member should:
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
 |---|---|---|---|---|---|---|---|---|
-| B-17 | Build generic event ingestion endpoint (accepts any sourceType, maps to UnifiedEvent) | | ⬜ Not Started | 0% | 🔴 Critical | B-06 | | |
-| B-18 | Build radar ingestion (simulated kinematic tracks: velocity, heading, altitude, IFF tag) | | ⬜ Not Started | 0% | 🔴 Critical | B-06 | | High-fidelity simulated, NOT real radar |
-| B-19 | Build weather ingestion — **live Open-Meteo API** (precipitation, wind vector, visibility, temperature; zero API key required) | | ⬜ Not Started | 0% | 🟠 High | B-06 | | PRD §5.1.1: Only live external data source |
-| B-20 | Build personnel ingestion (simulated: unit readiness, status telemetry, vehicle positions) | | ⬜ Not Started | 0% | 🟠 High | B-06 | | Simulated |
-| B-21 | Build operational logs ingestion (simulated: system events, comms logs, perimeter tripwires) | | ⬜ Not Started | 0% | 🟠 High | B-06 | | Simulated |
-| B-22 | Build incident ingestion (simulated: tactical/civil dispatches with severity annotations) | | ⬜ Not Started | 0% | 🔴 Critical | B-06 | | Simulated |
-| B-23 | Implement input validation (strict UnifiedEvent schema enforcement) | | ⬜ Not Started | 0% | 🔴 Critical | B-17 | | |
-| B-24 | Implement event deduplication | | ⬜ Not Started | 0% | 🟠 High | B-17 | | |
+| B-17 | Build generic event ingestion endpoint (accepts any sourceType, maps to UnifiedEvent) | @rudra129r-lgtm | 🟡 In Progress | 50% | 🔴 Critical | B-06 | | Generic POST /api/v1/events schema defined |
+| B-18 | Build radar ingestion (simulated kinematic tracks: velocity, heading, altitude, IFF tag) | @rudra129r-lgtm | 🟡 In Progress | 50% | 🔴 Critical | B-06 | | Kinematic track generator & WS spec defined |
+| B-19 | Build weather ingestion — **live Open-Meteo API** (precipitation, wind vector, visibility, temperature; zero API key required) | @rudra129r-lgtm | 🟡 In Progress | 50% | 🟠 High | B-06 | | Open-Meteo live REST API & cache spec defined |
+| B-20 | Build personnel ingestion (simulated: unit readiness, status telemetry, vehicle positions) | @rudra129r-lgtm | 🟡 In Progress | 50% | 🟠 High | B-06 | | Unit readiness & asset beacon telemetry spec defined |
+| B-21 | Build operational logs ingestion (simulated: system events, comms logs, perimeter tripwires) | @rudra129r-lgtm | 🟡 In Progress | 50% | 🟠 High | B-06 | | Base perimeter & syslog event pattern spec defined |
+| B-22 | Build incident ingestion (simulated: tactical/civil dispatches with severity annotations) | @rudra129r-lgtm | 🟡 In Progress | 50% | 🔴 Critical | B-06 | | SALUTE spot report & dispatch API spec defined |
+| B-23 | Implement input validation (strict UnifiedEvent schema enforcement) | @rudra129r-lgtm | 🟡 In Progress | 50% | 🔴 Critical | B-17 | | Zod / UnifiedEvent schema validation specified |
+| B-24 | Implement event deduplication | @rudra129r-lgtm | 🟡 In Progress | 50% | 🟠 High | B-17 | | Spatiotemporal Haversine & Delta T dedup specified |
 
 ---
 
@@ -352,7 +352,7 @@ Use this section before submission to verify that **every official requirement i
 
 | Official Requirement | Implementation | Task | Owner | Status |
 |---|---|---|---|---|
-| Multi-stream data aggregation | Weather (Open-Meteo live) + Radar (sim) + Personnel (sim) + Logs (sim) + Incidents (sim) | B-17–B-22 | | ⬜ |
+| Multi-stream data aggregation | Weather (Open-Meteo live) + Radar (sim) + Personnel (sim) + Logs (sim) + Incidents (sim) | B-17–B-22 | @rudra129r-lgtm | 🟡 In Progress |
 | Interactive geospatial tactical map | MapLibre GL JS with dark tactical basemap | F-06 | | ⬜ |
 | Assets map layer | Ground, naval, aerial unit markers with directional headings | F-07 | | ⬜ |
 | Alerts map layer | Color-coded by severity (CRITICAL/HIGH/MEDIUM/LOW) | F-08 | | ⬜ |
