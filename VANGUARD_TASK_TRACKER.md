@@ -77,14 +77,14 @@ Every team member should:
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
 |---|---|---|---|---|---|---|---|---|
-| B-06 | Create UnifiedEvent model — fields: id, sourceType, timestamp, location (GeoLocation), severity, title, description, confidence, confidenceBreakdown, corroboratedBy[], isAnomaly, raw | | ⬜ Not Started | 0% | 🔴 Critical | B-02 | | Must match PRD §7.1 UnifiedEvent interface exactly |
-| B-07 | Create Source model with reliability profile (static/dynamic weight 0.0–1.0) | | ⬜ Not Started | 0% | 🟠 High | B-02 | | Per PRD: SourceReliability is per-feed-type static/dynamic weight |
-| B-08 | Create Asset model with GeoLocation (lat, lng, altitudeMeters, headingDegrees, speedKnots) | | ⬜ Not Started | 0% | 🟠 High | B-02 | | Directional headings required for map markers |
-| B-09 | Create Incident model with severity annotations | | ⬜ Not Started | 0% | 🔴 Critical | B-02 | | |
+| B-06 | Create UnifiedEvent model — fields: id, sourceType, timestamp, location (GeoLocation), severity, title, description, confidence, confidenceBreakdown, corroboratedBy[], isAnomaly, raw | @rudra129r-lgtm | 🟢 Done | 100% | 🔴 Critical | B-02 | | Implemented in src/types/schema.ts |
+| B-07 | Create Source model with reliability profile (static/dynamic weight 0.0–1.0) | @rudra129r-lgtm | 🟢 Done | 100% | 🟠 High | B-02 | | Implemented in src/types/schema.ts & fusionEngine.ts |
+| B-08 | Create Asset model with GeoLocation (lat, lng, altitudeMeters, headingDegrees, speedKnots) | @rudra129r-lgtm | 🟢 Done | 100% | 🟠 High | B-02 | | Implemented in src/types/schema.ts |
+| B-09 | Create Incident model with severity annotations | @rudra129r-lgtm | 🟢 Done | 100% | 🔴 Critical | B-02 | | Implemented in src/types/schema.ts & incidentSource.ts |
 | B-10 | Create Alert model with priority level and trigger event reference | | ⬜ Not Started | 0% | 🔴 Critical | B-02 | | Must link to triggering UnifiedEvent ID |
 | B-11 | Create Zone model with GeoJSON geospatial data (sectors, restricted airspace, patrol perimeters, incident geofences) | | ⬜ Not Started | 0% | 🟠 High | B-03 | | |
-| B-12 | Create Weather Observation model (Open-Meteo fields: precipitation, windVector, visibility, temperature) | | ⬜ Not Started | 0% | 🟠 High | B-02 | | Maps to Open-Meteo API response |
-| B-13 | Create Telemetry / Log model (system events, comms logs, perimeter tripwires) | | ⬜ Not Started | 0% | 🟠 High | B-02 | | |
+| B-12 | Create Weather Observation model (Open-Meteo fields: precipitation, windVector, visibility, temperature) | @rudra129r-lgtm | 🟢 Done | 100% | 🟠 High | B-02 | | Implemented in weatherSource.ts & liveApis.ts |
+| B-13 | Create Telemetry / Log model (system events, comms logs, perimeter tripwires) | @rudra129r-lgtm | 🟢 Done | 100% | 🟠 High | B-02 | | Implemented in logSource.ts & fallbackDatasets.ts |
 | B-14 | Create Situation model (current threat level, active alerts count, summary) | | ⬜ Not Started | 0% | 🔴 Critical | B-02 | | |
 | B-15 | Create AI Briefing model (AISummary): generatedAt, threatLevel, headline, executiveSummary, keyDevelopments[{point, supportingEventIds[]}], prioritizedActions[{action, urgency, supportingEventIds[]}], coursesOfAction[] | | ⬜ Not Started | 0% | 🟠 High | B-02 | | Must match PRD §7.1 AISummary interface |
 | B-15b | Create CourseOfAction model: id, title, description, pros[], tradeoffs[], recommendedUrgency (1–5) | | ⬜ Not Started | 0% | 🟠 High | B-02 | | PRD §5.6: 2–3 distinct COAs with tradeoff analysis |
@@ -96,14 +96,14 @@ Every team member should:
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
 |---|---|---|---|---|---|---|---|---|
-| B-17 | Build generic event ingestion endpoint (accepts any sourceType, maps to UnifiedEvent) | @rudra129r-lgtm | 🟡 In Progress | 50% | 🔴 Critical | B-06 | | Generic POST /api/v1/events schema defined |
-| B-18 | Build radar ingestion (simulated kinematic tracks: velocity, heading, altitude, IFF tag) | @rudra129r-lgtm | 🟡 In Progress | 50% | 🔴 Critical | B-06 | | Kinematic track generator & WS spec defined |
-| B-19 | Build weather ingestion — **live Open-Meteo API** (precipitation, wind vector, visibility, temperature; zero API key required) | @rudra129r-lgtm | 🟡 In Progress | 50% | 🟠 High | B-06 | | Open-Meteo live REST API & cache spec defined |
-| B-20 | Build personnel ingestion (simulated: unit readiness, status telemetry, vehicle positions) | @rudra129r-lgtm | 🟡 In Progress | 50% | 🟠 High | B-06 | | Unit readiness & asset beacon telemetry spec defined |
-| B-21 | Build operational logs ingestion (simulated: system events, comms logs, perimeter tripwires) | @rudra129r-lgtm | 🟡 In Progress | 50% | 🟠 High | B-06 | | Base perimeter & syslog event pattern spec defined |
-| B-22 | Build incident ingestion (simulated: tactical/civil dispatches with severity annotations) | @rudra129r-lgtm | 🟡 In Progress | 50% | 🔴 Critical | B-06 | | SALUTE spot report & dispatch API spec defined |
-| B-23 | Implement input validation (strict UnifiedEvent schema enforcement) | @rudra129r-lgtm | 🟡 In Progress | 50% | 🔴 Critical | B-17 | | Zod / UnifiedEvent schema validation specified |
-| B-24 | Implement event deduplication | @rudra129r-lgtm | 🟡 In Progress | 50% | 🟠 High | B-17 | | Spatiotemporal Haversine & Delta T dedup specified |
+| B-17 | Build generic event ingestion endpoint (accepts any sourceType, maps to UnifiedEvent) | @rudra129r-lgtm | 🟢 Done | 100% | 🔴 Critical | B-06 | | Implemented in src/data/dataAdapter.ts |
+| B-18 | Build radar ingestion (OpenSky ADS-B live flight tracks & kinematic radar generator) | @rudra129r-lgtm | 🟢 Done | 100% | 🔴 Critical | B-06 | | Implemented in liveApis.ts & radarSource.ts |
+| B-19 | Build weather ingestion — **live Open-Meteo API** (precipitation, wind vector, visibility, temperature) | @rudra129r-lgtm | 🟢 Done | 100% | 🟠 High | B-06 | | Implemented in liveApis.ts & weatherSource.ts |
+| B-20 | Build personnel ingestion (unit readiness, status telemetry, vehicle positions) | @rudra129r-lgtm | 🟢 Done | 100% | 🟠 High | B-06 | | Implemented in personnelSource.ts |
+| B-21 | Build operational logs ingestion (CEF syslog, optical tripwires & CISA cyber threat feed) | @rudra129r-lgtm | 🟢 Done | 100% | 🟠 High | B-06 | | Implemented in logSource.ts & liveApis.ts |
+| B-22 | Build incident ingestion (SALUTE spot reports, USGS seismic & GDACS disaster alerts) | @rudra129r-lgtm | 🟢 Done | 100% | 🔴 Critical | B-06 | | Implemented in incidentSource.ts & liveApis.ts |
+| B-23 | Implement input validation (strict UnifiedEvent schema enforcement) | @rudra129r-lgtm | 🟢 Done | 100% | 🔴 Critical | B-17 | | Implemented in src/types/schema.ts |
+| B-24 | Implement event deduplication & resilient dataset fallback suite | @rudra129r-lgtm | 🟢 Done | 100% | 🟠 High | B-17 | | Implemented in fallbackDatasets.ts & fusionEngine.ts |
 
 ---
 
@@ -352,7 +352,7 @@ Use this section before submission to verify that **every official requirement i
 
 | Official Requirement | Implementation | Task | Owner | Status |
 |---|---|---|---|---|
-| Multi-stream data aggregation | Weather (Open-Meteo live) + Radar (sim) + Personnel (sim) + Logs (sim) + Incidents (sim) | B-17–B-22 | @rudra129r-lgtm | 🟡 In Progress |
+| Multi-stream data aggregation | Weather (Open-Meteo live) + Radar (OpenSky ADS-B) + Personnel (sim) + Logs (CEF/CISA) + Incidents (SALUTE/USGS/GDACS) | B-17–B-22 | @rudra129r-lgtm | 🟢 Done |
 | Interactive geospatial tactical map | MapLibre GL JS with dark tactical basemap | F-06 | | ⬜ |
 | Assets map layer | Ground, naval, aerial unit markers with directional headings | F-07 | | ⬜ |
 | Alerts map layer | Color-coded by severity (CRITICAL/HIGH/MEDIUM/LOW) | F-08 | | ⬜ |
