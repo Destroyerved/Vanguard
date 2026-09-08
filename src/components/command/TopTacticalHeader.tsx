@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import {
   ShieldAlert,
   Radio,
@@ -13,7 +14,11 @@ import {
   Newspaper,
   ShieldCheck,
   Server,
-  Play
+  Play,
+  User,
+  LogOut,
+  ChevronDown,
+  Key
 } from 'lucide-react';
 import { DemoScenarioMode } from '../../data/scenarioEngine';
 
@@ -42,6 +47,7 @@ interface TopTacticalHeaderProps {
   onTabChange?: (tab: NavSection) => void;
   eventCount?: number;
   anomalyCount?: number;
+  onOpenAuthModal?: () => void;
 }
 
 export default function TopTacticalHeader({
@@ -57,8 +63,12 @@ export default function TopTacticalHeader({
   activeTab = 'overview',
   onTabChange,
   eventCount = 0,
-  anomalyCount = 0
+  anomalyCount = 0,
+  onOpenAuthModal
 }: TopTacticalHeaderProps) {
+  const { operatorProfile, logout } = useAuth();
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+
   const threatLevel = situation?.threatLevel || 'green';
   const threatScore = situation?.threatScore ?? 0;
 
@@ -68,65 +78,50 @@ export default function TopTacticalHeader({
       : threatLevel === 'orange'
       ? { badge: 'bg-orange-950/80 border-orange-500/60 text-orange-300', glow: '', label: 'UNSTABLE' }
       : threatLevel === 'yellow'
-      ? { badge: 'bg-yellow-950/80 border-yellow-500/60 text-yellow-300', glow: '', label: 'GUARDED' }
-      : { badge: 'bg-emerald-950/80 border-emerald-500/60 text-emerald-300', glow: '', label: 'ROUTINE' };
+      ? { badge: 'bg-yellow-950/80 border-yellow-500/60 text-yellow-300', glow: '', label: 'MODERATE' }
+      : { badge: 'bg-emerald-950/80 border-emerald-500/60 text-emerald-300', glow: '', label: 'NOMINAL' };
 
-  const navTabs: Array<{
-    id: NavSection;
-    label: string;
-    icon: React.ComponentType<{ className?: string }>;
-    count?: number | string;
-    tag?: string;
-  }> = [
+  const navTabs: Array<{ id: NavSection; label: string; icon: any; count?: number; tag?: string }> = [
     { id: 'overview', label: 'Overview', icon: Activity },
-    { id: 'news', label: 'Verified News', icon: Newspaper, tag: 'LIVE' },
-    { id: 'recon', label: 'Satellite Recon', icon: Globe },
     { id: 'events', label: 'Signal Stream', icon: Radio, count: eventCount },
-    { id: 'osint', label: 'OSINT Verifier', icon: ShieldCheck, count: anomalyCount ? `${anomalyCount} Anom` : undefined },
+    { id: 'news', label: 'Verified News', icon: Newspaper, tag: 'LIVE' },
+    { id: 'recon', label: 'Satellite Recon', icon: Globe, tag: 'ESRI' },
+    { id: 'osint', label: 'OSINT Veracity', icon: ShieldCheck, count: anomalyCount },
     { id: 'timeline', label: 'Timeline', icon: Clock },
-    { id: 'sources', label: 'Sources', icon: Server },
-    { id: 'simulation', label: 'Scenarios', icon: Play },
+    { id: 'sources', label: 'Topology', icon: Server },
+    { id: 'simulation', label: 'Scenario Injector', icon: Play },
     { id: 'api_tester', label: 'API Console', icon: Terminal },
   ];
 
   return (
-    <header className="relative z-30 flex flex-col bg-[#070b10]/95 border-b border-white/10 backdrop-blur-md select-none font-mono">
-      {/* TOP ROW: BRAND, STATUS, CONTROLS */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2">
-        {/* 1. BRAND & CORE STATUS */}
+    <header className="sticky top-0 z-40 bg-[#070b10]/95 backdrop-blur-md border-b border-white/10 select-none font-mono">
+      {/* PRIMARY HEADER ROW */}
+      <div className="px-4 py-2.5 flex items-center justify-between gap-3">
+        {/* 1. LEFT: SYSTEM IDENTITY & BACKEND STATUS */}
         <div className="flex items-center gap-3">
-          <div className="relative flex items-center justify-center w-8 h-8 rounded bg-cyan-950/80 border border-cyan-500/50 text-cyan-400 font-heading font-bold text-base tracking-widest shadow-hud-glow">
-            V
-            <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-          </div>
           <div className="flex items-center gap-2">
-            <span className="font-heading text-base font-bold tracking-widest text-slate-100 flex items-center gap-1.5">
-              VANGUARD
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/40">
-                C2
-              </span>
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+            <span className="font-heading font-bold text-sm tracking-widest text-slate-100 uppercase">
+              VANGUARD <span className="text-cyan-400 text-xs">C2</span>
             </span>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#05070a] border border-white/10 text-[10px]">
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                  serverOnline ? 'bg-emerald-400 shadow-hud-glow animate-pulse' : 'bg-amber-400'
-                }`}
-              />
-              <span className="text-slate-400 font-semibold uppercase">
-                {serverOnline ? 'ONLINE' : 'FALLBACK'}
-              </span>
-            </div>
+          </div>
+
+          <div className="hidden sm:flex items-center gap-2 px-2 py-0.5 rounded bg-[#05070a] border border-white/10 text-[10px]">
+            <span className={`w-1.5 h-1.5 rounded-full ${serverOnline ? 'bg-emerald-400' : 'bg-rose-500'}`} />
+            <span className="text-slate-400">CORE:</span>
+            <span className={`font-bold ${serverOnline ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {serverOnline ? 'ONLINE' : 'FALLBACK'}
+            </span>
           </div>
 
           {activeScenario && (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-950/80 border border-amber-500/60 text-amber-300 text-xs animate-pulse">
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-              <span>SIMULATION: {activeScenario.toUpperCase()}</span>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-950/80 border border-amber-500/50 text-[10px] text-amber-300 font-bold animate-pulse">
+              <span>SCENARIO ACTIVE</span>
             </div>
           )}
         </div>
 
-        {/* 2. CENTER: QUICK COMMAND TRIGGER */}
+        {/* 2. CENTER: GLOBAL SEARCH PALETTE BUTTON */}
         <button
           onClick={onOpenCommandPalette}
           className="hidden md:flex items-center gap-2.5 px-3 py-1.5 rounded bg-[#05070a] border border-white/10 hover:border-cyan-500/40 text-slate-400 hover:text-slate-200 transition-all text-xs w-64 justify-between group shadow-tactical"
@@ -140,14 +135,77 @@ export default function TopTacticalHeader({
           </kbd>
         </button>
 
-        {/* 3. RIGHT: THREAT POSTURE, MODE TOGGLE & TIME */}
-        <div className="flex items-center gap-2.5">
+        {/* 3. RIGHT: OPERATOR CLEARANCE BADGE, THREAT POSTURE & TIME */}
+        <div className="flex items-center gap-2">
+          {/* OPERATOR CLEARANCE PROFILE BADGE */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                if (onOpenAuthModal) onOpenAuthModal();
+                else setProfileDropdownOpen(!profileDropdownOpen);
+              }}
+              className="flex items-center gap-2 px-2.5 py-1 rounded bg-[#05070a] border border-cyan-500/40 hover:border-cyan-500/70 text-slate-200 text-xs font-semibold transition-all shadow-sm group"
+            >
+              <div className="w-5 h-5 rounded-full bg-cyan-950 border border-cyan-500/60 flex items-center justify-center text-[10px] font-bold text-cyan-300 uppercase">
+                {operatorProfile?.displayName ? operatorProfile.displayName.charAt(0) : 'OP'}
+              </div>
+              <div className="hidden lg:flex flex-col text-left leading-none">
+                <span className="text-[11px] font-bold text-cyan-300 group-hover:text-cyan-100 truncate max-w-[110px]">
+                  {operatorProfile?.displayName || 'Guest Operator'}
+                </span>
+                <span className="text-[9px] text-slate-400 font-mono">
+                  [{operatorProfile?.clearanceLevel || 'TS-SCI'}]
+                </span>
+              </div>
+              <ChevronDown className="w-3 h-3 text-slate-400" />
+            </button>
+
+            {/* OPERATOR DROPDOWN MENU */}
+            {profileDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-[#070b10] border border-cyan-500/50 rounded-xl shadow-2xl p-2 z-50 space-y-2 font-mono text-xs animate-in fade-in duration-100">
+                <div className="p-2 rounded bg-cyan-950/40 border border-cyan-500/30 space-y-1">
+                  <div className="text-[10px] text-cyan-400 font-bold uppercase">
+                    {operatorProfile?.isGuest ? 'GUEST OPERATOR' : 'AUTHENTICATED OPERATOR'}
+                  </div>
+                  <div className="font-bold text-slate-100 text-xs truncate">
+                    {operatorProfile?.displayName}
+                  </div>
+                  <div className="text-[10px] text-slate-400 truncate">
+                    {operatorProfile?.email}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setProfileDropdownOpen(false);
+                    if (onOpenAuthModal) onOpenAuthModal();
+                  }}
+                  className="w-full text-left p-2 rounded hover:bg-white/10 text-slate-300 flex items-center gap-2 text-xs transition-colors"
+                >
+                  <Key className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Switch Operator Account</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setProfileDropdownOpen(false);
+                    logout();
+                  }}
+                  className="w-full text-left p-2 rounded hover:bg-rose-950/60 text-rose-300 flex items-center gap-2 text-xs transition-colors border-t border-white/10"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Sign Out Operator</span>
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* THREAT POSTURE */}
           <div
             className={`flex items-center gap-2 px-2.5 py-1 rounded border text-xs font-semibold ${threatColor.badge} ${threatColor.glow}`}
           >
             <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
-            <span className="tracking-wider">{threatColor.label}</span>
+            <span className="tracking-wider hidden sm:inline">{threatColor.label}</span>
             <span className="text-[10px] opacity-80">({threatScore})</span>
           </div>
 
@@ -162,7 +220,7 @@ export default function TopTacticalHeader({
             title="Toggle COP View Mode"
           >
             <Sliders className="w-3 h-3" />
-            <span className="text-[11px]">{easyMode ? 'EASY COP' : 'EXPERT'}</span>
+            <span className="text-[11px] hidden sm:inline">{easyMode ? 'EASY COP' : 'EXPERT'}</span>
           </button>
 
           {/* SYNC / REFRESH */}

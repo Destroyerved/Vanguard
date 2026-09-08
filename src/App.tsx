@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { UnifiedEvent } from './types/schema';
 import { getScenarioDataset, DemoScenarioMode } from './data/scenarioEngine';
+import { AuthProvider } from './context/AuthContext';
+import OperatorAuthModal from './components/auth/OperatorAuthModal';
 
 // Components
 import TopTacticalHeader, { NavSection } from './components/command/TopTacticalHeader';
@@ -18,7 +20,7 @@ import EventReconMedia from './components/EventReconMedia';
 
 const BACKEND_URL = 'http://localhost:3001/api/v1';
 
-export default function App() {
+function AppContent() {
   const [activeTab, setActiveTab] = useState<NavSection>('overview');
   const [loading, setLoading] = useState(true);
   const [serverOnline, setServerOnline] = useState(false);
@@ -35,6 +37,7 @@ export default function App() {
   const [activeScenario, setActiveScenario] = useState<DemoScenarioMode | null>(null);
   const [isDegradedComms, setIsDegradedComms] = useState<boolean>(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Fetch live backend data from REST server
   const fetchBackendData = async (isManualSync = false) => {
@@ -194,6 +197,7 @@ export default function App() {
         onTabChange={(tab) => setActiveTab(tab)}
         eventCount={events.length}
         anomalyCount={anomalyCount}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
       />
 
       {/* 2. PRIMARY FULL-WIDTH OPERATIONAL WORKSPACE */}
@@ -324,6 +328,20 @@ export default function App() {
           setCommandPaletteOpen(false);
         }}
       />
+
+      {/* 5. OPERATOR AUTH MODAL */}
+      <OperatorAuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
