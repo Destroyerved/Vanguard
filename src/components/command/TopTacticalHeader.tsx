@@ -175,7 +175,7 @@ export default function TopTacticalHeader({
               <div className="absolute right-0 mt-2 w-56 bg-[#070b10] border border-cyan-500/50 rounded-xl shadow-2xl p-2 z-50 space-y-2 font-mono text-xs animate-in fade-in duration-100">
                 <div className="p-2 rounded bg-cyan-950/40 border border-cyan-500/30 space-y-1">
                   <div className="text-[10px] text-cyan-400 font-bold uppercase">
-                    {operatorProfile.isGuest ? 'GUEST OPERATOR' : 'AUTHENTICATED OPERATOR'}
+                    AUTHENTICATED OPERATOR
                   </div>
                   <div className="font-bold text-slate-100 text-xs truncate">
                     {operatorProfile.displayName}
