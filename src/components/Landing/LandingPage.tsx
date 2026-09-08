@@ -20,12 +20,17 @@ import {
   Volume2
 } from 'lucide-react';
 import { soundFx } from '../../services/soundFx';
+import { RafaleTopRightNuke } from '../Rafale/RafaleTopRightNuke';
+import { PhosphorRadar } from '../Radar/PhosphorRadar';
+import { useEventStore } from '../../store/useEventStore';
 
 interface LandingPageProps {
   onEnterCommandRoom: () => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onEnterCommandRoom }) => {
+  const executeDetonation = useEventStore((s) => s.executeDetonation);
+
   const handleLaunch = () => {
     soundFx.playTargetLock();
     onEnterCommandRoom();
@@ -59,7 +64,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterCommandRoom }) 
         <nav className="hidden md:flex items-center space-x-6 text-xs text-slate-400">
           <a href="#architecture" className="hover:text-cyan-300 transition">Architecture</a>
           <a href="#capabilities" className="hover:text-cyan-300 transition">Core Capabilities</a>
-          <a href="#radar-rafale" className="hover:text-cyan-300 transition">Radar &amp; Rafale HUD</a>
+          <a href="#live-preview" className="hover:text-cyan-300 transition">Radar &amp; Rafale C2</a>
           <a href="#explainability" className="hover:text-cyan-300 transition">Confidence Math</a>
         </nav>
 
@@ -79,69 +84,87 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterCommandRoom }) 
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative z-20 pt-16 pb-20 px-6 max-w-7xl mx-auto flex flex-col items-center text-center">
-        {/* Top Tagline Pill */}
-        <div className="inline-flex items-center space-x-2 px-3 py-1 bg-cyan-950/70 border border-cyan-400/40 rounded-full text-xs text-cyan-300 mb-6 shadow-[0_0_15px_rgba(0,240,255,0.2)]">
-          <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-          <span className="font-bold tracking-wider uppercase">Problem ID: D-05 | HackHertz 2026</span>
-          <span>•</span>
-          <span className="text-emerald-400 font-bold">Approved for Build</span>
+      {/* Hero Section with Top Right Rafale and Left Bottom Radar integration */}
+      <section className="relative z-20 pt-10 pb-16 px-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center mb-12">
+          {/* Main Hero Content (Left 7 cols) */}
+          <div className="lg:col-span-7 text-left space-y-5">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 bg-cyan-950/70 border border-cyan-400/40 rounded-full text-xs text-cyan-300 shadow-[0_0_15px_rgba(0,240,255,0.2)]">
+              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="font-bold tracking-wider uppercase">Problem ID: D-05 | HackHertz 2026</span>
+              <span>•</span>
+              <span className="text-emerald-400 font-bold">Approved for Build</span>
+            </div>
+
+            <h1 className="font-display font-black text-3xl sm:text-5xl md:text-6xl text-white tracking-tight leading-tight">
+              ONE PICTURE.<br />
+              <span className="text-cyan-400 drop-shadow-[0_0_25px_rgba(0,240,255,0.8)]">EVERY SOURCE.</span><br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-200 via-cyan-200 to-amber-300">
+                ZERO DELAY.
+              </span>
+            </h1>
+
+            <p className="text-sm sm:text-base text-slate-300 font-sans leading-relaxed">
+              Vanguard is an AI-synthesized <b>Common Operating Picture (COP) &amp; Tactical Command Platform</b> fusing surveillance radar, live Open-Meteo atmospheric telemetry, personnel readiness monitors, tripwire logs, and tactical incident dispatches.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <button
+                onClick={handleLaunch}
+                className="px-6 py-3 bg-cyan-400 hover:bg-cyan-300 text-black font-black text-xs uppercase tracking-widest rounded shadow-[0_0_30px_rgba(0,240,255,0.7)] flex items-center space-x-2 transition transform hover:-translate-y-0.5"
+              >
+                <Activity className="w-4 h-4" />
+                <span>LAUNCH TACTICAL COMMAND ROOM (COP)</span>
+              </button>
+
+              <a
+                href="#architecture"
+                className="px-5 py-3 bg-[#091522] hover:bg-[#0e1f33] border border-cyan-500/40 text-cyan-300 font-bold text-xs uppercase tracking-wider rounded transition flex items-center space-x-2"
+              >
+                <Terminal className="w-4 h-4 text-cyan-400" />
+                <span>TOPOLOGY SPEC</span>
+              </a>
+            </div>
+          </div>
+
+          {/* TOP RIGHT: Rafale F4 Nuking the UI Widget (Right 5 cols) */}
+          <div className="lg:col-span-5 flex flex-col h-[340px] shadow-[0_0_40px_rgba(255,42,75,0.3)]">
+            <RafaleTopRightNuke onNukeTriggered={executeDetonation} />
+          </div>
         </div>
 
-        {/* Main Headline */}
-        <h1 className="font-display font-black text-4xl sm:text-6xl md:text-7xl text-white tracking-tight leading-none mb-6">
-          ONE PICTURE. <span className="text-cyan-400 drop-shadow-[0_0_25px_rgba(0,240,255,0.8)]">EVERY SOURCE.</span><br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-200 via-cyan-200 to-amber-300">
-            ZERO DELAY.
-          </span>
-        </h1>
-
-        {/* Subtitle */}
-        <p className="max-w-3xl text-sm sm:text-base text-slate-300 font-sans leading-relaxed mb-10">
-          Vanguard is an AI-synthesized <b>Common Operating Picture (COP) &amp; Tactical Decision-Support Command Platform</b> for defense and emergency watchstanders. It continuously correlates 5 heterogeneous data streams—surveillance radar, live weather, personnel readiness, tripwire logs, and tactical dispatches—into an explainable, actionable tactical picture in real time.
-        </p>
-
-        {/* Action Buttons */}
-        <div className="flex flex-wrap items-center justify-center gap-4 mb-16">
-          <button
-            onClick={handleLaunch}
-            className="px-6 py-3.5 bg-cyan-400 hover:bg-cyan-300 text-black font-black text-sm uppercase tracking-widest rounded shadow-[0_0_30px_rgba(0,240,255,0.7)] flex items-center space-x-2 transition transform hover:-translate-y-0.5"
-          >
-            <Activity className="w-4 h-4" />
-            <span>LAUNCH TACTICAL COMMAND CENTER (COP)</span>
-          </button>
-
-          <a
-            href="#architecture"
-            className="px-6 py-3.5 bg-[#091522] hover:bg-[#0e1f33] border border-cyan-500/40 text-cyan-300 font-bold text-sm uppercase tracking-wider rounded transition flex items-center space-x-2"
-          >
-            <Terminal className="w-4 h-4 text-cyan-400" />
-            <span>EXPLORE SYSTEM ARCHITECTURE</span>
-          </a>
-        </div>
-
-        {/* Live Metrics Ribbon */}
-        <div className="w-full max-w-5xl grid grid-cols-2 md:grid-cols-4 gap-3 text-left">
-          <div className="bg-[#070e17]/80 border border-cyan-500/30 rounded p-3.5 tactical-box">
-            <div className="text-[10px] text-slate-500 uppercase">Multi-INT Ingestion</div>
-            <div className="text-xl font-bold text-cyan-300">5 LIVE STREAMS</div>
-            <div className="text-[10px] text-slate-400 mt-1">Radar, Weather, Personnel, Logs, Dispatches</div>
+        {/* Live Metrics Ribbon & Left-Bottom Radar Preview */}
+        <div id="live-preview" className="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-6">
+          {/* LEFT BOTTOM: Live Phosphor Radar Screen (Col span 5) */}
+          <div className="lg:col-span-5 h-[320px] flex flex-col shadow-[0_0_30px_rgba(0,240,255,0.2)]">
+            <PhosphorRadar />
           </div>
-          <div className="bg-[#070e17]/80 border border-cyan-500/30 rounded p-3.5 tactical-box">
-            <div className="text-[10px] text-slate-500 uppercase">AI Synthesis Time</div>
-            <div className="text-xl font-bold text-emerald-400">&lt; 10 SECONDS</div>
-            <div className="text-[10px] text-slate-400 mt-1">Grounded Gemini 2.0 SITREP generation</div>
-          </div>
-          <div className="bg-[#070e17]/80 border border-cyan-500/30 rounded p-3.5 tactical-box">
-            <div className="text-[10px] text-slate-500 uppercase">Claim Grounding</div>
-            <div className="text-xl font-bold text-cyan-300">100% CITED</div>
-            <div className="text-[10px] text-slate-400 mt-1">Every summary point cites supporting Event IDs</div>
-          </div>
-          <div className="bg-[#070e17]/80 border border-red-500/30 rounded p-3.5 tactical-box tactical-box-red">
-            <div className="text-[10px] text-slate-500 uppercase">Strategic Deterrence</div>
-            <div className="text-xl font-bold text-red-400">ASMP-A 300 kT</div>
-            <div className="text-[10px] text-slate-400 mt-1">Rafale F4 hypersonic stand-off strike C2</div>
+
+          {/* RIGHT 7 COLS: Mission Metrics Grid */}
+          <div className="lg:col-span-7 grid grid-cols-2 gap-3 h-full content-between">
+            <div className="bg-[#070e17]/80 border border-cyan-500/30 rounded p-4 tactical-box">
+              <div className="text-[10px] text-slate-500 uppercase">Multi-INT Ingestion</div>
+              <div className="text-xl font-bold text-cyan-300">5 LIVE STREAMS</div>
+              <div className="text-[10px] text-slate-400 mt-1">Radar kinematics, Open-Meteo weather, SAM status, tripwires, dispatches</div>
+            </div>
+
+            <div className="bg-[#070e17]/80 border border-cyan-500/30 rounded p-4 tactical-box">
+              <div className="text-[10px] text-slate-500 uppercase">AI Situation Synthesis</div>
+              <div className="text-xl font-bold text-emerald-400">&lt; 10 SECONDS</div>
+              <div className="text-[10px] text-slate-400 mt-1">Grounded executive brief with zero hallucination</div>
+            </div>
+
+            <div className="bg-[#070e17]/80 border border-cyan-500/30 rounded p-4 tactical-box">
+              <div className="text-[10px] text-slate-500 uppercase">Grounding Citations</div>
+              <div className="text-xl font-bold text-cyan-300">100% CITED</div>
+              <div className="text-[10px] text-slate-400 mt-1">Every summary claim links directly to immutable event IDs</div>
+            </div>
+
+            <div className="bg-[#070e17]/80 border border-red-500/40 rounded p-4 tactical-box tactical-box-red">
+              <div className="text-[10px] text-slate-500 uppercase">Strategic Air Dominance</div>
+              <div className="text-xl font-bold text-red-400">RAFALE ASMP-A</div>
+              <div className="text-[10px] text-slate-400 mt-1">300 kT hypersonic stand-off nuclear strike C2</div>
+            </div>
           </div>
         </div>
       </section>
@@ -227,25 +250,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterCommandRoom }) 
             </div>
           </div>
 
-          {/* Dual Right-Side Tactical Widgets */}
+          {/* Dual Tactical Widgets Specification */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-[#06141a] border border-cyan-500/60 rounded p-3">
+              <div className="text-cyan-400 font-bold text-xs mb-1 flex items-center space-x-1.5">
+                <Crosshair className="w-4 h-4 text-cyan-400" />
+                <span>LEFT BOTTOM: 3D PHOSPHOR RADAR DISPLAY</span>
+              </div>
+              <div className="text-[11px] text-slate-300">
+                60 FPS rotating cathode-ray beam, phosphor persistence blip trails, 25-150nm range rings, target lock-on telemetry, and audio pings.
+              </div>
+            </div>
+
             <div className="bg-[#12080a] border border-red-500/60 rounded p-3">
               <div className="text-red-400 font-bold text-xs mb-1 flex items-center space-x-1.5">
                 <Flame className="w-4 h-4 text-red-400" />
                 <span>TOP RIGHT: RAFALE F4 HUD &amp; NUCLEAR STRIKE C2</span>
               </div>
               <div className="text-[11px] text-slate-300">
-                Mach 1.84, FL452, 4.8G pitch ladder telemetry, Two-Man PAL authentication, ASMP-A 300 kT hypersonic cruise, blast overpressure &amp; BDA.
-              </div>
-            </div>
-
-            <div className="bg-[#06141a] border border-cyan-500/60 rounded p-3">
-              <div className="text-cyan-400 font-bold text-xs mb-1 flex items-center space-x-1.5">
-                <Crosshair className="w-4 h-4 text-cyan-400" />
-                <span>BOTTOM RIGHT: 3D PHOSPHOR RADAR DISPLAY</span>
-              </div>
-              <div className="text-[11px] text-slate-300">
-                60 FPS rotating cathode-ray beam, phosphor persistence blip trails, 25-150nm range rings, target lock-on telemetry, and audio pings.
+                Mach 2.05, FL500, 5.8G pitch ladder telemetry, Two-Man PAL authentication, ASMP-A 300 kT hypersonic cruise, blast overpressure &amp; BDA.
               </div>
             </div>
           </div>
@@ -264,7 +287,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterCommandRoom }) 
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1 */}
           <div className="bg-[#070e17]/80 border border-cyan-500/30 rounded-lg p-5 tactical-box">
             <div className="w-10 h-10 rounded bg-cyan-950/80 border border-cyan-400 flex items-center justify-center text-cyan-400 mb-4">
               <Radio className="w-5 h-5" />
@@ -275,7 +297,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterCommandRoom }) 
             </p>
           </div>
 
-          {/* Card 2 */}
           <div className="bg-[#070e17]/80 border border-cyan-500/30 rounded-lg p-5 tactical-box">
             <div className="w-10 h-10 rounded bg-cyan-950/80 border border-cyan-400 flex items-center justify-center text-cyan-400 mb-4">
               <Sparkles className="w-5 h-5" />
@@ -286,7 +307,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterCommandRoom }) 
             </p>
           </div>
 
-          {/* Card 3 */}
           <div className="bg-[#070e17]/80 border border-cyan-500/30 rounded-lg p-5 tactical-box">
             <div className="w-10 h-10 rounded bg-cyan-950/80 border border-cyan-400 flex items-center justify-center text-cyan-400 mb-4">
               <Volume2 className="w-5 h-5" />
@@ -297,7 +317,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterCommandRoom }) 
             </p>
           </div>
 
-          {/* Card 4 */}
           <div className="bg-[#070e17]/80 border border-cyan-500/30 rounded-lg p-5 tactical-box">
             <div className="w-10 h-10 rounded bg-cyan-950/80 border border-cyan-400 flex items-center justify-center text-cyan-400 mb-4">
               <Flame className="w-5 h-5 text-red-400" />
@@ -308,7 +327,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterCommandRoom }) 
             </p>
           </div>
 
-          {/* Card 5 */}
           <div className="bg-[#070e17]/80 border border-cyan-500/30 rounded-lg p-5 tactical-box">
             <div className="w-10 h-10 rounded bg-cyan-950/80 border border-cyan-400 flex items-center justify-center text-cyan-400 mb-4">
               <Crosshair className="w-5 h-5" />
@@ -319,7 +337,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterCommandRoom }) 
             </p>
           </div>
 
-          {/* Card 6 */}
           <div className="bg-[#070e17]/80 border border-cyan-500/30 rounded-lg p-5 tactical-box">
             <div className="w-10 h-10 rounded bg-cyan-950/80 border border-cyan-400 flex items-center justify-center text-cyan-400 mb-4">
               <FileDown className="w-5 h-5 text-emerald-400" />
@@ -344,7 +361,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterCommandRoom }) 
           </h2>
 
           <p className="text-sm text-slate-300 font-sans max-w-xl mx-auto">
-            Step directly into the Sector-7 Northern Frontier Command Center with live multi-source data fusion, 3D radar, and Rafale air superiority telemetry.
+            Step directly into the Sector-7 Northern Frontier Command Center with live multi-source data fusion, left-bottom radar, and top-right Rafale nuclear strike C2.
           </p>
 
           <div>
