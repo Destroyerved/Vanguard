@@ -41,9 +41,9 @@ VANGUARD replaces non-deterministic LLM estimations with mathematically rigorous
 ## 2. Spatio-Temporal Correlation Precision & Error Bounds
 
 ### A. Geodetic Distance Calculation
-Standard flat-earth Euclidean approximations introduce unacceptable distortions ($\approx 5\text{–}10\%$) over large Areas of Operation (AO). VANGUARD implements the **Great-Circle Haversine Formula**:
+Standard flat-earth Euclidean approximations introduce unacceptable distortions (5% to 10%) over large Areas of Operation (AO). VANGUARD implements the **Great-Circle Haversine Formula**:
 
-$$d = 2R \arcsin\sqrt{\sin^2\!\left(\frac{\Delta\varphi}{2}\right) + \cos\varphi_1 \cos\varphi_2 \sin^2\!\left(\frac{\Delta\lambda}{2}\right)}$$
+$$d = 2R \arcsin\left(\sqrt{\sin^2\left(\frac{\Delta\varphi}{2}\right) + \cos(\varphi_1) \cos(\varphi_2) \sin^2\left(\frac{\Delta\lambda}{2}\right)}\right)$$
 
 * **Spherical Error Bound:** $< 0.01\%$ across the entire 90 km tactical AO.
 * **Spatial Horizon ($\Delta R$):** $5,000\text{ m}$ ($5.0\text{ km}$).
@@ -60,7 +60,7 @@ To ensure zero latency spikes during heavy sensor floods, VANGUARD optimizes the
 
 Confidence is not an arbitrary rating; it is computed with transparent, decomposable arithmetic:
 
-$$\text{Confidence} = \min\!\left(100,\ \operatorname{round}\!\left(R_s \times D_t \times B_c \times 100\right)\right)$$
+$$\text{Confidence} = \min\left(100, \text{round}(R_s \times D_t \times B_c \times 100)\right)$$
 
 ### 1. Calibrated Source Reliability ($R_s$)
 Instrumented sensors with known calibration profiles are mathematically weighted above unverified human field reports:
@@ -76,7 +76,7 @@ Instrumented sensors with known calibration profiles are mathematically weighted
 ### 2. Recency Decay Half-Life ($D_t$)
 Matches the real-world operational tempo of tactical watch floors using an exponential decay with a **15-minute half-life ($T_{1/2} = 900\text{ s}$)**:
 
-$$D_t = \max\!\left(0.05,\ e^{-\lambda \Delta t}\right), \qquad \lambda = \frac{\ln 2}{900}$$
+$$D_t = \max\left(0.05, e^{-\lambda \Delta t}\right), \qquad \lambda = \frac{\ln(2)}{900}$$
 
 * At $t = 0\text{ min}$: $D_t = 1.000$ (100% fresh)
 * At $t = 15\text{ min}$: $D_t = 0.500$ (50% weight)
@@ -93,7 +93,7 @@ Rather than asking an LLM "does this speed look strange?", VANGUARD runs dual st
 1. **Classical Standardized Score:**
    $$Z_{\text{standard}} = \frac{x - \mu}{\sigma}$$
 2. **Robust Median Absolute Deviation (MAD):**
-   $$Z_{\text{robust}} = \frac{0.6745 \cdot (x - \tilde{x})}{\text{MAD}}, \qquad \text{MAD} = \text{median}(|x_i - \tilde{x}|)$$
+   $$Z_{\text{robust}} = \frac{0.6745 \cdot (x - \text{median}(x))}{\text{MAD}}, \qquad \text{MAD} = \text{median}(|x_i - \text{median}(x)|)$$
 
 * **Anomaly Trigger Threshold:** $|Z| \ge 2.5\sigma$ (flags top $0.6\%$ statistical anomalies).
 * **Sample Exclusion:** The evaluated track is excluded from its own baseline to prevent self-masking bias.
