@@ -7,14 +7,16 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Saira', 'sans-serif'],
-        heading: ['Rajdhani', 'sans-serif'],
+        sans: ['Inter', 'Plus Jakarta Sans', 'Saira', 'sans-serif'],
+        display: ['"Space Grotesk"', '"Plus Jakarta Sans"', 'sans-serif'],
+        heading: ['"Plus Jakarta Sans"', 'Rajdhani', 'sans-serif'],
         condensed: ['"Saira Condensed"', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
+        vanguard: ['"Chakra Petch"', '"Orbitron"', '"Russo One"', 'sans-serif'],
       },
       colors: {
         surface: {
-          0: '#05070a',
+          0: '#000000',
           1: '#070b10',
           2: '#0a0f15',
           3: '#0e141c',
@@ -32,6 +34,9 @@ export default {
           red: '#ef4444',
           emerald: '#10b981',
           gold: '#eab308',
+          olive: '#33401c',
+          forest: '#526a27',
+          lime: '#a4c639',
         }
       },
       boxShadow: {

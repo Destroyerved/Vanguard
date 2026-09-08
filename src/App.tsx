@@ -17,10 +17,12 @@ import ScenarioSimulationController from './components/system/ScenarioSimulation
 import ApiConsoleDiagnostics from './components/system/ApiConsoleDiagnostics';
 import EventInvestigationDrawer from './components/intelligence/EventInvestigationDrawer';
 import EventReconMedia from './components/EventReconMedia';
+import VanguardLandingPage from './components/landing/VanguardLandingPage';
 
 const BACKEND_URL = 'http://localhost:3001/api/v1';
 
 function AppContent() {
+  const [viewMode, setViewMode] = useState<'landing' | 'console'>('landing');
   const [activeTab, setActiveTab] = useState<NavSection>('overview');
   const [loading, setLoading] = useState(true);
   const [serverOnline, setServerOnline] = useState(false);
@@ -121,6 +123,8 @@ function AppContent() {
         setActiveTab('simulation');
       } else if (e.key === 'd' || e.key === 'D') {
         setActiveTab('api_tester');
+      } else if (e.key === 'l' || e.key === 'L') {
+        setViewMode((prev) => (prev === 'landing' ? 'console' : 'landing'));
       } else if (e.key === 'Escape') {
         setSelectedEvent(null);
         setCommandPaletteOpen(false);
@@ -180,6 +184,17 @@ function AppContent() {
 
   const anomalyCount = events.filter((e) => e.isAnomaly).length;
 
+  if (viewMode === 'landing') {
+    return (
+      <VanguardLandingPage
+        onLaunchCop={() => setViewMode('console')}
+        serverOnline={serverOnline}
+        eventCount={events.length}
+        threatLevel={situation?.threatLevel}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#05070a] text-slate-200 font-sans">
       {/* 1. TOP TACTICAL COMMAND HEADER */}
@@ -198,6 +213,7 @@ function AppContent() {
         eventCount={events.length}
         anomalyCount={anomalyCount}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onNavigateToLanding={() => setViewMode('landing')}
       />
 
       {/* 2. PRIMARY FULL-WIDTH OPERATIONAL WORKSPACE */}

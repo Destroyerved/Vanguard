@@ -48,6 +48,7 @@ interface TopTacticalHeaderProps {
   eventCount?: number;
   anomalyCount?: number;
   onOpenAuthModal?: () => void;
+  onNavigateToLanding?: () => void;
 }
 
 export default function TopTacticalHeader({
@@ -64,7 +65,8 @@ export default function TopTacticalHeader({
   onTabChange,
   eventCount = 0,
   anomalyCount = 0,
-  onOpenAuthModal
+  onOpenAuthModal,
+  onNavigateToLanding
 }: TopTacticalHeaderProps) {
   const { operatorProfile, logout } = useAuth();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -105,6 +107,17 @@ export default function TopTacticalHeader({
               VANGUARD <span className="text-cyan-400 text-xs">C2</span>
             </span>
           </div>
+
+          {onNavigateToLanding && (
+            <button
+              onClick={onNavigateToLanding}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#16200d] border border-[#526a27]/60 hover:border-[#a4c639] text-[#a4c639] hover:text-white text-xs font-semibold transition-all shadow-sm group"
+              title="Return to Defense SaaS Landing Page"
+            >
+              <Globe className="w-3.5 h-3.5 text-[#a4c639] group-hover:rotate-45 transition-transform" />
+              <span className="text-[11px] hidden sm:inline">Landing Page</span>
+            </button>
+          )}
 
           <div className="hidden sm:flex items-center gap-2 px-2 py-0.5 rounded bg-[#05070a] border border-white/10 text-[10px]">
             <span className={`w-1.5 h-1.5 rounded-full ${serverOnline ? 'bg-emerald-400' : 'bg-rose-500'}`} />

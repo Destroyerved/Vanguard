@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@types/d3": "^7.4.3",
+    "d3": "^7.9.0",
     "firebase": "^12.18.0",
     "lucide-react": "^0.344.0",
     "motion": "^13.2.0",
@@ -17,6 +19,7 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@21st-dev/cli": "^1.17.0",
     "@types/node": "^26.5.0",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
