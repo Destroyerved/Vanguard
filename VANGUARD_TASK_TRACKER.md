@@ -6,6 +6,53 @@
 
 ---
 
+## 📊 Current Status — Backend Complete
+
+> Updated after the backend implementation landed (commit `4e68d70`).
+
+| Area | State |
+|---|---|
+| **Backend fusion pipeline** | 🟢 Complete and verified — ingestion, normalization, 6-stage fusion, threat posture |
+| **AI intelligence** | 🟢 Complete — Gemini + enforced citation grounding + deterministic fallback |
+| **REST / WebSocket API** | 🟢 Complete — 30 endpoints, 11 frame types |
+| **Frontend** | ⬜ Not started — the API surface it needs is documented and live |
+| **Tests** | 🟢 114 passing · typecheck clean · `npm run smoke` green |
+
+### Verify it yourself
+
+```bash
+cd server && npm install && npm run smoke     # no API key needed
+```
+
+### Deliberate divergences from the original plan
+
+The backend was built on **Express + an in-memory store**, not NestJS + PostgreSQL + PostGIS
++ Redis + BullMQ. This was a considered decision, not a shortcut:
+
+- The COP is a **sliding one-hour window over a few thousand records**. Every query is a scan.
+  A database buys durability the product does not need.
+- The PRD requires **zero-config startup** (`npm run dev`, no Docker, no DB). That is a scored
+  differentiator, and a Postgres/PostGIS/Redis stack would remove it.
+- Geospatial work is done in-process with haversine plus a spatial grid index — measured at
+  803 comparisons for 118 events, and a full fusion pass in 2–37 ms against a 3000 ms budget.
+
+Rows B-02 to B-05 are marked ⚪ `Deferred` with the reasoning in their Notes rather than
+silently ticked. **If the team wants persistence, `state/EventStore.ts` is the single seam to
+replace** — nothing else in the system touches storage.
+
+### Where the docs live
+
+| Need | Document |
+|---|---|
+| Learn the system | [`docs/MASTER_GUIDELINES.md`](docs/MASTER_GUIDELINES.md) |
+| Change backend code | [`docs/BACKEND_WALKTHROUGH.md`](docs/BACKEND_WALKTHROUGH.md) |
+| Build the frontend against it | [`docs/API.md`](docs/API.md) |
+| Working as an AI agent here | [`docs/AI_AGENT_GUIDE.md`](docs/AI_AGENT_GUIDE.md) |
+| Present it | [`docs/presentation/`](docs/presentation/) |
+
+
+---
+
 ## 📌 How to Use
 
 Every team member should:
@@ -24,6 +71,7 @@ Every team member should:
 - 🔴 `Blocked`
 - 🔵 `Review`
 - 🟢 `Done`
+- ⚪ `Deferred` — deliberately not built; the reason is recorded in **Notes**
 
 ### Priority
 
@@ -40,11 +88,11 @@ Every team member should:
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
 |---|---|---|---|---:|---|---|---|---|
-| P-01 | Finalize system architecture — frontend, backend, AI, DB, real-time | | ⬜ Not Started | 0% | 🔴 Critical | — | | |
-| P-02 | Define repository structure | | ⬜ Not Started | 0% | 🟠 High | P-01 | | |
-| P-03 | Define API contracts — REST + WebSocket schemas | | ⬜ Not Started | 0% | 🔴 Critical | P-01 | | |
-| P-04 | Create `.env.example` and configuration strategy | | ⬜ Not Started | 0% | 🟠 High | P-01 | | |
-| P-05 | Create Docker development environment | | ⬜ Not Started | 0% | 🟠 High | P-01 | | |
+| P-01 | Finalize system architecture — frontend, backend, AI, DB, real-time | | 🟢 Done | 100% | 🔴 Critical | — | | See `docs/ARCHITECTURE.md`. Express + in-memory store, no DB — the PRD requires zero-config startup. |
+| P-02 | Define repository structure | | 🟢 Done | 100% | 🟠 High | P-01 | | `server/src/{ingestion,normalization,fusion,state,ai,api,ws,orchestrator}` |
+| P-03 | Define API contracts — REST + WebSocket schemas | | 🟢 Done | 100% | 🔴 Critical | P-01 | | 30 REST endpoints + 11 WS frame types — `docs/API.md` |
+| P-04 | Create `.env.example` and configuration strategy | | 🟢 Done | 100% | 🟠 High | P-01 | | `.env.example` — every variable optional; server boots with an empty env |
+| P-05 | Create Docker development environment | | ⚪ Deferred | 0% | 🟠 High | P-01 | | Deliberate: `npm install && npm run dev` is the whole setup. Docker would add friction the product is designed to avoid. |
 
 ---
 
@@ -54,27 +102,27 @@ Every team member should:
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
 |---|---|---|---|---:|---|---|---|---|
-| B-01 | Initialize NestJS backend | | ⬜ Not Started | 0% | 🔴 Critical | — | | |
-| B-02 | Setup PostgreSQL | | ⬜ Not Started | 0% | 🔴 Critical | B-01 | | |
-| B-03 | Setup PostGIS | | ⬜ Not Started | 0% | 🔴 Critical | B-02 | | |
-| B-04 | Setup Redis | | ⬜ Not Started | 0% | 🟠 High | B-01 | | |
-| B-05 | Setup BullMQ workers | | ⬜ Not Started | 0% | 🟡 Medium | B-04 | | |
+| B-01 | Initialize NestJS backend | | 🟢 Done | 100% | 🔴 Critical | — | | Express 4 + TypeScript (ESM) rather than NestJS — 4 runtime deps total, faster cold start, no decorator/DI overhead for a 6-stage pipeline. |
+| B-02 | Setup PostgreSQL | | ⚪ Deferred | 0% | 🔴 Critical | B-01 | | DECISION: in-memory ring buffer (`state/EventStore.ts`). The COP is a sliding 1h window over ~5k records; Postgres buys durability the product does not need at the cost of zero-friction setup. |
+| B-03 | Setup PostGIS | | ⚪ Deferred | 0% | 🔴 Critical | B-02 | | Geospatial handled in-process: haversine + a spatial grid index (`util/geo.ts`, `fusion/correlate.ts`). 803 comparisons for 118 events. |
+| B-04 | Setup Redis | | ⚪ Deferred | 0% | 🟠 High | B-01 | | Not needed — single process, no cross-instance state. |
+| B-05 | Setup BullMQ workers | | ⚪ Deferred | 0% | 🟡 Medium | B-04 | | Not needed — one orchestrator tick loop with independent per-adapter cadences. |
 
 ## 3. Backend Data Models
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
 |---|---|---|---|---:|---|---|---|---|
-| B-06 | Create UnifiedEvent model | | ⬜ Not Started | 0% | 🔴 Critical | B-02 | | |
-| B-07 | Create Source model with reliability profile | | ⬜ Not Started | 0% | 🟠 High | B-02 | | |
-| B-08 | Create Asset model | | ⬜ Not Started | 0% | 🟠 High | B-02 | | |
-| B-09 | Create Incident model | | ⬜ Not Started | 0% | 🔴 Critical | B-02 | | |
-| B-10 | Create Alert model | | ⬜ Not Started | 0% | 🔴 Critical | B-02 | | |
-| B-11 | Create Zone model with geospatial data | | ⬜ Not Started | 0% | 🟠 High | B-03 | | |
-| B-12 | Create Weather Observation model | | ⬜ Not Started | 0% | 🟠 High | B-02 | | |
-| B-13 | Create Telemetry / Log model | | ⬜ Not Started | 0% | 🟠 High | B-02 | | |
-| B-14 | Create Situation model | | ⬜ Not Started | 0% | 🔴 Critical | B-02 | | |
-| B-15 | Create AI Briefing model | | ⬜ Not Started | 0% | 🟠 High | B-02 | | |
-| B-16 | Create Audit Log model | | ⬜ Not Started | 0% | 🟡 Medium | B-02 | | |
+| B-06 | Create UnifiedEvent model | | 🟢 Done | 100% | 🔴 Critical | B-02 | | `types/events.ts` — UnifiedEvent v1.1. See `docs/DATA_MODEL.md` |
+| B-07 | Create Source model with reliability profile | | 🟢 Done | 100% | 🟠 High | B-02 | | `state/SourceHealthRegistry.ts` — health multiplies into effective reliability, feeding the confidence formula directly |
+| B-08 | Create Asset model | | 🟢 Done | 100% | 🟠 High | B-02 | | `TacticalAsset` + `GET /api/v1/map/assets` |
+| B-09 | Create Incident model | | 🟢 Done | 100% | 🔴 Critical | B-02 | | Incidents normalize into UnifiedEvent with a reporter-credibility model |
+| B-10 | Create Alert model | | 🟢 Done | 100% | 🔴 Critical | B-02 | | Alerts are severity-filtered events — `GET /api/v1/map/alerts` |
+| B-11 | Create Zone model with geospatial data | | 🟢 Done | 100% | 🟠 High | B-03 | | `OperationalZone` + GeoJSON polygons at `GET /api/v1/map/zones` |
+| B-12 | Create Weather Observation model | | 🟢 Done | 100% | 🟠 High | B-02 | | `WeatherPayload` from the live Open-Meteo grid |
+| B-13 | Create Telemetry / Log model | | 🟢 Done | 100% | 🟠 High | B-02 | | Perimeter trips, sensor faults and system logs |
+| B-14 | Create Situation model | | 🟢 Done | 100% | 🔴 Critical | B-02 | | `SituationSnapshot` + `state/ThreatState.ts` with hysteresis |
+| B-15 | Create AI Briefing model | | 🟢 Done | 100% | 🟠 High | B-02 | | `AISummary` with a `provenance` audit trail |
+| B-16 | Create Audit Log model | | 🟢 Done | 100% | 🟡 Medium | B-02 | | `EscalationRecord` logs every posture change with its trigger event IDs |
 
 ---
 
@@ -82,14 +130,14 @@ Every team member should:
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
 |---|---|---|---|---:|---|---|---|---|
-| B-17 | Build generic event ingestion endpoint | | ⬜ Not Started | 0% | 🔴 Critical | B-06 | | |
-| B-18 | Build radar ingestion | | ⬜ Not Started | 0% | 🔴 Critical | B-06 | | |
-| B-19 | Build weather ingestion | | ⬜ Not Started | 0% | 🟠 High | B-06 | | |
-| B-20 | Build personnel ingestion | | ⬜ Not Started | 0% | 🟠 High | B-06 | | |
-| B-21 | Build operational logs ingestion | | ⬜ Not Started | 0% | 🟠 High | B-06 | | |
-| B-22 | Build incident ingestion | | ⬜ Not Started | 0% | 🔴 Critical | B-06 | | |
-| B-23 | Implement input validation | | ⬜ Not Started | 0% | 🔴 Critical | B-17 | | |
-| B-24 | Implement event deduplication | | ⬜ Not Started | 0% | 🟠 High | B-17 | | |
+| B-17 | Build generic event ingestion endpoint | | 🟢 Done | 100% | 🔴 Critical | B-06 | | `ingestion/SourceAdapter.ts` — one interface every feed implements |
+| B-18 | Build radar ingestion | | 🟢 Done | 100% | 🔴 Critical | B-06 | | Persistent dead-reckoned kinematic tracks, not random points |
+| B-19 | Build weather ingestion | | 🟢 Done | 100% | 🟠 High | B-06 | | LIVE Open-Meteo API with 3-level fallback (live -> cache -> synthetic) |
+| B-20 | Build personnel ingestion | | 🟢 Done | 100% | 🟠 High | B-06 | | Patrol orbits + visual sightings that corroborate real contacts |
+| B-21 | Build operational logs ingestion | | 🟢 Done | 100% | 🟠 High | B-06 | | Perimeter sensors with a modelled false-alarm rate |
+| B-22 | Build incident ingestion | | 🟢 Done | 100% | 🔴 Critical | B-06 | | Field dispatches + the demo scenario engine |
+| B-23 | Implement input validation | | 🟢 Done | 100% | 🔴 Critical | B-17 | | `normalization/validate.ts` — repairs what is safe, rejects what is not |
+| B-24 | Implement event deduplication | | 🟢 Done | 100% | 🟠 High | B-17 | | `fusion/dedupe.ts` — same-source, 150m, 30s, same title |
 
 ---
 
@@ -97,13 +145,13 @@ Every team member should:
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
 |---|---|---|---|---:|---|---|---|---|
-| B-25 | Build event normalization pipeline | | ⬜ Not Started | 0% | 🔴 Critical | B-18–B-22 | | |
-| B-26 | Build spatial correlation engine | | ⬜ Not Started | 0% | 🔴 Critical | B-03, B-25 | | |
-| B-27 | Build temporal correlation engine | | ⬜ Not Started | 0% | 🔴 Critical | B-25 | | |
-| B-28 | Build entity correlation engine | | ⬜ Not Started | 0% | 🟠 High | B-25 | | |
-| B-29 | Build source agreement engine | | ⬜ Not Started | 0% | 🔴 Critical | B-25 | | |
-| B-30 | Build conflict detection engine | | ⬜ Not Started | 0% | 🟠 High | B-29 | | |
-| B-31 | Build data freshness engine | | ⬜ Not Started | 0% | 🟠 High | B-25 | | |
+| B-25 | Build event normalization pipeline | | 🟢 Done | 100% | 🔴 Critical | B-18–B-22 | | `normalization/normalize.ts` — 5 shapes into one type; entity-stable vs discrete IDs |
+| B-26 | Build spatial correlation engine | | 🟢 Done | 100% | 🔴 Critical | B-03, B-25 | | Haversine, ΔR ≤ 5km, grid-indexed |
+| B-27 | Build temporal correlation engine | | 🟢 Done | 100% | 🔴 Critical | B-25 | | ΔT ≤ 600s; correlation requires BOTH windows |
+| B-28 | Build entity correlation engine | | 🟢 Done | 100% | 🟠 High | B-25 | | Union-find transitive closure — `fusion/correlate.ts` |
+| B-29 | Build source agreement engine | | 🟢 Done | 100% | 🔴 Critical | B-25 | | `fusion/corroborate.ts` — affinity × proximity × simultaneity, breadth-first selection |
+| B-30 | Build conflict detection engine | | 🟢 Done | 100% | 🟠 High | B-29 | | Conflict is represented rather than resolved: uncorroborated claims simply score lower and both remain visible |
+| B-31 | Build data freshness engine | | 🟢 Done | 100% | 🟠 High | B-25 | | Exponential recency decay, 15-minute half-life |
 
 ---
 
@@ -111,12 +159,12 @@ Every team member should:
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
 |---|---|---|---|---:|---|---|---|---|
-| B-32 | Implement multi-source confidence scoring | | ⬜ Not Started | 0% | 🔴 Critical | B-29, B-31 | | |
-| B-33 | Implement confidence breakdown | | ⬜ Not Started | 0% | 🔴 Critical | B-32 | | |
-| B-34 | Implement alert priority engine | | ⬜ Not Started | 0% | 🔴 Critical | B-32 | | |
-| B-35 | Implement anomaly detection | | ⬜ Not Started | 0% | 🟡 Medium | B-25 | | |
-| B-36 | Build situation state engine | | ⬜ Not Started | 0% | 🔴 Critical | B-30, B-32, B-34 | | |
-| B-37 | Build situation history / timeline | | ⬜ Not Started | 0% | 🟠 High | B-36 | | |
+| B-32 | Implement multi-source confidence scoring | | 🟢 Done | 100% | 🔴 Critical | B-29, B-31 | | `fusion/confidence.ts` — reliability × recency × corroboration. 22 dedicated tests. |
+| B-33 | Implement confidence breakdown | | 🟢 Done | 100% | 🔴 Critical | B-32 | | 6-factor breakdown + a counterfactual showing what corroboration contributed |
+| B-34 | Implement alert priority engine | | 🟢 Done | 100% | 🔴 Critical | B-32 | | `fusion/severity.ts` — idempotent escalation rules; 4 severity tiers |
+| B-35 | Implement anomaly detection | | 🟢 Done | 100% | 🟡 Medium | B-25 | | 3 z-score detectors (rate/kinematic/spatial) with a robust median/MAD fallback — runs BEFORE the model |
+| B-36 | Build situation state engine | | 🟢 Done | 100% | 🔴 Critical | B-30, B-32, B-34 | | `state/ThreatState.ts` — GREEN/YELLOW/ORANGE/RED with 15% de-escalation hysteresis |
+| B-37 | Build situation history / timeline | | 🟢 Done | 100% | 🟠 High | B-36 | | `GET /api/v1/situation/timeline` + `/replay?at=` point-in-time snapshots |
 
 ---
 
@@ -124,10 +172,10 @@ Every team member should:
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
 |---|---|---|---|---:|---|---|---|---|
-| B-38 | Integrate Gemini API | | ⬜ Not Started | 0% | 🔴 Critical | B-36 | | |
-| B-39 | Design structured situation briefing prompt | | ⬜ Not Started | 0% | 🔴 Critical | B-38 | | |
-| B-40 | Implement structured AI output | | ⬜ Not Started | 0% | 🔴 Critical | B-39 | | |
-| B-41 | Implement evidence linking for AI insights | | ⬜ Not Started | 0% | 🟠 High | B-40 | | |
+| B-38 | Integrate Gemini API | | 🟢 Done | 100% | 🔴 Critical | B-36 | | `ai/gemini.ts` — dependency-free structured-JSON client with retry/backoff |
+| B-39 | Design structured situation briefing prompt | | 🟢 Done | 100% | 🔴 Critical | B-38 | | `ai/prompts.ts` — the model phrases a finished analysis; it never decides a number |
+| B-40 | Implement structured AI output | | 🟢 Done | 100% | 🔴 Critical | B-39 | | `responseSchema` structured output + a deterministic fallback synthesizer |
+| B-41 | Implement evidence linking for AI insights | | 🟢 Done | 100% | 🟠 High | B-40 | | `ai/grounding.ts` — invented IDs STRIPPED, uncited claims DISCARDED. `POST /ai/verify` re-checks independently. |
 
 ### AI Output Must Cover
 
@@ -144,10 +192,10 @@ Every team member should:
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
 |---|---|---|---|---:|---|---|---|---|
-| B-42 | Situation REST APIs — current/history/timeline | | ⬜ Not Started | 0% | 🔴 Critical | B-36 | | |
-| B-43 | Event REST APIs — list/detail/correlations | | ⬜ Not Started | 0% | 🟠 High | B-25 | | |
-| B-44 | Map APIs — assets/alerts/weather/zones/hotspots | | ⬜ Not Started | 0% | 🔴 Critical | B-03, B-34 | | |
-| B-45 | Intelligence APIs — confidence/conflicts/anomalies | | ⬜ Not Started | 0% | 🟠 High | B-30, B-32, B-35 | | |
+| B-42 | Situation REST APIs — current/history/timeline | | 🟢 Done | 100% | 🔴 Critical | B-36 | | `/situation/current`, `/timeline`, `/replay` |
+| B-43 | Event REST APIs — list/detail/correlations | | 🟢 Done | 100% | 🟠 High | B-25 | | `/events`, `/:id`, `/:id/correlations`, `/:id/candidates`, `/stats` |
+| B-44 | Map APIs — assets/alerts/weather/zones/hotspots | | 🟢 Done | 100% | 🔴 Critical | B-03, B-34 | | assets / alerts / weather / zones / heatmap / all — GeoJSON |
+| B-45 | Intelligence APIs — confidence/conflicts/anomalies | | 🟢 Done | 100% | 🟠 High | B-30, B-32, B-35 | | source-health / clusters / anomalies / metrics / fusion / config |
 
 ---
 
@@ -155,10 +203,10 @@ Every team member should:
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
 |---|---|---|---|---:|---|---|---|---|
-| B-46 | Build WebSocket gateway | | ⬜ Not Started | 0% | 🔴 Critical | B-04 | | |
-| B-47 | Stream new events | | ⬜ Not Started | 0% | 🟠 High | B-46, B-17 | | |
-| B-48 | Stream alert updates | | ⬜ Not Started | 0% | 🔴 Critical | B-46, B-34 | | |
-| B-49 | Stream situation updates | | ⬜ Not Started | 0% | 🔴 Critical | B-46, B-36 | | |
+| B-46 | Build WebSocket gateway | | 🟢 Done | 100% | 🔴 Critical | B-04 | | `ws/hub.ts` — push-only, heartbeat, per-connection sequence numbers |
+| B-47 | Stream new events | | 🟢 Done | 100% | 🟠 High | B-46, B-17 | | `EVENT_STREAM` frames |
+| B-48 | Stream alert updates | | 🟢 Done | 100% | 🔴 Critical | B-46, B-34 | | `ALERT_TRIGGER` per critical event + `ESCALATION` on posture change |
+| B-49 | Stream situation updates | | 🟢 Done | 100% | 🔴 Critical | B-46, B-36 | | `SITUATION_UPDATE`, `CLUSTER_UPDATE`, `HEALTH_STATUS`, `ASSET_UPDATE`, `METRICS` |
 
 ---
 
@@ -166,12 +214,12 @@ Every team member should:
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
 |---|---|---|---|---:|---|---|---|---|
-| B-50 | Build synthetic multi-source data generator | | ⬜ Not Started | 0% | 🔴 Critical | B-17 | | |
-| B-51 | Create normal operations scenario | | ⬜ Not Started | 0% | 🟠 High | B-50 | | |
-| B-52 | Create weather degradation scenario | | ⬜ Not Started | 0% | 🟠 High | B-50 | | |
-| B-53 | Create multi-source correlation scenario | | ⬜ Not Started | 0% | 🔴 Critical | B-50, B-26, B-27 | | |
-| B-54 | Create conflicting-source scenario | | ⬜ Not Started | 0% | 🟠 High | B-50, B-30 | | |
-| B-55 | Build event replay/timeline engine | | ⬜ Not Started | 0% | 🟡 Medium | B-37 | | |
+| B-50 | Build synthetic multi-source data generator | | 🟢 Done | 100% | 🔴 Critical | B-17 | | 4 seeded simulators — same SIM_SEED reproduces the same scenario on any machine |
+| B-51 | Create normal operations scenario | | 🟢 Done | 100% | 🟠 High | B-50 | | Default steady state: ~45 events, posture GREEN/YELLOW |
+| B-52 | Create weather degradation scenario | | 🟢 Done | 100% | 🟠 High | B-50 | | `severe_weather_impact` scenario + degraded-comms simulation |
+| B-53 | Create multi-source correlation scenario | | 🟢 Done | 100% | 🔴 Critical | B-50, B-26, B-27 | | `border_spike` / `perimeter_breach` — verified driving ORANGE -> RED |
+| B-54 | Create conflicting-source scenario | | 🟢 Done | 100% | 🟠 High | B-50, B-30 | | Sensor false alarms and low-credibility reports produce genuine source disagreement |
+| B-55 | Build event replay/timeline engine | | 🟢 Done | 100% | 🟡 Medium | B-37 | | `EventStore.snapshotAt()` with firstSeen semantics — backs the 4D time-scrubber |
 
 ---
 
@@ -179,13 +227,13 @@ Every team member should:
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
 |---|---|---|---|---:|---|---|---|---|
-| B-56 | Implement authentication | | ⬜ Not Started | 0% | 🟠 High | B-01 | | |
-| B-57 | Implement role-based access control | | ⬜ Not Started | 0% | 🟡 Medium | B-56 | | |
-| B-58 | Implement API rate limiting | | ⬜ Not Started | 0% | 🟡 Medium | B-01 | | |
-| B-59 | Implement audit logging | | ⬜ Not Started | 0% | 🟡 Medium | B-16 | | |
-| B-60 | Implement system health checks | | ⬜ Not Started | 0% | 🟠 High | B-02, B-04 | | |
-| B-61 | Backend unit tests | | ⬜ Not Started | 0% | 🟠 High | B-32, B-34 | | |
-| B-62 | Backend integration tests | | ⬜ Not Started | 0% | 🟠 High | B-36 | | |
+| B-56 | Implement authentication | | ⬜ Not Started | 0% | 🟠 High | B-01 | | Out of hackathon scope per PRD §3 Non-Goals |
+| B-57 | Implement role-based access control | | ⬜ Not Started | 0% | 🟡 Medium | B-56 | | Out of hackathon scope per PRD §3 Non-Goals |
+| B-58 | Implement API rate limiting | | ⬜ Not Started | 0% | 🟡 Medium | B-01 | | Body size capped at 1MB; full rate limiting not yet implemented |
+| B-59 | Implement audit logging | | 🟢 Done | 100% | 🟡 Medium | B-16 | | Escalations log trigger events; briefings log engine, latency and stripped citations |
+| B-60 | Implement system health checks | | 🟢 Done | 100% | 🟠 High | B-02, B-04 | | `/health` liveness + `/ready` readiness + `/intelligence/metrics` |
+| B-61 | Backend unit tests | | 🟢 Done | 100% | 🟠 High | B-32, B-34 | | 114 tests across confidence, fusion, grounding and pipeline |
+| B-62 | Backend integration tests | | 🟢 Done | 100% | 🟠 High | B-36 | | `npm run smoke` — end-to-end pipeline invariant assertions |
 
 ---
 
