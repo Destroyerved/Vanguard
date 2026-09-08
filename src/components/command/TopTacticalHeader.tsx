@@ -155,12 +155,10 @@ export default function TopTacticalHeader({
           </span>
           {[
             { id: 'overview', label: 'Overview', icon: Activity, key: 'O' },
-            { id: 'map', label: 'Tactical Map', icon: MapIcon, count: eventCount, key: 'M' },
             { id: 'news', label: 'Verified News', icon: Newspaper, tag: 'LIVE', key: 'N' },
-            { id: 'spatial_3d', label: '3D Spatial Field', icon: Globe, key: 'G' },
-            { id: 'events', label: 'Signal Stream', icon: Radio, count: anomalyCount ? `${anomalyCount} Anom` : undefined, key: 'E' },
-            { id: 'osint', label: 'OSINT Verifier', icon: ShieldCheck, key: 'V' },
             { id: 'recon', label: 'Satellite Recon', icon: Globe, key: 'R' },
+            { id: 'events', label: 'Signal Stream', icon: Radio, count: eventCount, key: 'E' },
+            { id: 'osint', label: 'OSINT Verifier', icon: ShieldCheck, count: anomalyCount ? `${anomalyCount} Anom` : undefined, key: 'V' },
             { id: 'timeline', label: 'Threat Timeline', icon: Clock, key: 'T' },
             { id: 'sources', label: 'Source Topology', icon: Server, key: 'S' },
             { id: 'simulation', label: 'Scenarios', icon: Play, key: 'X' },

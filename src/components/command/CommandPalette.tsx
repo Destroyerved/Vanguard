@@ -65,12 +65,11 @@ export default function CommandPalette({
 
   const quickNavs: Array<{ id: NavSection; label: string; icon: any }> = [
     { id: 'overview', label: 'Command Overview (O)', icon: Zap },
-    { id: 'map', label: 'Tactical Map (M)', icon: MapIcon },
-    { id: 'spatial_3d', label: '3D Spatial Threat Field (G)', icon: Globe },
-    { id: 'events', label: 'Signal Stream (E)', icon: Radio },
-    { id: 'timeline', label: 'Threat Timeline (T)', icon: Clock },
     { id: 'news', label: 'Verified Signals & News (N)', icon: Newspaper },
+    { id: 'recon', label: 'Satellite Recon Media (R)', icon: Globe },
+    { id: 'events', label: 'Signal Stream (E)', icon: Radio },
     { id: 'osint', label: 'OSINT Veracity Forensics (V)', icon: ShieldCheck },
+    { id: 'timeline', label: 'Threat Timeline (T)', icon: Clock },
     { id: 'sources', label: 'Source Topology (S)', icon: Server },
     { id: 'simulation', label: 'Scenario Injector (X)', icon: Play },
   ];

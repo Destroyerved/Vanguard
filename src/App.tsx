@@ -7,8 +7,6 @@ import CommandRail, { NavSection } from './components/command/CommandRail';
 import TopTacticalHeader from './components/command/TopTacticalHeader';
 import CommandPalette from './components/command/CommandPalette';
 import OverviewCanvas from './components/views/OverviewCanvas';
-import TacticalMap from './components/TacticalMap';
-import SpatialThreatField3D from './components/spatial/SpatialThreatField3D';
 import SignalHorizonStream from './components/intelligence/SignalHorizonStream';
 import TemporalIntelligenceTimeline from './components/timeline/TemporalIntelligenceTimeline';
 import VerifiedNewsHub from './components/VerifiedNewsHub';
@@ -101,12 +99,8 @@ export default function App() {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setCommandPaletteOpen((prev) => !prev);
-      } else if (e.key === 'm' || e.key === 'M') {
-        setActiveTab('map');
       } else if (e.key === 'o' || e.key === 'O') {
         setActiveTab('overview');
-      } else if (e.key === 'g' || e.key === 'G') {
-        setActiveTab('spatial_3d');
       } else if (e.key === 'e' || e.key === 'E') {
         setActiveTab('events');
       } else if (e.key === 't' || e.key === 'T') {
@@ -234,26 +228,6 @@ export default function App() {
               easyMode={easyMode}
               onNavigateToTab={(tab) => setActiveTab(tab)}
             />
-          )}
-
-          {activeTab === 'map' && (
-            <div className="h-[calc(100vh-140px)] flex flex-col">
-              <TacticalMap
-                events={events}
-                selectedEventId={selectedEvent?.id}
-                onSelectEvent={(evt) => setSelectedEvent(evt)}
-              />
-            </div>
-          )}
-
-          {activeTab === 'spatial_3d' && (
-            <div className="h-[calc(100vh-140px)] flex flex-col">
-              <SpatialThreatField3D
-                events={events}
-                selectedEventId={selectedEvent?.id}
-                onSelectEvent={(evt) => setSelectedEvent(evt)}
-              />
-            </div>
           )}
 
           {activeTab === 'events' && (

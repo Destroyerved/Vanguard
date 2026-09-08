@@ -18,7 +18,7 @@ import {
   Cpu
 } from 'lucide-react';
 
-export type NavSection = 'overview' | 'map' | 'spatial_3d' | 'events' | 'timeline' | 'news' | 'osint' | 'recon' | 'sources' | 'simulation' | 'api_tester';
+export type NavSection = 'overview' | 'events' | 'news' | 'recon' | 'osint' | 'timeline' | 'sources' | 'simulation' | 'api_tester';
 
 interface CommandRailProps {
   activeTab: NavSection;
@@ -50,15 +50,13 @@ export default function CommandRail({
   }> = [
     // COMMAND
     { id: 'overview', label: 'Command Overview', category: 'COMMAND', icon: Activity, shortcut: 'O' },
-    { id: 'map', label: 'Tactical Map', category: 'COMMAND', icon: MapIcon, badge: eventCount > 0 ? eventCount : undefined, shortcut: 'M' },
-    { id: 'spatial_3d', label: '3D Spatial Field', category: 'COMMAND', icon: Globe, shortcut: 'G' },
 
     // INTELLIGENCE
-    { id: 'events', label: 'Signal Stream', category: 'INTELLIGENCE', icon: Radio, badge: anomalyCount > 0 ? `${anomalyCount} Anom` : undefined, badgeColor: 'bg-rose-500/20 text-rose-400 border-rose-500/40', shortcut: 'E' },
-    { id: 'timeline', label: 'Threat Timeline', category: 'INTELLIGENCE', icon: Clock, shortcut: 'T' },
     { id: 'news', label: 'Verified News Hub', category: 'INTELLIGENCE', icon: Newspaper, badge: 'REUTERS/AP', badgeColor: 'bg-cyan-950 text-cyan-300 border-cyan-500/30', shortcut: 'N' },
-    { id: 'osint', label: 'OSINT Veracity', category: 'INTELLIGENCE', icon: ShieldCheck, shortcut: 'V' },
     { id: 'recon', label: 'Satellite Recon', category: 'INTELLIGENCE', icon: Globe, badge: 'ESRI HD', badgeColor: 'bg-indigo-950 text-indigo-300 border-indigo-500/30', shortcut: 'R' },
+    { id: 'events', label: 'Signal Stream', category: 'INTELLIGENCE', icon: Radio, badge: eventCount > 0 ? eventCount : undefined, shortcut: 'E' },
+    { id: 'osint', label: 'OSINT Veracity', category: 'INTELLIGENCE', icon: ShieldCheck, badge: anomalyCount > 0 ? `${anomalyCount} Anom` : undefined, badgeColor: 'bg-rose-500/20 text-rose-400 border-rose-500/40', shortcut: 'V' },
+    { id: 'timeline', label: 'Threat Timeline', category: 'INTELLIGENCE', icon: Clock, shortcut: 'T' },
 
     // SOURCES & SYSTEM
     { id: 'sources', label: 'Source Topology', category: 'SOURCES', icon: Server, badge: serverOnline ? 'ONLINE' : 'OFFLINE', badgeColor: serverOnline ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400', shortcut: 'S' },

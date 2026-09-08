@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { UnifiedEvent } from '../../types/schema';
-import TacticalMap from '../TacticalMap';
 import ThreatPostureInstrument from '../intelligence/ThreatPostureInstrument';
 import SituationBriefingCard from '../intelligence/SituationBriefingCard';
 import SignalHorizonStream from '../intelligence/SignalHorizonStream';
 import VerifiedNewsHub from '../VerifiedNewsHub';
 import EventReconMedia from '../EventReconMedia';
-import { Globe, Newspaper, Radio, Camera, ShieldAlert, Sparkles, Activity, Layers } from 'lucide-react';
+import { Globe, Newspaper, Radio, Camera, ShieldAlert, Sparkles, Activity, Layers, Play } from 'lucide-react';
 
 interface OverviewCanvasProps {
   situation: any;
@@ -27,13 +26,13 @@ export default function OverviewCanvas({
   easyMode,
   onNavigateToTab
 }: OverviewCanvasProps) {
-  const [activeCenterView, setActiveCenterView] = useState<'MAP' | 'NEWS' | 'RECON'>('MAP');
+  const [activeCenterView, setActiveCenterView] = useState<'NEWS' | 'RECON' | 'STREAM'>('NEWS');
 
   const activeEvent = events.find((e) => e.id === selectedEventId) || events[0] || {
-    id: 'RAD-001',
+    id: 'EVT-001',
     sourceType: 'radar',
-    title: 'Unidentified Aerial Track',
-    description: 'Active radar surveillance track',
+    title: 'Surveillance Telemetry Contact',
+    description: 'Active multi-source intelligence contact',
     severity: 'high',
     confidence: 88,
     location: { lat: 23.0225, lng: 72.5714 },
@@ -50,7 +49,7 @@ export default function OverviewCanvas({
     <div className="space-y-4 select-none font-mono">
       {/* 1. PRIMARY OPERATIONAL HORIZON */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* LEFT / CENTER (7 COLS): MULTI-LAYER TACTICAL WORKSPACE (MAP / NEWS / RECON) */}
+        {/* LEFT / CENTER (7 COLS): MULTI-LAYER TACTICAL WORKSPACE (NEWS / RECON / STREAM) */}
         <div className="lg:col-span-7 flex flex-col space-y-2">
           {/* WORKSPACE VIEW SWITCHER TABS */}
           <div className="flex items-center justify-between px-3 py-1.5 rounded bg-[#070b10] border border-white/10 text-xs">
@@ -58,9 +57,9 @@ export default function OverviewCanvas({
               <span className="text-slate-400 font-bold uppercase text-[10px]">PRIMARY INSTRUMENT:</span>
               <div className="flex items-center gap-1">
                 {[
-                  { id: 'MAP', label: 'Tactical Map', icon: Globe },
                   { id: 'NEWS', label: 'Verified News Hub', icon: Newspaper },
                   { id: 'RECON', label: 'Satellite Recon Media', icon: Camera },
+                  { id: 'STREAM', label: 'Signal Horizon Stream', icon: Radio },
                 ].map((tab) => {
                   const Icon = tab.icon;
                   const isActive = activeCenterView === tab.id;
@@ -84,17 +83,17 @@ export default function OverviewCanvas({
 
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-slate-500 hidden sm:inline">
-                LIVE MULTI-SOURCE FEEDS ACTIVE
+                LIVE FEEDS ACTIVE
               </span>
               {onNavigateToTab && (
                 <button
                   onClick={() =>
-                    onNavigateToTab(activeCenterView === 'MAP' ? 'map' : activeCenterView === 'NEWS' ? 'news' : 'recon')
+                    onNavigateToTab(activeCenterView === 'NEWS' ? 'news' : activeCenterView === 'RECON' ? 'recon' : 'events')
                   }
                   className="px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/40 text-[10px] text-cyan-300 hover:bg-cyan-900/60 font-semibold transition-all"
                   title="Expand to Full Dedicated View"
                 >
-                  EXPAND [{activeCenterView === 'MAP' ? 'M' : activeCenterView === 'NEWS' ? 'N' : 'R'}] ↗
+                  EXPAND [{activeCenterView === 'NEWS' ? 'N' : activeCenterView === 'RECON' ? 'R' : 'E'}] ↗
                 </button>
               )}
             </div>
@@ -102,14 +101,6 @@ export default function OverviewCanvas({
 
           {/* ACTIVE PRIMARY VIEW */}
           <div className="h-[540px] flex flex-col">
-            {activeCenterView === 'MAP' && (
-              <TacticalMap
-                events={events}
-                onSelectEvent={onSelectEvent}
-                selectedEventId={selectedEventId}
-              />
-            )}
-
             {activeCenterView === 'NEWS' && (
               <div className="h-full overflow-y-auto">
                 <VerifiedNewsHub event={activeEvent} isStandaloneTab={false} />
@@ -119,6 +110,17 @@ export default function OverviewCanvas({
             {activeCenterView === 'RECON' && (
               <div className="h-full overflow-y-auto">
                 <EventReconMedia event={activeEvent} />
+              </div>
+            )}
+
+            {activeCenterView === 'STREAM' && (
+              <div className="h-full overflow-y-auto">
+                <SignalHorizonStream
+                  events={events}
+                  selectedEventId={selectedEventId}
+                  onSelectEvent={onSelectEvent}
+                  easyMode={easyMode}
+                />
               </div>
             )}
           </div>
