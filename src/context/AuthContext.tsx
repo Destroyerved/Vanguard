@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [operatorProfile, setOperatorProfile] = useState<OperatorProfile | null>(() => {
     // Check if guest operator profile is saved locally
     const saved = localStorage.getItem('vanguard_guest_operator');
-    return saved ? JSON.parse(saved) : DEFAULT_GUEST_OPERATOR;
+    return saved ? JSON.parse(saved) : null;
   });
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -66,12 +66,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('vanguard_guest_operator');
       } else {
         setUser(null);
-        // If not logged in via Firebase, fallback to guest operator profile so app is accessible
         const savedGuest = localStorage.getItem('vanguard_guest_operator');
         if (savedGuest) {
           setOperatorProfile(JSON.parse(savedGuest));
         } else {
-          setOperatorProfile(DEFAULT_GUEST_OPERATOR);
+          setOperatorProfile(null);
         }
       }
       setLoading(false);
