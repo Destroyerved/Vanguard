@@ -1,8 +1,9 @@
 # VANGUARD — Team Task Tracker
 
-> **Multi-Source Defence Situational Awareness System**  
-> Hackathon: **HACKHERTZ 2026 — Defense Track**  
+> **Multi-Source Defence Situational Awareness System**
+> Hackathon: **HACKHERTZ 2026 — Defense Track**
 > Team: **Destroyer of Worlds**
+> PRD Version: **1.1 (Harmonized & Production-Aligned)**
 
 ---
 
@@ -34,17 +35,29 @@ Every team member should:
 
 ---
 
+## 🎯 Evaluation Weight Mapping
+
+| Weight | Area | Primary Task Sections |
+|---|---|---|
+| **30%** | Data Fusion & Multi-Source Integration | Sections 2–5: Ingestion, Fusion, Confidence, Source Health |
+| **25%** | Command Map & Geospatial UX | Section F-06–F-13: MapLibre, layers, clustering, heatmap, time-scrubber |
+| **25%** | AI Summarization & Alert Prioritization | Sections B-38–B-41, F-25–F-29: Gemini briefing, COA, NL query, explainability |
+| **20%** | Scalability & UI Craftsmanship | Sections F-34–F-43, D-01–D-12: Polish, radar sweep, threat-level HUD, demo |
+
+---
+
 # 🏗️ Project Tasks
 
 ## 1. Project Architecture & Setup
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
-|---|---|---|---|---:|---|---|---|---|
-| P-01 | Finalize system architecture — frontend, backend, AI, DB, real-time | | ⬜ Not Started | 0% | 🔴 Critical | — | | |
-| P-02 | Define repository structure | | ⬜ Not Started | 0% | 🟠 High | P-01 | | |
-| P-03 | Define API contracts — REST + WebSocket schemas | | ⬜ Not Started | 0% | 🔴 Critical | P-01 | | |
-| P-04 | Create `.env.example` and configuration strategy | | ⬜ Not Started | 0% | 🟠 High | P-01 | | |
-| P-05 | Create Docker development environment | | ⬜ Not Started | 0% | 🟠 High | P-01 | | |
+|---|---|---|---|---|---|---|---|---|
+| P-01 | Finalize system architecture — dual-mode (backend service + client fallback), frontend, AI, real-time | | ⬜ Not Started | 0% | 🔴 Critical | — | | PRD §6: Modular Full-Stack with Instant Dual-Mode Fallback |
+| P-02 | Define repository structure (monorepo: `/backend`, `/frontend`, `/shared`) | | ⬜ Not Started | 0% | 🟠 High | P-01 | | |
+| P-03 | Define API contracts — REST + WebSocket schemas per PRD §7.2 | | ⬜ Not Started | 0% | 🔴 Critical | P-01 | | Exact endpoints and WS event types defined below |
+| P-04 | Create `.env.example` and configuration strategy | | ⬜ Not Started | 0% | 🟠 High | P-01 | | Must include GEMINI_API_KEY, OPEN_METEO base URL, WS port |
+| P-05 | Create Docker development environment | | ⬜ Not Started | 0% | 🟠 High | P-01 | | docker-compose: backend + PostgreSQL/PostGIS + Redis |
+| P-06 | Implement dual-mode architecture — backend service mode + client fallback mode (Web Worker ingestion + Zustand store) | | ⬜ Not Started | 0% | 🟠 High | P-01 | | PRD §6: Ensures 100% turnkey operation when backend unavailable |
 
 ---
 
@@ -53,27 +66,28 @@ Every team member should:
 ## 2. Backend Foundation
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
-|---|---|---|---|---:|---|---|---|---|
-| B-01 | Initialize NestJS backend | | ⬜ Not Started | 0% | 🔴 Critical | — | | |
+|---|---|---|---|---|---|---|---|---|
+| B-01 | Initialize NestJS backend (Node.js / Express alternative acceptable) | | ⬜ Not Started | 0% | 🔴 Critical | — | | TypeScript, modular structure |
 | B-02 | Setup PostgreSQL | | ⬜ Not Started | 0% | 🔴 Critical | B-01 | | |
-| B-03 | Setup PostGIS | | ⬜ Not Started | 0% | 🔴 Critical | B-02 | | |
-| B-04 | Setup Redis | | ⬜ Not Started | 0% | 🟠 High | B-01 | | |
-| B-05 | Setup BullMQ workers | | ⬜ Not Started | 0% | 🟡 Medium | B-04 | | |
+| B-03 | Setup PostGIS | | ⬜ Not Started | 0% | 🔴 Critical | B-02 | | Required for spatial correlation (Haversine) |
+| B-04 | Setup Redis | | ⬜ Not Started | 0% | 🟠 High | B-01 | | Event bus, caching, session |
+| B-05 | Setup BullMQ workers | | ⬜ Not Started | 0% | 🟡 Medium | B-04 | | Background job processing |
 
 ## 3. Backend Data Models
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
-|---|---|---|---|---:|---|---|---|---|
-| B-06 | Create UnifiedEvent model | | ⬜ Not Started | 0% | 🔴 Critical | B-02 | | |
-| B-07 | Create Source model with reliability profile | | ⬜ Not Started | 0% | 🟠 High | B-02 | | |
-| B-08 | Create Asset model | | ⬜ Not Started | 0% | 🟠 High | B-02 | | |
-| B-09 | Create Incident model | | ⬜ Not Started | 0% | 🔴 Critical | B-02 | | |
-| B-10 | Create Alert model | | ⬜ Not Started | 0% | 🔴 Critical | B-02 | | |
-| B-11 | Create Zone model with geospatial data | | ⬜ Not Started | 0% | 🟠 High | B-03 | | |
-| B-12 | Create Weather Observation model | | ⬜ Not Started | 0% | 🟠 High | B-02 | | |
-| B-13 | Create Telemetry / Log model | | ⬜ Not Started | 0% | 🟠 High | B-02 | | |
-| B-14 | Create Situation model | | ⬜ Not Started | 0% | 🔴 Critical | B-02 | | |
-| B-15 | Create AI Briefing model | | ⬜ Not Started | 0% | 🟠 High | B-02 | | |
+|---|---|---|---|---|---|---|---|---|
+| B-06 | Create UnifiedEvent model — fields: id, sourceType, timestamp, location (GeoLocation), severity, title, description, confidence, confidenceBreakdown, corroboratedBy[], isAnomaly, raw | | ⬜ Not Started | 0% | 🔴 Critical | B-02 | | Must match PRD §7.1 UnifiedEvent interface exactly |
+| B-07 | Create Source model with reliability profile (static/dynamic weight 0.0–1.0) | | ⬜ Not Started | 0% | 🟠 High | B-02 | | Per PRD: SourceReliability is per-feed-type static/dynamic weight |
+| B-08 | Create Asset model with GeoLocation (lat, lng, altitudeMeters, headingDegrees, speedKnots) | | ⬜ Not Started | 0% | 🟠 High | B-02 | | Directional headings required for map markers |
+| B-09 | Create Incident model with severity annotations | | ⬜ Not Started | 0% | 🔴 Critical | B-02 | | |
+| B-10 | Create Alert model with priority level and trigger event reference | | ⬜ Not Started | 0% | 🔴 Critical | B-02 | | Must link to triggering UnifiedEvent ID |
+| B-11 | Create Zone model with GeoJSON geospatial data (sectors, restricted airspace, patrol perimeters, incident geofences) | | ⬜ Not Started | 0% | 🟠 High | B-03 | | |
+| B-12 | Create Weather Observation model (Open-Meteo fields: precipitation, windVector, visibility, temperature) | | ⬜ Not Started | 0% | 🟠 High | B-02 | | Maps to Open-Meteo API response |
+| B-13 | Create Telemetry / Log model (system events, comms logs, perimeter tripwires) | | ⬜ Not Started | 0% | 🟠 High | B-02 | | |
+| B-14 | Create Situation model (current threat level, active alerts count, summary) | | ⬜ Not Started | 0% | 🔴 Critical | B-02 | | |
+| B-15 | Create AI Briefing model (AISummary): generatedAt, threatLevel, headline, executiveSummary, keyDevelopments[{point, supportingEventIds[]}], prioritizedActions[{action, urgency, supportingEventIds[]}], coursesOfAction[] | | ⬜ Not Started | 0% | 🟠 High | B-02 | | Must match PRD §7.1 AISummary interface |
+| B-15b | Create CourseOfAction model: id, title, description, pros[], tradeoffs[], recommendedUrgency (1–5) | | ⬜ Not Started | 0% | 🟠 High | B-02 | | PRD §5.6: 2–3 distinct COAs with tradeoff analysis |
 | B-16 | Create Audit Log model | | ⬜ Not Started | 0% | 🟡 Medium | B-02 | | |
 
 ---
@@ -81,14 +95,14 @@ Every team member should:
 # 📡 Multi-Source Data Ingestion
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
-|---|---|---|---|---:|---|---|---|---|
-| B-17 | Build generic event ingestion endpoint | | ⬜ Not Started | 0% | 🔴 Critical | B-06 | | |
-| B-18 | Build radar ingestion | | ⬜ Not Started | 0% | 🔴 Critical | B-06 | | |
-| B-19 | Build weather ingestion | | ⬜ Not Started | 0% | 🟠 High | B-06 | | |
-| B-20 | Build personnel ingestion | | ⬜ Not Started | 0% | 🟠 High | B-06 | | |
-| B-21 | Build operational logs ingestion | | ⬜ Not Started | 0% | 🟠 High | B-06 | | |
-| B-22 | Build incident ingestion | | ⬜ Not Started | 0% | 🔴 Critical | B-06 | | |
-| B-23 | Implement input validation | | ⬜ Not Started | 0% | 🔴 Critical | B-17 | | |
+|---|---|---|---|---|---|---|---|---|
+| B-17 | Build generic event ingestion endpoint (accepts any sourceType, maps to UnifiedEvent) | | ⬜ Not Started | 0% | 🔴 Critical | B-06 | | |
+| B-18 | Build radar ingestion (simulated kinematic tracks: velocity, heading, altitude, IFF tag) | | ⬜ Not Started | 0% | 🔴 Critical | B-06 | | High-fidelity simulated, NOT real radar |
+| B-19 | Build weather ingestion — **live Open-Meteo API** (precipitation, wind vector, visibility, temperature; zero API key required) | | ⬜ Not Started | 0% | 🟠 High | B-06 | | PRD §5.1.1: Only live external data source |
+| B-20 | Build personnel ingestion (simulated: unit readiness, status telemetry, vehicle positions) | | ⬜ Not Started | 0% | 🟠 High | B-06 | | Simulated |
+| B-21 | Build operational logs ingestion (simulated: system events, comms logs, perimeter tripwires) | | ⬜ Not Started | 0% | 🟠 High | B-06 | | Simulated |
+| B-22 | Build incident ingestion (simulated: tactical/civil dispatches with severity annotations) | | ⬜ Not Started | 0% | 🔴 Critical | B-06 | | Simulated |
+| B-23 | Implement input validation (strict UnifiedEvent schema enforcement) | | ⬜ Not Started | 0% | 🔴 Critical | B-17 | | |
 | B-24 | Implement event deduplication | | ⬜ Not Started | 0% | 🟠 High | B-17 | | |
 
 ---
@@ -96,13 +110,13 @@ Every team member should:
 # 🧠 Data Fusion Engine
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
-|---|---|---|---|---:|---|---|---|---|
-| B-25 | Build event normalization pipeline | | ⬜ Not Started | 0% | 🔴 Critical | B-18–B-22 | | |
-| B-26 | Build spatial correlation engine | | ⬜ Not Started | 0% | 🔴 Critical | B-03, B-25 | | |
-| B-27 | Build temporal correlation engine | | ⬜ Not Started | 0% | 🔴 Critical | B-25 | | |
+|---|---|---|---|---|---|---|---|---|
+| B-25 | Build event normalization pipeline — map all source types into UnifiedEvent v1.1 schema | | ⬜ Not Started | 0% | 🔴 Critical | B-18–B-22 | | Strict schema normalization |
+| B-26 | Build spatial correlation engine — Haversine distance ≤ ΔR, PostGIS-powered | | ⬜ Not Started | 0% | 🔴 Critical | B-03, B-05 | | PRD §5.1: Spatiotemporal corroboration |
+| B-27 | Build temporal correlation engine — temporal window ≤ ΔT | | ⬜ Not Started | 0% | 🔴 Critical | B-25 | | |
 | B-28 | Build entity correlation engine | | ⬜ Not Started | 0% | 🟠 High | B-25 | | |
-| B-29 | Build source agreement engine | | ⬜ Not Started | 0% | 🔴 Critical | B-25 | | |
-| B-30 | Build conflict detection engine | | ⬜ Not Started | 0% | 🟠 High | B-29 | | |
+| B-29 | Build source agreement engine — cross-source corroboration scoring | | ⬜ Not Started | 0% | 🔴 Critical | B-25 | | Corroborating sources linked via `corroboratedBy` |
+| B-30 | Build conflict detection engine — flag contradictory observations | | ⬜ Not Started | 0% | 🟠 High | B-29 | | |
 | B-31 | Build data freshness engine | | ⬜ Not Started | 0% | 🟠 High | B-25 | | |
 
 ---
@@ -110,67 +124,72 @@ Every team member should:
 # 🎯 Confidence, Priority & Intelligence
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
-|---|---|---|---|---:|---|---|---|---|
-| B-32 | Implement multi-source confidence scoring | | ⬜ Not Started | 0% | 🔴 Critical | B-29, B-31 | | |
-| B-33 | Implement confidence breakdown | | ⬜ Not Started | 0% | 🔴 Critical | B-32 | | |
-| B-34 | Implement alert priority engine | | ⬜ Not Started | 0% | 🔴 Critical | B-32 | | |
-| B-35 | Implement anomaly detection | | ⬜ Not Started | 0% | 🟡 Medium | B-25 | | |
-| B-36 | Build situation state engine | | ⬜ Not Started | 0% | 🔴 Critical | B-30, B-32, B-34 | | |
-| B-37 | Build situation history / timeline | | ⬜ Not Started | 0% | 🟠 High | B-36 | | |
+|---|---|---|---|---|---|---|---|---|
+| B-32 | Implement multi-source confidence scoring — `Confidence = min(100, round(SourceReliability × RecencyDecay × CorroborationBoost × 100))` | | ⬜ Not Started | 0% | 🔴 Critical | B-29, B-31 | | PRD §5.1: SourceReliability (0–1), RecencyDecay = e^(-λΔt), CorroborationBoost = 1 + 0.15×(N−1) |
+| B-33 | Implement confidence breakdown — 5 factors: sourceAgreement, spatialAgreement, temporalAgreement, sourceReliability, dataFreshness (all 0–100) | | ⬜ Not Started | 0% | 🔴 Critical | B-32 | | Must match PRD §7.1 ConfidenceBreakdown interface |
+| B-34 | Implement alert priority engine — factors: severity, confidence, recency, corroboration count, geographic relevance, persistence | | ⬜ Not Started | 0% | 🔴 Critical | B-32 | | PRD §5.1 |
+| B-35 | Implement anomaly detection — statistical z-score outlier detection on incident frequency and sensor deviations | | ⬜ Not Started | 0% | 🟡 Medium | B-25 | | PRD §5.1 |
+| B-36 | Build situation state engine — generate threat level (green/yellow/orange/red) | | ⬜ Not Started | 0% | 🔴 Critical | B-30, B-32, B-34 | | |
+| B-37 | Build situation history / timeline — chronological threat level escalations with trigger event references | | ⬜ Not Started | 0% | 🟠 High | B-36 | | PRD §7.2: GET /situation/timeline |
 
 ---
 
 # 🤖 AI / Gemini Backend
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
-|---|---|---|---|---:|---|---|---|---|
-| B-38 | Integrate Gemini API | | ⬜ Not Started | 0% | 🔴 Critical | B-36 | | |
-| B-39 | Design structured situation briefing prompt | | ⬜ Not Started | 0% | 🔴 Critical | B-38 | | |
-| B-40 | Implement structured AI output | | ⬜ Not Started | 0% | 🔴 Critical | B-39 | | |
-| B-41 | Implement evidence linking for AI insights | | ⬜ Not Started | 0% | 🟠 High | B-40 | | |
+|---|---|---|---|---|---|---|---|---|
+| B-38 | Integrate Gemini API — Google Gemini 2.0 / 1.5 Flash, structured JSON response schema | | ⬜ Not Started | 0% | 🔴 Critical | B-36 | | PRD §5.3 |
+| B-39 | Design structured situation briefing prompt — threat assessment, grounded claims with `supportingEventIds` | | ⬜ Not Started | 0% | 🔴 Critical | B-38 | | Zero hallucination: every key development must cite event IDs |
+| B-40 | Implement structured AI output — generate AISummary (executiveSummary, keyDevelopments, prioritizedActions, threatLevel badge) | | ⬜ Not Started | 0% | 🔴 Critical | B-39 | | PRD §5.3 |
+| B-40b | Implement AI Courses of Action (COA) generation — 2–3 distinct COAs with pros, tradeoffs, urgency scores (1–5) | | ⬜ Not Started | 0% | 🔴 Critical | B-40 | | PRD §5.6: COA 1: Rapid Interception, COA 2: Perimeter Containment, COA 3: Reconnaissance |
+| B-41 | Implement evidence linking for AI insights — every AI claim references contributing event IDs | | ⬜ Not Started | 0% | 🟠 High | B-40 | | Hard grounding requirement |
 
 ### AI Output Must Cover
 
-- Situation summary
-- Key developments
-- Prioritized action items
+- Threat level badge (`GREEN`, `YELLOW`, `ORANGE`, `RED`)
+- Executive summary
+- Key developments with `supportingEventIds` citations
+- Prioritized action items with urgency scores
+- Courses of Action (COAs) with tradeoff analysis
 - Uncertainties
 - Confidence/context
-- Evidence references
 
 ---
 
 # 🌐 Backend APIs
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
-|---|---|---|---|---:|---|---|---|---|
-| B-42 | Situation REST APIs — current/history/timeline | | ⬜ Not Started | 0% | 🔴 Critical | B-36 | | |
-| B-43 | Event REST APIs — list/detail/correlations | | ⬜ Not Started | 0% | 🟠 High | B-25 | | |
-| B-44 | Map APIs — assets/alerts/weather/zones/hotspots | | ⬜ Not Started | 0% | 🔴 Critical | B-03, B-34 | | |
-| B-45 | Intelligence APIs — confidence/conflicts/anomalies | | ⬜ Not Started | 0% | 🟠 High | B-30, B-32, B-35 | | |
+|---|---|---|---|---|---|---|---|---|
+| B-42 | Situation REST APIs — `GET /api/v1/situation/current` (threatLevel, summary, activeAlertsCount), `GET /api/v1/situation/timeline` (chronological threat-level escalations) | | ⬜ Not Started | 0% | 🔴 Critical | B-36 | | Exact contracts per PRD §7.2 |
+| B-43 | Event REST APIs — `GET /api/v1/events` (?source=&severity=&limit=), `GET /api/v1/events/:id`, `GET /api/v1/events/:id/correlations` | | ⬜ Not Started | 0% | 🟠 High | B-25 | | |
+| B-44 | Map APIs — `GET /api/v1/map/assets`, `/alerts`, `/weather` (live Open-Meteo grid), `/zones` (GeoJSON) | | ⬜ Not Started | 0% | 🔴 Critical | B-03, B-34 | | |
+| B-45 | Intelligence APIs — `GET /api/v1/intelligence/source-health` (SourceHealth[]), confidence, conflicts, anomalies | | ⬜ Not Started | 0% | 🟠 High | B-30, B-32, B-35 | | Must include source-health endpoint per PRD §7.2 |
+| B-45b | NL Query API — `POST /api/v1/ai/query` (free-text → Gemini function-calling → filter params) | | ⬜ Not Started | 0% | 🟠 High | B-38 | | PRD §5.5: Temporal, spatial, severity, source filters extracted by Gemini |
 
 ---
 
 # ⚡ Real-Time Backend
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
-|---|---|---|---|---:|---|---|---|---|
-| B-46 | Build WebSocket gateway | | ⬜ Not Started | 0% | 🔴 Critical | B-04 | | |
-| B-47 | Stream new events | | ⬜ Not Started | 0% | 🟠 High | B-46, B-17 | | |
-| B-48 | Stream alert updates | | ⬜ Not Started | 0% | 🔴 Critical | B-46, B-34 | | |
-| B-49 | Stream situation updates | | ⬜ Not Started | 0% | 🔴 Critical | B-46, B-36 | | |
+|---|---|---|---|---|---|---|---|---|
+| B-46 | Build WebSocket gateway — `ws://localhost:3001/stream`, 4 event types: `EVENT_STREAM`, `ALERT_TRIGGER`, `BRIEFING_UPDATE`, `HEALTH_STATUS` | | ⬜ Not Started | 0% | 🔴 Critical | B-04 | | Exact event types per PRD §7.2 |
+| B-47 | Stream new events via `EVENT_STREAM` | | ⬜ Not Started | 0% | 🟠 High | B-46, B-17 | | |
+| B-48 | Stream alert updates via `ALERT_TRIGGER` | | ⬜ Not Started | 0% | 🔴 Critical | B-46, B-34 | | |
+| B-49 | Stream situation updates via `BRIEFING_UPDATE` | | ⬜ Not Started | 0% | 🔴 Critical | B-46, B-36 | | |
+| B-49b | Stream source health status via `HEALTH_STATUS` — live/degraded/down per source | | ⬜ Not Started | 0% | 🟠 High | B-46, B-60 | | |
 
 ---
 
 # 🧪 Synthetic Data & Simulation
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
-|---|---|---|---|---:|---|---|---|---|
-| B-50 | Build synthetic multi-source data generator | | ⬜ Not Started | 0% | 🔴 Critical | B-17 | | |
-| B-51 | Create normal operations scenario | | ⬜ Not Started | 0% | 🟠 High | B-50 | | |
-| B-52 | Create weather degradation scenario | | ⬜ Not Started | 0% | 🟠 High | B-50 | | |
-| B-53 | Create multi-source correlation scenario | | ⬜ Not Started | 0% | 🔴 Critical | B-50, B-26, B-27 | | |
-| B-54 | Create conflicting-source scenario | | ⬜ Not Started | 0% | 🟠 High | B-50, B-30 | | |
+|---|---|---|---|---|---|---|---|---|
+| B-50 | Build synthetic multi-source data generator — radar, personnel, logs, incidents are simulated; weather uses live Open-Meteo | | ⬜ Not Started | 0% | 🔴 Critical | B-17 | | PRD §5.1: Only weather is live; rest are high-fidelity simulated |
+| B-50b | Implement simulated source dropout injection — toggle source to `degraded`/`down` state | | ⬜ Not Started | 0% | 🟠 High | B-50 | | PRD §5.1: Source health monitoring with simulated dropout |
+| B-51 | Create normal operations scenario — stable environment, healthy sources, no critical alerts | | ⬜ Not Started | 0% | 🟠 High | B-50 | | |
+| B-52 | Create weather degradation scenario — weather changes → sensor reliability decreases → confidence recalculated → situation status updated | | ⬜ Not Started | 0% | 🟠 High | B-50 | | |
+| B-53 | Create multi-source correlation scenario — radar + sensor + incident → spatial+temporal correlation → high-confidence situation → priority alert → AI briefing | | ⬜ Not Started | 0% | 🔴 Critical | B-50, B-26, B-27 | | |
+| B-54 | Create conflicting-source scenario — Source A: normal, Source B: anomaly, Source C: normal → conflict detected → confidence adjusted → human verification | | ⬜ Not Started | 0% | 🟠 High | B-50, B-30 | | |
 | B-55 | Build event replay/timeline engine | | ⬜ Not Started | 0% | 🟡 Medium | B-37 | | |
 
 ---
@@ -178,14 +197,14 @@ Every team member should:
 # 🔐 Backend Security & Reliability
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
-|---|---|---|---|---:|---|---|---|---|
-| B-56 | Implement authentication | | ⬜ Not Started | 0% | 🟠 High | B-01 | | |
-| B-57 | Implement role-based access control | | ⬜ Not Started | 0% | 🟡 Medium | B-56 | | |
+|---|---|---|---|---|---|---|---|---|
+| B-56 | Implement mock operator profile switcher (Command Operator / Intelligence Analyst / Duty Officer) — demo mode only | | ⬜ Not Started | 0% | 🟠 High | B-01 | | PRD §3 Non-Goals: No full auth/RBAC for hackathon |
+| B-57 | ~~Implement role-based access control~~ **Non-goal for hackathon** — remove or mark as future | | ⬜ Not Started | 0% | ⚪ Low | — | | PRD §3: Mock profile switcher replaces RBAC |
 | B-58 | Implement API rate limiting | | ⬜ Not Started | 0% | 🟡 Medium | B-01 | | |
 | B-59 | Implement audit logging | | ⬜ Not Started | 0% | 🟡 Medium | B-16 | | |
-| B-60 | Implement system health checks | | ⬜ Not Started | 0% | 🟠 High | B-02, B-04 | | |
-| B-61 | Backend unit tests | | ⬜ Not Started | 0% | 🟠 High | B-32, B-34 | | |
-| B-62 | Backend integration tests | | ⬜ Not Started | 0% | 🟠 High | B-36 | | |
+| B-60 | Implement source health checks — live status per source (live/degraded/down), lastUpdate timestamp, reliabilityScore, activeCount | | ⬜ Not Started | 0% | 🟠 High | B-02, B-04 | | Must match PRD §7.1 SourceHealth interface |
+| B-61 | Backend unit tests — confidence engine, priority engine, correlation engines | | ⬜ Not Started | 0% | 🟠 High | B-32, B-34 | | |
+| B-62 | Backend integration tests — full ingestion → fusion → situation flow | | ⬜ Not Started | 0% | 🟠 High | B-36 | | |
 
 ---
 
@@ -194,39 +213,43 @@ Every team member should:
 ## 4. Frontend Foundation
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
-|---|---|---|---|---:|---|---|---|---|
-| F-01 | Initialize React + TypeScript | | ⬜ Not Started | 0% | 🔴 Critical | — | | |
-| F-02 | Setup Tailwind CSS | | ⬜ Not Started | 0% | 🟠 High | F-01 | | |
-| F-03 | Build reusable UI component system | | ⬜ Not Started | 0% | 🔴 Critical | F-02 | | |
-| F-04 | Build command center application shell | | ⬜ Not Started | 0% | 🔴 Critical | F-03 | | |
-| F-05 | Implement responsive layout | | ⬜ Not Started | 0% | 🟡 Medium | F-04 | | |
+|---|---|---|---|---|---|---|---|---|
+| F-01 | Initialize React 18 + TypeScript + **Vite** | | ⬜ Not Started | 0% | 🔴 Critical | — | | PRD §8: Vite for instantaneous HMR |
+| F-02 | Setup Tailwind CSS + custom dark tactical HUD theme (military-grade dark, glassmorphism, custom fonts) | | ⬜ Not Started | 0% | 🟠 High | F-01 | | PRD §8: Vanilla CSS + Tailwind |
+| F-02b | Setup **Zustand** state management — reactive store connecting map, feed, time-scrubber, AI drawer | | ⬜ Not Started | 0% | 🔴 Critical | F-01 | | PRD §8: Zero-boilerplate reactive store |
+| F-03 | Build reusable UI component system (badges, panels, meters, cards, buttons, modals) | | ⬜ Not Started | 0% | 🔴 Critical | F-02 | | |
+| F-04 | Build command center application shell (top nav, sidebar, main content, footer) | | ⬜ Not Started | 0% | 🔴 Critical | F-03 | | |
+| F-05 | Implement responsive layout | | ⬜ Not Started | 0% | 🟡 Medium | F-04 | | Optimized for desktop command displays and multi-monitor |
 
 ---
 
 # 🗺️ Tactical Command Map
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
-|---|---|---|---|---:|---|---|---|---|
-| F-06 | Integrate MapLibre / Leaflet | | ⬜ Not Started | 0% | 🔴 Critical | F-04 | | |
-| F-07 | Build Assets map layer | | ⬜ Not Started | 0% | 🔴 Critical | F-06 | | |
-| F-08 | Build Alerts map layer | | ⬜ Not Started | 0% | 🔴 Critical | F-06 | | |
-| F-09 | Build Weather map layer | | ⬜ Not Started | 0% | 🟠 High | F-06 | | |
-| F-10 | Build Zones map layer | | ⬜ Not Started | 0% | 🟠 High | F-06 | | |
-| F-11 | Build dynamic layer toggles | | ⬜ Not Started | 0% | 🔴 Critical | F-07–F-10 | | |
-| F-12 | Build map popup/detail panel | | ⬜ Not Started | 0% | 🟠 High | F-07, F-08 | | |
-| F-13 | Build activity / alert hotspots | | ⬜ Not Started | 0% | 🟠 High | F-08 | | |
+|---|---|---|---|---|---|---|---|---|
+| F-06 | Integrate MapLibre GL JS with custom dark tactical basemap | | ⬜ Not Started | 0% | 🔴 Critical | F-04 | | PRD §5.2: WebGL hardware-accelerated, no proprietary API keys |
+| F-07 | Build Assets map layer — ground, naval, aerial unit markers with directional headings | | ⬜ Not Started | 0% | 🔴 Critical | F-06 | | |
+| F-08 | Build Alerts map layer — color-coded by severity (CRITICAL/HIGH/MEDIUM/LOW) | | ⬜ Not Started | 0% | 🔴 Critical | F-06 | | |
+| F-09 | Build Weather map layer — real-time Open-Meteo overlays (precipitation radar, wind vector particles) | | ⬜ Not Started | 0% | 🟠 High | F-06 | | |
+| F-10 | Build Zones map layer — operational sectors, restricted airspace, patrol perimeters, incident geofences (GeoJSON) | | ⬜ Not Started | 0% | 🟠 High | F-06 | | |
+| F-11 | Build dynamic layer toggles (☑ Assets ☑ Alerts ☑ Weather ☑ Zones) | | ⬜ Not Started | 0% | 🔴 Critical | F-07–F-10 | | |
+| F-12 | Build interactive event popups — summary badge, confidence meter, corroborating source tags, drill-down trigger | | ⬜ Not Started | 0% | 🟠 High | F-07, F-08 | | |
+| F-13 | Build marker clustering + fly-to focus — dense contacts auto-cluster; clicking alert flies camera to hotspot | | ⬜ Not Started | 0% | 🔴 Critical | F-06 | | PRD §5.2: Marker Clustering & Fly-to Focus |
+| F-13b | Build incident heatmap mode — dynamic density surface showing spatial concentration of high-severity events | | ⬜ Not Started | 0% | 🟠 High | F-08 | | PRD §5.2: Incident Heatmap Mode |
+| F-43 | Build 4D Time-Scrubber — slider to scrub backwards in time and replay how operational picture unfolded | | ⬜ Not Started | 0% | 🟠 High | F-06, B-55 | | PRD §5.2: 4D Time-Scrubber |
 
 ---
 
 # 📊 Command Dashboard
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
-|---|---|---|---|---:|---|---|---|---|
-| F-14 | Build situation overview panel | | ⬜ Not Started | 0% | 🔴 Critical | B-42 | | |
+|---|---|---|---|---|---|---|---|---|
+| F-14 | Build situation overview panel — threat level badge, active alerts count, summary | | ⬜ Not Started | 0% | 🔴 Critical | B-42 | | |
 | F-15 | Build active alerts panel | | ⬜ Not Started | 0% | 🔴 Critical | B-34 | | |
-| F-16 | Build source health panel | | ⬜ Not Started | 0% | 🟠 High | B-60 | | |
+| F-16 | Build source health panel — live/degraded/down status per source with lastUpdate | | ⬜ Not Started | 0% | 🟠 High | B-60 | | Must match SourceHealth interface |
 | F-17 | Build key metrics cards | | ⬜ Not Started | 0% | 🟠 High | F-14 | | |
 | F-18 | Build operational event timeline | | ⬜ Not Started | 0% | 🟠 High | B-37 | | |
+| F-18b | Build alert escalation timeline — vertical chronological timeline logging every threat-level shift + trigger event responsible | | ⬜ Not Started | 0% | 🟠 High | B-37 | | PRD §5.10 |
 | F-19 | Build recent changes panel | | ⬜ Not Started | 0% | 🟠 High | B-37 | | |
 
 ---
@@ -234,10 +257,10 @@ Every team member should:
 # 🧠 Intelligence UI
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
-|---|---|---|---|---:|---|---|---|---|
-| F-20 | Build confidence indicator | | ⬜ Not Started | 0% | 🔴 Critical | B-33 | | |
-| F-21 | Build confidence breakdown | | ⬜ Not Started | 0% | 🔴 Critical | B-33 | | |
-| F-22 | Build evidence viewer | | ⬜ Not Started | 0% | 🟠 High | B-41 | | |
+|---|---|---|---|---|---|---|---|---|
+| F-20 | Build confidence indicator — color-coded badges across all UI surfaces: ≥80% Emerald Green, 50–79% Amber Yellow, <50% Crimson Red | | ⬜ Not Started | 0% | 🔴 Critical | B-33 | | PRD §5.4 |
+| F-21 | Build confidence breakdown — interactive display of 5 factors with visual bars | | ⬜ Not Started | 0% | 🔴 Critical | B-33 | | |
+| F-22 | Build Interactive Explainability Drawer — sliding panel showing: supporting source event cards with raw JSON view, 5 contributing factor breakdown, mathematical confidence computation breakdown | | ⬜ Not Started | 0% | 🔴 Critical | B-33, B-41 | | PRD §5.8: Click any AI bullet or event to open |
 | F-23 | Build conflicting-source warnings | | ⬜ Not Started | 0% | 🟠 High | B-30 | | |
 | F-24 | Build anomaly indicators | | ⬜ Not Started | 0% | 🟡 Medium | B-35 | | |
 
@@ -246,65 +269,76 @@ Every team member should:
 # 🤖 AI Situation Briefing UI
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
-|---|---|---|---|---:|---|---|---|---|
-| F-25 | Build AI executive briefing panel | | ⬜ Not Started | 0% | 🔴 Critical | B-40 | | |
-| F-26 | Build prioritized action items | | ⬜ Not Started | 0% | 🔴 Critical | B-40 | | |
-| F-27 | Build key developments section | | ⬜ Not Started | 0% | 🟠 High | B-40 | | |
+|---|---|---|---|---|---|---|---|---|
+| F-25 | Build AI executive briefing panel — threat level badge (GREEN/YELLOW/ORANGE/RED), headline, executive summary | | ⬜ Not Started | 0% | 🔴 Critical | B-40 | | |
+| F-26 | Build prioritized action items with urgency scores (1–5) | | ⬜ Not Started | 0% | 🔴 Critical | B-40 | | |
+| F-26b | Build AI Courses of Action (COA) panel — 2–3 COAs with pros, risks, resource tradeoffs | | ⬜ Not Started | 0% | 🔴 Critical | B-40b | | PRD §5.6 |
+| F-27 | Build key developments section with `supportingEventIds` citations (clickable → event detail) | | ⬜ Not Started | 0% | 🟠 High | B-40 | | PRD §5.3: Every claim must cite event IDs |
 | F-28 | Build uncertainty section | | ⬜ Not Started | 0% | 🟠 High | B-40 | | |
-| F-29 | Build evidence-linked briefing UI | | ⬜ Not Started | 0% | 🟠 High | B-41 | | |
+| F-29 | Build NL Command Query Bar — free-form omnibar, Gemini parses temporal/spatial/severity/source filters, instant map+feed+stats filtering | | ⬜ Not Started | 0% | 🔴 Critical | B-45b | | PRD §5.5: "Show all high-severity radar anomalies near Sector 4 in the past 30 minutes" |
 
 ---
 
 # ⚡ Frontend Real-Time
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
-|---|---|---|---|---:|---|---|---|---|
-| F-30 | Integrate WebSocket connection | | ⬜ Not Started | 0% | 🔴 Critical | B-46 | | |
-| F-31 | Implement live map updates | | ⬜ Not Started | 0% | 🔴 Critical | F-30 | | |
-| F-32 | Implement live alert updates | | ⬜ Not Started | 0% | 🔴 Critical | F-30 | | |
-| F-33 | Implement live situation updates | | ⬜ Not Started | 0% | 🔴 Critical | F-30 | | |
+|---|---|---|---|---|---|---|---|---|
+| F-30 | Integrate WebSocket connection to `ws://localhost:3001/stream` | | ⬜ Not Started | 0% | 🔴 Critical | B-46 | | |
+| F-31 | Implement live map updates (assets, alerts, weather zones update in real time) | | ⬜ Not Started | 0% | 🔴 Critical | F-30 | | |
+| F-32 | Implement live alert updates (alert panel refreshes on ALERT_TRIGGER) | | ⬜ Not Started | 0% | 🔴 Critical | F-30 | | |
+| F-33 | Implement live situation updates (threat level, briefing refresh on BRIEFING_UPDATE) | | ⬜ Not Started | 0% | 🔴 Critical | F-30 | | |
+| F-33b | Implement live source health updates (HEALTH_STATUS stream) | | ⬜ Not Started | 0% | 🟠 High | F-30, B-49b | | |
 
 ---
 
 # ✨ Frontend UX & Polish
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
-|---|---|---|---|---:|---|---|---|---|
+|---|---|---|---|---|---|---|---|---|
 | F-34 | Implement loading/skeleton states | | ⬜ Not Started | 0% | 🟡 Medium | — | | |
 | F-35 | Implement API/network error states | | ⬜ Not Started | 0% | 🟠 High | — | | |
 | F-36 | Implement empty states | | ⬜ Not Started | 0% | 🟡 Medium | — | | |
 | F-37 | Implement toast/notification system | | ⬜ Not Started | 0% | 🟡 Medium | — | | |
 | F-38 | Accessibility pass | | ⬜ Not Started | 0% | 🟡 Medium | — | | |
 | F-39 | Final visual polish | | ⬜ Not Started | 0% | 🔴 Critical | — | | |
+| F-39b | Build Voice Briefing Mode — Web Speech API, military-style voice readout of latest Gemini briefing with play/pause controls | | ⬜ Not Started | 0% | 🟠 High | B-40 | | PRD §5.7: Hands-free audio SITREP |
+| F-39c | Build Dynamic Tactical Threat Level UI — threat level drives global UI lighting, top nav warning bar, ambient HUD accents, flashing indicators during RED/CRITICAL spikes | | ⬜ Not Started | 0% | 🔴 Critical | B-36 | | PRD §5.9 |
+| F-39d | Build radar sweep animation on command center | | ⬜ Not Started | 0% | 🟡 Medium | F-04 | | PRD §10: "Visual Wow Factor" |
+| F-40 | Build What-If Scenario Sandbox — drag-and-drop hypothetical threats (severe storm, radar jamming, hostile contact) onto map; triggers client-side re-fusion and updated briefing | | ⬜ Not Started | 0% | 🟡 Medium | B-25 | | PRD §5.11 |
+| F-41 | Build Degraded-Comms Simulation UI — amber "DEGRADED MODE — SERVING CACHED COP" banner, freeze last-known positions, visibly increased uncertainty metrics | | ⬜ Not Started | 0% | 🟡 Medium | B-49b | | PRD §5.12 |
+| F-42 | Build One-Click SITREP PDF Export — military-formatted PDF via jsPDF/html2canvas containing timestamp, threat level, briefing, active COAs, map snapshot, critical event tables | | ⬜ Not Started | 0% | 🟠 High | B-40 | | PRD §5.13 |
 
 ---
 
 # 🔗 Frontend + Backend Integration
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
-|---|---|---|---|---:|---|---|---|---|
-| I-01 | Connect frontend to Situation APIs | | ⬜ Not Started | 0% | 🔴 Critical | B-42, F-14 | | |
-| I-02 | Connect frontend to Map APIs | | ⬜ Not Started | 0% | 🔴 Critical | B-44, F-06 | | |
-| I-03 | Connect frontend to Intelligence APIs | | ⬜ Not Started | 0% | 🔴 Critical | B-45, F-20 | | |
-| I-04 | Connect AI briefing UI to backend | | ⬜ Not Started | 0% | 🔴 Critical | B-40, F-25 | | |
-| I-05 | Connect WebSocket live events | | ⬜ Not Started | 0% | 🔴 Critical | B-47–B-49, F-30 | | |
+|---|---|---|---|---|---|---|---|---|
+| I-01 | Connect frontend to Situation APIs (`/situation/current`, `/situation/timeline`) | | ⬜ Not Started | 0% | 🔴 Critical | B-42, F-14 | | |
+| I-02 | Connect frontend to Map APIs (`/map/assets`, `/alerts`, `/weather`, `/zones`) | | ⬜ Not Started | 0% | 🔴 Critical | B-44, F-06 | | |
+| I-03 | Connect frontend to Intelligence APIs (`/intelligence/source-health`, confidence, conflicts) | | ⬜ Not Started | 0% | 🔴 Critical | B-45, F-20 | | |
+| I-04 | Connect AI briefing UI to backend (`/ai/briefing`, `/ai/briefing/latest`) | | ⬜ Not Started | 0% | 🔴 Critical | B-40, F-25 | | |
+| I-04b | Connect NL query bar to backend (`/ai/query`) | | ⬜ Not Started | 0% | 🔴 Critical | B-45b, F-29 | | |
+| I-05 | Connect WebSocket live events (EVENT_STREAM, ALERT_TRIGGER, BRIEFING_UPDATE, HEALTH_STATUS) | | ⬜ Not Started | 0% | 🔴 Critical | B-47–B-49b, F-30 | | |
 | I-06 | Test complete ingestion → fusion → dashboard flow | | ⬜ Not Started | 0% | 🔴 Critical | B-36, F-33 | | |
-| I-07 | Test scenario → AI → briefing flow | | ⬜ Not Started | 0% | 🔴 Critical | B-40, F-25 | | |
+| I-07 | Test scenario → AI → briefing flow (including COAs) | | ⬜ Not Started | 0% | 🔴 Critical | B-40b, F-25 | | |
 
 ---
 
 # 🎬 Demo & Hackathon Preparation
 
 | ID | Task | Owner | Status | Progress | Priority | Dependencies | GitHub / PR | Notes |
-|---|---|---|---|---:|---|---|---|---|
-| D-01 | Prepare primary live demo scenario | | ⬜ Not Started | 0% | 🔴 Critical | I-06, I-07 | | |
+|---|---|---|---|---|---|---|---|---|
+| D-01 | Prepare primary live demo scenario (PRD §10: 7-step judging walkthrough) | | ⬜ Not Started | 0% | 🔴 Critical | I-06, I-07 | | Must cover all 7 demo steps per PRD §10 |
 | D-02 | Prepare backup demo scenario | | ⬜ Not Started | 0% | 🟠 High | I-06 | | |
 | D-03 | Add simulation start/stop/reset controls | | ⬜ Not Started | 0% | 🟠 High | B-50 | | |
+| D-03b | Add incident spike injection button — "Inject Incident Spike" triggers coordinated border anomaly | | ⬜ Not Started | 0% | 🟠 High | B-50 | | PRD §10 Step 6: Threat status transitions YELLOW → RED dynamically |
+| D-03c | Add source dropout injection controls | | ⬜ Not Started | 0% | 🟡 Medium | B-50b | | PRD §5.1 |
 | D-04 | Add replay controls | | ⬜ Not Started | 0% | 🟡 Medium | B-55 | | |
 | D-05 | Finalize README | | ⬜ Not Started | 0% | 🟠 High | — | | |
 | D-06 | Create final architecture diagram | | ⬜ Not Started | 0% | 🟠 High | P-01 | | |
 | D-07 | Document API endpoints | | ⬜ Not Started | 0% | 🟡 Medium | B-42–B-45 | | |
-| D-08 | Prepare judge walkthrough / pitch | | ⬜ Not Started | 0% | 🔴 Critical | D-01 | | |
+| D-08 | Prepare judge walkthrough / pitch | | ⬜ Not Started | 0% | 🔴 Critical | D-01 | | Must include: visual wow, layer interactivity, explainability, NL query, AI briefing+voice, escalation injection, SITREP export |
 | D-09 | Full system QA | | ⬜ Not Started | 0% | 🔴 Critical | I-06, I-07 | | |
 | D-10 | Deploy frontend | | ⬜ Not Started | 0% | 🔴 Critical | D-09 | | |
 | D-11 | Deploy backend + database + Redis | | ⬜ Not Started | 0% | 🔴 Critical | D-09 | | |
@@ -316,23 +350,38 @@ Every team member should:
 
 Use this section before submission to verify that **every official requirement is implemented**.
 
-| Official Requirement | Implementation | Owner | Status |
-|---|---|---|---|
-| Multi-stream data aggregation | Weather + Radar + Personnel + Logs + Incidents | | ⬜ |
-| Interactive geospatial tactical map | MapLibre / Leaflet | | ⬜ |
-| Assets map layer | Operational assets | | ⬜ |
-| Alerts map layer | Alert visualization | | ⬜ |
-| Weather map layer | Weather visualization | | ⬜ |
-| Zones map layer | Operational zones | | ⬜ |
-| AI situation synthesis | Gemini-powered synthesis | | ⬜ |
-| Concise executive summary | AI briefing | | ⬜ |
-| Confidence level indicator | Multi-source confidence engine | | ⬜ |
-| Prioritized action items | Alert/action priority engine + AI | | ⬜ |
-| Unified command center | Complete dashboard | | ⬜ |
-| Data fusion | Spatial + temporal + source correlation | | ⬜ |
-| Alert prioritization | Severity + confidence + recency + impact | | ⬜ |
-| Scalability | Event-driven backend + Redis + queues | | ⬜ |
-| UI craftsmanship | Final polished command interface | | ⬜ |
+| Official Requirement | Implementation | Task | Owner | Status |
+|---|---|---|---|---|
+| Multi-stream data aggregation | Weather (Open-Meteo live) + Radar (sim) + Personnel (sim) + Logs (sim) + Incidents (sim) | B-17–B-22 | | ⬜ |
+| Interactive geospatial tactical map | MapLibre GL JS with dark tactical basemap | F-06 | | ⬜ |
+| Assets map layer | Ground, naval, aerial unit markers with directional headings | F-07 | | ⬜ |
+| Alerts map layer | Color-coded by severity (CRITICAL/HIGH/MEDIUM/LOW) | F-08 | | ⬜ |
+| Weather map layer | Real-time Open-Meteo overlays (precipitation, wind vectors) | F-09 | | ⬜ |
+| Zones map layer | GeoJSON operational sectors, restricted airspace, patrol perimeters | F-10 | | ⬜ |
+| AI situation synthesis | Gemini 2.0/1.5 Flash structured JSON briefing with grounded citations | B-38–B-40 | | ⬜ |
+| Concise executive summary | Threat level badge + executive summary in AISummary | B-40, F-25 | | ⬜ |
+| Confidence level indicator | Color-coded badges: ≥80% green, 50–79% amber, <50% red | F-20 | | ⬜ |
+| Confidence breakdown | 5-factor breakdown (source, spatial, temporal, reliability, freshness) | F-21, B-33 | | ⬜ |
+| Prioritized action items | Alert priority engine + AI-generated ranked actions with urgency (1–5) | B-34, B-40, F-26 | | ⬜ |
+| Unified command center | Complete dark-themed command center with all panels | F-04 | | ⬜ |
+| Data fusion | Spatial (Haversine) + temporal + source correlation + corroboration | B-25–B-29 | | ⬜ |
+| Alert prioritization | Severity + confidence + recency + corroboration + geographic relevance + persistence | B-34 | | ⬜ |
+| Scalability | Event-driven backend + Redis + BullMQ queues + WebSocket streaming | B-04, B-05, B-46 | | ⬜ |
+| UI craftsmanship | Military-grade dark HUD, glassmorphism, smooth animations, zero-latency | F-02, F-39, F-39d | | ⬜ |
+| **Natural-language query bar** | Free-form omnibar → Gemini function-calling → instant map+feed filtering | B-45b, F-29 | | ⬜ |
+| **AI Courses of Action** | 2–3 COAs with pros, risks, resource tradeoffs | B-40b, F-26b | | ⬜ |
+| **Voice briefing** | Web Speech API military-style audio readout with play/pause | F-39b | | ⬜ |
+| **Explainability drawer** | Sliding panel: source cards, raw JSON, 5-factor math breakdown | F-22 | | ⬜ |
+| **Threat-level dynamic UI** | Global UI lighting + nav bar + ambient glow + flashing during RED/CRITICAL | F-39c | | ⬜ |
+| **Alert escalation timeline** | Vertical timeline of every threat-level shift + trigger event | F-18b | | ⬜ |
+| **Marker clustering + fly-to** | Dense contacts auto-cluster; clicking alert flies camera | F-13 | | ⬜ |
+| **Incident heatmap** | Dynamic density surface for high-severity events | F-13b | | ⬜ |
+| **4D Time-Scrubber** | Slider to replay operational picture over time | F-43 | | ⬜ |
+| **What-If sandbox** | Drag-and-drop hypothetical threats → client-side re-fusion | F-40 | | ⬜ |
+| **Degraded-comms simulation** | Amber banner, cached COP, frozen positions, uncertainty tags | F-41 | | ⬜ |
+| **SITREP PDF export** | One-click military-formatted PDF via jsPDF/html2canvas | F-42 | | ⬜ |
+| **Source health monitoring** | live/degraded/down per source with reliability score | B-60, F-16 | | ⬜ |
+| **Client fallback mode** | Web Worker ingestion + Zustand store when backend unavailable | P-06 | | ⬜ |
 
 ---
 
@@ -351,41 +400,40 @@ Use this section before submission to verify that **every official requirement i
 ### Suggested Ownership Split
 
 **Backend Team**
-- Data ingestion
-- Database
-- Data fusion
-- Confidence engine
+- Data ingestion (weather live + 4 simulated sources)
+- Database & PostGIS
+- Data fusion (spatial Haversine + temporal + entity + source agreement)
+- Confidence engine (5-factor breakdown with exact formula)
 - Priority engine
-- APIs
-- WebSockets
-- AI integration
+- APIs (REST + WebSocket 4-type streaming)
+- AI integration (Gemini briefing + COA generation + NL query)
 
 **Frontend Team**
-- Command center
-- Tactical map
-- Dashboard
-- Alerts
-- Confidence visualization
-- AI briefing
-- Real-time UI
-- UX polish
+- Command center (dark HUD + glassmorphism)
+- Tactical map (MapLibre + 4 layers + clustering + heatmap + time-scrubber)
+- Dashboard (situation, alerts, source health, metrics, escalation timeline)
+- Intelligence UI (confidence badges, explainability drawer)
+- AI briefing (panel, COAs, key developments, NL query bar)
+- Real-time UI (WebSocket live updates)
+- UX polish (radar sweep, threat-level glow, voice briefing, SITREP export, what-if sandbox, degraded mode)
 
 **Integration / DevOps**
-- Docker
+- Docker (docker-compose)
+- Dual-mode architecture (backend service + client fallback)
 - Environment setup
 - Deployment
-- API integration
-- WebSocket integration
-- Testing
-- Demo infrastructure
+- API integration (all REST + WebSocket endpoints)
+- Testing (unit + integration)
+- Demo infrastructure (simulation controls, incident injection, scenario prep)
 
 **AI / Intelligence**
 - Situation synthesis
-- Prompt engineering
-- Structured outputs
+- Prompt engineering (grounded claims with event IDs)
+- Structured outputs (AISummary + COAs)
 - Evidence linking
 - Confidence reasoning
 - Action prioritization
+- NL query parsing (Gemini function calling)
 
 ---
 
@@ -404,16 +452,16 @@ Use this section before submission to verify that **every official requirement i
 ### Date: `YYYY-MM-DD`
 
 **What I completed yesterday**
-- 
+-
 
 **What I am working on today**
-- 
+-
 
 **What is blocking me**
-- 
+-
 
 **PRs / Commits**
-- 
+-
 
 ---
 
@@ -421,60 +469,92 @@ Use this section before submission to verify that **every official requirement i
 
 ## Backend
 
-- [ ] All data sources ingest successfully
-- [ ] Events normalized
-- [ ] Spatial correlation working
-- [ ] Temporal correlation working
+- [ ] All 5 data sources ingest successfully (weather=Open-Meteo live, rest=simulated)
+- [ ] Events normalized to UnifiedEvent v1.1 schema
+- [ ] Spatial correlation working (Haversine ≤ ΔR)
+- [ ] Temporal correlation working (window ≤ ΔT)
 - [ ] Source agreement working
 - [ ] Conflicts detected
-- [ ] Confidence calculated
-- [ ] Alert priority calculated
-- [ ] Situation state generated
-- [ ] Gemini briefing working
-- [ ] Evidence linking working
-- [ ] REST APIs working
-- [ ] WebSockets working
-- [ ] Synthetic scenarios working
+- [ ] Confidence calculated (exact formula: Reliability × Recency × Corroboration)
+- [ ] Confidence breakdown (5 factors) exposed via API
+- [ ] Alert priority calculated (severity + confidence + recency + corroboration + geo + persistence)
+- [ ] Anomaly detection working (z-score)
+- [ ] Situation state generated (threat level green/yellow/orange/red)
+- [ ] Gemini briefing working (structured JSON, grounded claims)
+- [ ] AI Courses of Action working (2–3 COAs with tradeoffs)
+- [ ] Evidence linking working (every claim cites event IDs)
+- [ ] Source health checks working (live/degraded/down)
+- [ ] NL query endpoint working (POST /ai/query)
+- [ ] REST APIs working (all endpoints per PRD §7.2)
+- [ ] WebSockets working (4 event types: EVENT_STREAM, ALERT_TRIGGER, BRIEFING_UPDATE, HEALTH_STATUS)
+- [ ] Synthetic scenarios working (normal, weather degradation, multi-source, conflicting)
+- [ ] Incident spike injection working
+- [ ] Source dropout injection working
 - [ ] Database migrations complete
 - [ ] Backend tests passing
 
 ## Frontend
 
-- [ ] Command center loads
-- [ ] Tactical map works
-- [ ] Assets layer works
-- [ ] Alerts layer works
-- [ ] Weather layer works
-- [ ] Zones layer works
+- [ ] Command center loads (dark HUD + glassmorphism)
+- [ ] Tactical map works (MapLibre GL, dark basemap)
+- [ ] Assets layer works (directional headings)
+- [ ] Alerts layer works (severity color-coded)
+- [ ] Weather layer works (Open-Meteo overlays)
+- [ ] Zones layer works (GeoJSON)
 - [ ] Layer toggles work
-- [ ] Situation overview works
+- [ ] Marker clustering + fly-to working
+- [ ] Incident heatmap mode working
+- [ ] 4D Time-scrubber working
+- [ ] Interactive event popups working
+- [ ] Situation overview works (threat level badge)
 - [ ] Alerts panel works
-- [ ] Source health works
-- [ ] Confidence indicator works
-- [ ] Confidence breakdown works
-- [ ] Evidence viewer works
-- [ ] AI briefing works
-- [ ] Prioritized actions work
-- [ ] Real-time updates work
+- [ ] Source health works (live/degraded/down)
+- [ ] Alert escalation timeline works
+- [ ] Confidence indicator works (color-coded badges)
+- [ ] Confidence breakdown works (5-factor visual)
+- [ ] Explainability drawer works (raw JSON + formula breakdown)
+- [ ] Conflicting-source warnings work
+- [ ] AI briefing works (executive summary + citations)
+- [ ] Prioritized actions work (urgency scores)
+- [ ] AI COA panel works (2–3 COAs with tradeoffs)
+- [ ] Key developments with event ID citations work
+- [ ] NL query bar works (free-form → instant filtering)
+- [ ] Real-time updates work (WebSocket)
+- [ ] Live source health streaming works
+- [ ] Threat-level dynamic UI works (HUD lighting + nav bar + glow)
+- [ ] Voice briefing works (Web Speech API play/pause)
+- [ ] Radar sweep animation works
 - [ ] Loading/error/empty states work
+- [ ] SITREP PDF export works (jsPDF/html2canvas)
+- [ ] What-if sandbox works (drag-and-drop → re-fusion)
+- [ ] Degraded-comms mode works (amber banner + cached COP)
 - [ ] Final UI polish complete
 
 ## Integration
 
-- [ ] Frontend ↔ Backend connected
-- [ ] Backend ↔ Database connected
+- [ ] Frontend ↔ Backend connected (all REST endpoints)
+- [ ] Backend ↔ Database connected (PostgreSQL/PostGIS)
 - [ ] Backend ↔ Redis connected
 - [ ] Backend ↔ Gemini connected
-- [ ] WebSocket live updates verified
-- [ ] End-to-end scenario verified
+- [ ] WebSocket live updates verified (4 event types)
+- [ ] NL query end-to-end verified
+- [ ] End-to-end scenario verified (ingestion → fusion → dashboard)
+- [ ] Scenario → AI → briefing + COA flow verified
 - [ ] Production deployment verified
 
 ## Demo
 
-- [ ] Primary scenario tested
+- [ ] Primary scenario tested (PRD §10 7-step walkthrough)
 - [ ] Backup scenario tested
-- [ ] Simulation controls tested
-- [ ] Judge walkthrough prepared
+- [ ] Simulation controls tested (start/stop/reset)
+- [ ] Incident spike injection tested
+- [ ] Source dropout injection tested
+- [ ] Threat-level transitions verified (YELLOW → RED)
+- [ ] NL query demo step prepared
+- [ ] Voice briefing demo step prepared
+- [ ] SITREP export demo step prepared
+- [ ] Degraded-comms demo step prepared
+- [ ] Judge walkthrough prepared (all 7 PRD §10 steps)
 - [ ] Architecture diagram ready
 - [ ] README complete
 - [ ] Final production smoke test complete
@@ -500,6 +580,6 @@ A task is considered **Done** only when:
 
 ## VANGUARD
 
-> **Fuse the data. Understand the situation. Prioritize what matters.**
+> **One picture. Every source. Zero delay.**
 
 **Built by Destroyer of Worlds — HACKHERTZ 2026**
