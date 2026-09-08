@@ -34,6 +34,7 @@
  */
 
 import { SOURCE_RELIABILITY } from '../config/constants.js';
+import { refreshAuditCorroboration } from '../media/authenticity.js';
 import type {
   CorrelationCluster,
   SourceType,
@@ -150,6 +151,17 @@ export function runFusionPipeline(input: FusionInput): FusionResult {
     const corroborators = event.corroboratedBy
       .map((id) => byId.get(id))
       .filter((e): e is UnifiedEvent => e !== undefined);
+
+    // Media audits are classified with corroboration=0 at normalization time.
+    // Now that the corroborators are resolved, refresh the corroboration-
+    // dependent half (corroborationScore + manipulationCategory) BEFORE scoring,
+    // so the confidence formula reads a live verdict — HYBRID_CORROBORATED vs
+    // EVENT_FABRICATING is a product of the full evidence picture, not of the
+    // clip alone. The media discount itself only depends on manipulation risk,
+    // so this refresh cannot be gamed through scoring.
+    if (event.mediaAudit && corroborators.length > 0) {
+      refreshAuditCorroboration(event.mediaAudit, event, corroborators);
+    }
 
     const effectiveReliability =
       input.reliabilityBySource?.[event.sourceType] ?? SOURCE_RELIABILITY[event.sourceType];

@@ -3,7 +3,13 @@
  *
  * THE FORMULA (Vanguard_PRD.md §5.1):
  *
- *   Confidence = min(100, round(SourceReliability x RecencyDecay x CorroborationBoost x 100))
+ *   Confidence = min(100, round(SourceReliability x RecencyDecay x MediaAuthenticity x CorroborationBoost x 100))
+ *
+ * `MediaAuthenticity` is the Golden-Rule term for open-source media: it lives
+ * in [0.60, 1.0] and equals 1 for events that carry no media audit, so the
+ * original four-term formula is a strict special case. A fully fabricated clip
+ * is discounted to the floor, never zeroed — matching the media-authenticity
+ * rule that uncertain media is surfaced, not silently discarded.
  *
  * Three properties make this defensible in front of defense judges:
  *
@@ -28,6 +34,7 @@ import {
   SAME_SOURCE_CORROBORATION_WEIGHT,
   SOURCE_RELIABILITY,
 } from '../config/constants.js';
+import { mediaAuthenticityFactor } from '../media/authenticity.js';
 import type { ConfidenceBreakdown, SourceType, UnifiedEvent } from '../types/events.js';
 import { haversineMeters } from '../util/geo.js';
 import { clamp, round, toScore } from '../util/stats.js';
@@ -58,6 +65,7 @@ export interface ConfidenceResult {
   factors: {
     sourceReliability: number;
     recencyDecay: number;
+    mediaAuthenticity: number;
     corroborationBoost: number;
     /** Weighted count of independent confirmations, including the event itself. */
     effectiveSourceCount: number;
@@ -175,8 +183,15 @@ export function computeConfidence(input: ConfidenceInput): ConfidenceResult {
   const effCount = effectiveSourceCount(event.sourceType, corroborators);
   const boost = corroborationBoost(effCount);
 
+  // Golden-Rule media term: 1 for events without a media audit, else the
+  // manipulation-risk projection from the media engine.
+  const mediaFactor = event.mediaAudit ? mediaAuthenticityFactor(event.mediaAudit) : 1;
+
   // The formula, verbatim.
-  const confidence = Math.min(100, Math.round(reliability * recency * boost * 100));
+  const confidence = Math.min(
+    100,
+    Math.round(reliability * recency * mediaFactor * boost * 100),
+  );
 
   const distinctTypes = new Set<SourceType>([event.sourceType]);
   for (const c of corroborators) distinctTypes.add(c.sourceType);
@@ -188,6 +203,7 @@ export function computeConfidence(input: ConfidenceInput): ConfidenceResult {
     temporalAgreement: toScore(temporalAgreement(event, corroborators)),
     sourceReliability: toScore(reliability),
     dataFreshness: toScore(recency),
+    mediaAuthenticity: toScore(mediaFactor),
   };
 
   return {
@@ -196,12 +212,20 @@ export function computeConfidence(input: ConfidenceInput): ConfidenceResult {
     factors: {
       sourceReliability: round(reliability, 4),
       recencyDecay: round(recency, 4),
+      mediaAuthenticity: round(mediaFactor, 4),
       corroborationBoost: round(boost, 4),
       effectiveSourceCount: round(effCount, 3),
       distinctSourceTypes: distinctTypes.size,
       ageSeconds: round(age, 1),
     },
-    explanation: explainConfidence(reliability, recency, boost, confidence, corroborators.length),
+    explanation: explainConfidence(
+      reliability,
+      recency,
+      mediaFactor,
+      boost,
+      confidence,
+      corroborators.length,
+    ),
   };
 }
 
@@ -212,16 +236,20 @@ export function computeConfidence(input: ConfidenceInput): ConfidenceResult {
 export function explainConfidence(
   reliability: number,
   recency: number,
+  mediaAuthenticity: number,
   boost: number,
   confidence: number,
   corroboratorCount: number,
 ): string {
+  const mediaTerm =
+    mediaAuthenticity === 1 ? '' : ` x media authenticity ${round(mediaAuthenticity, 2)}`;
   const parts = [
     `reliability ${round(reliability, 2)}`,
     `x recency ${round(recency, 2)}`,
+    mediaTerm,
     `x corroboration ${round(boost, 2)}`,
     `= ${confidence}%`,
-  ];
+  ].filter((p) => p.length > 0);
   const suffix =
     corroboratorCount === 0
       ? ' (single-source, uncorroborated)'

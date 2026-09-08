@@ -27,21 +27,51 @@ export const MAX_CORROBORATORS_PER_EVENT = 6;
  * Read this as: "if feed A reports something, how much does a report from
  * feed B increase my belief in it?"
  *
- *  - Radar and log (perimeter/IR trips) are the strongest pairing: two
- *    independent instruments observing the same physical intrusion.
  *  - Personnel sightings strongly confirm both.
  *  - Weather corroborates weakly and asymmetrically: it EXPLAINS conditions
  *    around a contact (sensor masking, degraded optics) rather than confirming
  *    the contact exists. It is kept in the graph because that context is what
  *    lets the briefing say "storm cell is masking optical surveillance", but it
  *    is weighted low so it cannot inflate a contact's confidence on its own.
+ *  - Social media is open-source, platform-transcoded, and freely manipulable —
+ *    it corroborates strongly (0.85) toward official incident reporting and
+ *    personnel sightings, because footage of a real event is genuine, useful
+ *    evidence, but weakly toward its own kind (0.35: one repost does not confirm
+ *    another) and moderately toward radar (a clip of "something in the sky" is
+ *    consistent with but not proof of a contact). It corroborates WEATHER the
+ *    least (0.3): a scenic storm video proves the video exists, not the weather.
+ *  - Audio recordings (hydrophone) are instrumented: they corroborate incidents
+ *    strongly (0.85), radar moderately (0.6), and each other weakly (0.35).
  */
 const AFFINITY: Record<SourceType, Record<SourceType, number>> = {
-  radar: { radar: 0.35, log: 0.95, personnel: 0.85, incident: 0.8, weather: 0.3 },
-  log: { log: 0.35, radar: 0.95, personnel: 0.9, incident: 0.85, weather: 0.25 },
-  personnel: { personnel: 0.35, radar: 0.85, log: 0.9, incident: 0.9, weather: 0.3 },
-  incident: { incident: 0.35, radar: 0.8, log: 0.85, personnel: 0.9, weather: 0.45 },
-  weather: { weather: 0.35, radar: 0.3, log: 0.25, personnel: 0.3, incident: 0.45 },
+  radar: {
+    radar: 0.35, log: 0.95, personnel: 0.85, incident: 0.8, weather: 0.3,
+    social_media: 0.6, audio_recording: 0.6,
+  },
+  log: {
+    log: 0.35, radar: 0.95, personnel: 0.9, incident: 0.85, weather: 0.25,
+    social_media: 0.55, audio_recording: 0.5,
+  },
+  personnel: {
+    personnel: 0.35, radar: 0.85, log: 0.9, incident: 0.9, weather: 0.3,
+    social_media: 0.8, audio_recording: 0.7,
+  },
+  incident: {
+    incident: 0.35, radar: 0.8, log: 0.85, personnel: 0.9, weather: 0.45,
+    social_media: 0.85, audio_recording: 0.85,
+  },
+  weather: {
+    weather: 0.35, radar: 0.3, log: 0.25, personnel: 0.3, incident: 0.45,
+    social_media: 0.3, audio_recording: 0.3,
+  },
+  social_media: {
+    social_media: 0.35, radar: 0.6, log: 0.55, personnel: 0.8, incident: 0.85,
+    weather: 0.3, audio_recording: 0.5,
+  },
+  audio_recording: {
+    audio_recording: 0.35, radar: 0.6, log: 0.5, personnel: 0.7, incident: 0.85,
+    weather: 0.3, social_media: 0.5,
+  },
 };
 
 /** Links weaker than this are discarded as non-informative. */

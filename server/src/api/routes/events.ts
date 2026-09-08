@@ -150,7 +150,7 @@ export function eventRoutes(orchestrator: Orchestrator): Router {
         breakdown: scored.breakdown,
         factors: scored.factors,
         formula:
-          'confidence = min(100, round(sourceReliability x recencyDecay x corroborationBoost x 100))',
+          'confidence = min(100, round(sourceReliability x recencyDecay x mediaAuthenticity x corroborationBoost x 100))',
         explanation: scored.explanation,
       },
       counterfactual: {

@@ -237,7 +237,13 @@ export class EventStore {
   /** Per-source event counts within the active horizon. */
   countsBySource(): Record<SourceType, number> {
     const counts: Record<SourceType, number> = {
-      radar: 0, weather: 0, personnel: 0, log: 0, incident: 0,
+      radar: 0,
+      weather: 0,
+      personnel: 0,
+      log: 0,
+      incident: 0,
+      social_media: 0,
+      audio_recording: 0,
     };
     for (const e of this.active()) counts[e.sourceType]++;
     return counts;

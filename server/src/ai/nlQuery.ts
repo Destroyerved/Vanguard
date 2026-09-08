@@ -35,6 +35,13 @@ const SOURCE_KEYWORDS: Record<SourceType, string[]> = {
   personnel: ['personnel', 'unit', 'patrol', 'squad', 'troop', 'asset', 'callsign', 'readiness'],
   log: ['log', 'sensor', 'perimeter', 'tripwire', 'system', 'network', 'alarm'],
   incident: ['incident', 'report', 'dispatch', 'casualty', 'emergency', 'breach', 'intrusion'],
+  social_media: [
+    'social', 'social media', 'osint', 'posts', 'post', 'video clip', 'clip', 'footage',
+    'deepfake', 'fabricated', 'fake', 'authentic', 'instagram', 'telegram', 'youtube',
+  ],
+  audio_recording: [
+    'audio', 'hydrophone', 'acoustic', 'recording', 'sound', 'waveform', 'voice clip',
+  ],
 };
 
 const SEVERITY_KEYWORDS: Record<SeverityLevel, string[]> = {
@@ -160,7 +167,15 @@ interface RawFilter {
   textContains?: string;
 }
 
-const VALID_SOURCES: SourceType[] = ['radar', 'weather', 'personnel', 'log', 'incident'];
+const VALID_SOURCES: SourceType[] = [
+  'radar',
+  'weather',
+  'personnel',
+  'log',
+  'incident',
+  'social_media',
+  'audio_recording',
+];
 const VALID_SEVERITIES: SeverityLevel[] = ['low', 'medium', 'high', 'critical'];
 
 /** Coerce raw model output into a validated filter, dropping anything invalid. */

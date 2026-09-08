@@ -30,6 +30,7 @@ import { env } from '../config/env.js';
 import { AO_SECTORS, BRIEFING_MIN_INTERVAL_MS } from '../config/constants.js';
 import { BriefingCache, generateBriefing } from '../ai/briefing.js';
 import { IncidentsSimAdapter, type ScenarioName } from '../ingestion/incidents.sim.js';
+import { AudioRecordingSimAdapter, SocialMediaSimAdapter } from '../ingestion/media.sim.js';
 import { LogsSimAdapter } from '../ingestion/logs.sim.js';
 import { OpenMeteoAdapter } from '../ingestion/weather.openMeteo.js';
 import { PersonnelSimAdapter } from '../ingestion/personnel.sim.js';
@@ -63,6 +64,8 @@ export class Orchestrator {
   readonly personnel: PersonnelSimAdapter;
   readonly logs: LogsSimAdapter;
   readonly incidents: IncidentsSimAdapter;
+  readonly social: SocialMediaSimAdapter;
+  readonly hydrophone: AudioRecordingSimAdapter;
 
   private readonly adapters: SourceAdapter[];
   private readonly lastPollAt = new Map<string, number>();
@@ -88,8 +91,18 @@ export class Orchestrator {
     this.personnel = new PersonnelSimAdapter(env.simSeed, 6_000, env.simIntensity);
     this.logs = new LogsSimAdapter(env.simSeed, 4_000, env.simIntensity);
     this.incidents = new IncidentsSimAdapter(env.simSeed, 5_000, env.simIntensity);
+    this.social = new SocialMediaSimAdapter(env.simSeed, 6_000, env.simIntensity);
+    this.hydrophone = new AudioRecordingSimAdapter(env.simSeed, 8_000, env.simIntensity);
 
-    this.adapters = [this.weather, this.radar, this.personnel, this.logs, this.incidents];
+    this.adapters = [
+      this.weather,
+      this.radar,
+      this.personnel,
+      this.logs,
+      this.incidents,
+      this.social,
+      this.hydrophone,
+    ];
   }
 
   /** Register feeds and warm every adapter. Safe to call once at boot. */
@@ -189,12 +202,17 @@ export class Orchestrator {
       const escalation = this.threat.update(fusion.threat, fusion.events);
 
       /* -- 7. FEED FORWARD ------------------------------------------- */
-      // Publish contacts of interest so the personnel and log simulators can
-      // generate genuinely corroborating observations next tick. This closes
-      // the loop that makes multi-source correlation real rather than lucky.
+      // Publish contacts of interest so the personnel, log and media simulators
+      // can generate genuinely corroborating observations next tick. This
+      // closes the loop that makes multi-source correlation real rather than
+      // lucky — fabricated media attaches itself to live radar/incident
+      // contacts, which is precisely how the HYBRID_CORROBORATED vs
+      // EVENT_FABRICATING discrimination gets exercised.
       const pointsOfInterest = this.contactsOfInterest(fusion.events);
       this.personnel.setPointsOfInterest(pointsOfInterest);
       this.logs.setPointsOfInterest(pointsOfInterest);
+      this.social.setPointsOfInterest(pointsOfInterest);
+      this.hydrophone.setPointsOfInterest(pointsOfInterest);
 
       /* -- 8. BROADCAST ---------------------------------------------- */
       if (this.hub && validated.length > 0) {

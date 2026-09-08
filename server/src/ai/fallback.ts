@@ -149,6 +149,23 @@ function buildExecutiveSummary(
     );
   }
 
+  const media = input.events.filter((e) => e.mediaAudit);
+  if (media.length > 0) {
+    const fabricated = media.filter(
+      (e) => e.mediaAudit!.manipulationCategory === 'EVENT_FABRICATING',
+    ).length;
+    const hybrid = media.filter(
+      (e) => e.mediaAudit!.manipulationCategory === 'HYBRID_CORROBORATED',
+    ).length;
+    if (fabricated > 0 || hybrid > 0) {
+      sentences.push(
+        `Media authenticity audit covers ${media.length} open-source item${media.length === 1 ? '' : 's'}: ` +
+          `${fabricated} fabricated/uncorroborated and ${hybrid} AI-generated but independently corroborated. ` +
+          'Fabricated media is surfaced for review, never suppressed.',
+      );
+    }
+  }
+
   if (input.degradedMode) {
     sentences.push(
       'DEGRADED COMMS: the picture is being served from cached state and all confidence values are reduced accordingly.',
@@ -223,6 +240,14 @@ function buildKeyDevelopments(
     });
   }
 
+  // Then the media-authenticity findings: the flow mandates that manipulation
+  // evidence and its reasons reach the operator, not just the AI image model.
+  const mediaFindings = buildMediaFindings(events);
+  for (const finding of mediaFindings) {
+    developments.push(finding);
+    for (const id of finding.supportingEventIds) covered.add(id);
+  }
+
   // Backfill with the highest-severity uncovered events so the briefing is
   // never thin during quiet periods.
   if (developments.length < 3) {
@@ -241,6 +266,73 @@ function buildKeyDevelopments(
   }
 
   return developments.slice(0, 5);
+}
+
+/**
+ * Structured findings from the media-authenticity engine, forwarded verbatim
+ * into the briefing so the operator sees manipulation evidence and its reasons.
+ *
+ * Grouped by verdict because the four categories mean different things to a
+ * watchstander: fabricated-but-uncorroborated media is a disinformation
+ * candidate, AI-generated media that other feeds DO corroborate is still weak
+ * evidence but stops being deception, and legitimately edited footage is usable
+ * with a provenance discount. Never suppressed — surfaced.
+ */
+function buildMediaFindings(events: UnifiedEvent[]): GroundedClaim[] {
+  const media = events.filter((e) => e.mediaAudit);
+  if (media.length === 0) return [];
+
+  const byCategory = (category: string) =>
+    media.filter((e) => e.mediaAudit!.manipulationCategory === category);
+  const ids = (items: UnifiedEvent[]) => items.slice(0, 6).map((e) => e.id);
+
+  const findings: GroundedClaim[] = [];
+
+  const fabricated = byCategory('EVENT_FABRICATING');
+  if (fabricated.length > 0) {
+    findings.push({
+      point:
+        `Media authenticity audit: ${fabricated.length} fabricated item${fabricated.length === 1 ? '' : 's'} ` +
+        `describ${fabricated.length === 1 ? 'es' : 'e'} event${fabricated.length === 1 ? '' : 's'} no other feed ` +
+        `corroborates. Treat ${fabricated.length === 1 ? 'it' : 'them'} as disinformation candidates until an ` +
+        `independent source places the same event in reality.`,
+      supportingEventIds: ids(fabricated),
+    });
+  }
+
+  const hybrid = byCategory('HYBRID_CORROBORATED');
+  if (hybrid.length > 0) {
+    findings.push({
+      point:
+        `Media authenticity audit: ${hybrid.length} AI-generated item${hybrid.length === 1 ? '' : 's'} is ` +
+        `INDEPENDENTLY CORROBORATED by other feeds. The media remains weak evidence — the corroboration ` +
+        `carries the evidentiary weight, not the clip.`,
+      supportingEventIds: ids(hybrid),
+    });
+  }
+
+  const unverified = byCategory('AUTHENTICITY_UNVERIFIED');
+  if (unverified.length > 0) {
+    findings.push({
+      point:
+        `Media authenticity audit: ${unverified.length} item${unverified.length === 1 ? '' : 's'} has broken ` +
+        `provenance and no corroborating feed — authenticity cannot be determined from the available evidence.`,
+      supportingEventIds: ids(unverified),
+    });
+  }
+
+  const enhanced = byCategory('LEGITIMATE_ENHANCEMENT');
+  if (enhanced.length > 0) {
+    findings.push({
+      point:
+        `Media authenticity audit: ${enhanced.length} clip${enhanced.length === 1 ? '' : 's'} shows legitimate ` +
+        `editing (cut, grade, stabilize, denoise, upscale) with no event-fabricating manipulation — usable as ` +
+        `evidence with a reduced provenance weight.`,
+      supportingEventIds: ids(enhanced),
+    });
+  }
+
+  return findings;
 }
 
 /* ------------------------------------------------------------------ *

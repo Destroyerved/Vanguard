@@ -30,6 +30,11 @@ import {
   EVENT_ACTIVE_HORIZON_SECONDS,
   EVENT_STORE_CAPACITY,
   MAX_CORROBORATION_BOOST,
+  MEDIA_AUTHENTICITY_TERM,
+  MEDIA_CATEGORY_THRESHOLDS,
+  MEDIA_CHECK_WEIGHTS,
+  MEDIA_SCORE_BLEND,
+  MEDIA_UNVERIFIED_SCORE,
   RECENCY_HALF_LIFE_SECONDS,
   SAME_SOURCE_CORROBORATION_WEIGHT,
   SEVERITY_WEIGHT,
@@ -149,13 +154,25 @@ export function intelligenceRoutes(orchestrator: Orchestrator): Router {
       areaOfOperations: { center: AO_CENTER, sectors: AO_SECTORS },
       confidence: {
         formula:
-          'confidence = min(100, round(sourceReliability x recencyDecay x corroborationBoost x 100))',
+          'confidence = min(100, round(sourceReliability x recencyDecay x mediaAuthenticity x corroborationBoost x 100))',
         sourceReliability: SOURCE_RELIABILITY,
         recencyHalfLifeSeconds: RECENCY_HALF_LIFE_SECONDS,
         corroborationBoostPerSource: CORROBORATION_BOOST_PER_SOURCE,
         maxCorroborationBoost: MAX_CORROBORATION_BOOST,
         sameSourceCorroborationWeight: SAME_SOURCE_CORROBORATION_WEIGHT,
         bands: CONFIDENCE_BANDS,
+        // mediaAuthenticity is 1 for non-media events, so this term multiplies
+        // the classic four-factor formula out of the equation entirely.
+        mediaAuthenticityTerm: MEDIA_AUTHENTICITY_TERM,
+      },
+      mediaAuthenticity: {
+        checkWeights: MEDIA_CHECK_WEIGHTS,
+        scoreBlend: MEDIA_SCORE_BLEND,
+        categoryThresholds: MEDIA_CATEGORY_THRESHOLDS,
+        unverifiedDefaultAuthenticity: MEDIA_UNVERIFIED_SCORE,
+        goldenRule:
+          'Never binary real/fake. Ask how trustworthy the media is as evidence. ' +
+          'Never auto-discard uncertain media — surface it with reasons.',
       },
       correlation: {
         radiusMeters: CORRELATION_RADIUS_METERS,

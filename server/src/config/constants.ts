@@ -40,11 +40,20 @@ export const AO_SECTORS = [
  *
  * Rationale for the ordering: instrumented sensors with calibrated error models
  * outrank machine-generated logs, which outrank unverified human field reports.
- *   weather   0.95 — a real measured API (Open-Meteo), calibrated, low noise.
- *   radar     0.92 — calibrated instrument, but subject to clutter and ghosts.
- *   personnel 0.88 — GPS telemetry, accurate but sparse and latency-prone.
- *   log       0.80 — deterministic machine events, but prone to false trips.
- *   incident  0.72 — human-reported, highest variance and reporting bias.
+ *   weather         0.95 — a real measured API (Open-Meteo), calibrated, low noise.
+ *   radar           0.92 — calibrated instrument, but subject to clutter and ghosts.
+ *   personnel       0.88 — GPS telemetry, accurate but sparse and latency-prone.
+ *   log             0.80 — deterministic machine events, but prone to false trips.
+ *   incident        0.72 — human-reported, highest variance and reporting bias.
+ *   audio_recording 0.72 — instrumented acoustic capture, but human-labelled and
+ *                          latency-prone; a hydrophone recording is trusted the
+ *                          same as a field report because the EVENT it describes
+ *                          is still an interpretation.
+ *   social_media    0.60 — open-source human-derived media: freely manipulated,
+ *                          stripped of provenance, and platform-transcoded. The
+ *                          media-authenticity factor handles the manipulation
+ *                          specifically; this weight is the baseline distrust of
+ *                          the open channel itself.
  */
 export const SOURCE_RELIABILITY: Record<SourceType, number> = {
   weather: 0.95,
@@ -52,6 +61,8 @@ export const SOURCE_RELIABILITY: Record<SourceType, number> = {
   personnel: 0.88,
   log: 0.8,
   incident: 0.72,
+  audio_recording: 0.72,
+  social_media: 0.6,
 };
 
 /** Multiplier applied to reliability when a feed reports a degraded status. */
@@ -226,3 +237,91 @@ export const GEMINI_TIMEOUT_MS = 12_000;
 
 /** Retry attempts for a transient Gemini failure. */
 export const GEMINI_MAX_RETRIES = 2;
+
+/* ------------------------------------------------------------------ *
+ * Media authenticity (VANGUARD_MEDIA_AUTHENTICITY_FLOW.md)
+ * ------------------------------------------------------------------ */
+
+/**
+ * Relative weight of each forensic check in the aggregate scores.
+ *
+ * Split into two groups:
+ *   - PROVENANCE group  (provenance-c2pa, bitstream-container, edit-origin)
+ *   - CONTENT group     (visual-frame, temporal-consistency, acoustic-spectrum,
+ *                        sensor-prnu)
+ *
+ * The content group dominates (0.60 of total) because it is what detects
+ * synthetic generation; provenance is necessary but not sufficient — C2PA is
+ * routinely stripped by legitimate platform re-encoding, so an absent
+ * signature cannot convict by itself.
+ */
+export const MEDIA_CHECK_WEIGHTS: Record<
+  'provenance-c2pa' | 'bitstream-container' | 'edit-origin' | 'visual-frame' | 'temporal-consistency' | 'acoustic-spectrum' | 'sensor-prnu',
+  number
+> = {
+  'provenance-c2pa': 0.15,
+  'bitstream-container': 0.1,
+  'edit-origin': 0.15,
+  'visual-frame': 0.2,
+  'temporal-consistency': 0.15,
+  'acoustic-spectrum': 0.15,
+  'sensor-prnu': 0.1,
+};
+
+/** Blend weights for the authenticity and manipulation-risk aggregates. */
+export const MEDIA_SCORE_BLEND = {
+  /** Authenticity = provenance group x provenance weight + content group x content weight. */
+  provenanceWeight: 0.4,
+  contentWeight: 0.6,
+  /** Manipulation risk = AI-synthetic evidence x this + provenance loss x (1 - this). */
+  syntheticWeight: 0.6,
+  provenanceLossWeight: 0.4,
+} as const;
+
+/**
+ * Manipulation category thresholds.
+ *
+ *   aiSynthetic >= SYNTHETIC_HIGH      -> EVENT_FABRICATING unless corroborated
+ *   aiSynthetic >= SYNTHETIC_MODERATE (with weak provenance)
+ *                                        -> HYBRID_CORROBORATED if corroborated,
+ *                                           else EVENT_FABRICATING
+ *   provenance < PROVENANCE_BROKEN and corroboration < CORROBORATION_WEAK
+ *                                        -> AUTHENTICITY_UNVERIFIED
+ *
+ * Corroboration means OTHER VANGUARD intelligence (radar, incident, personnel)
+ * independently places the described event at the stated place and time.
+ */
+export const MEDIA_CATEGORY_THRESHOLDS = {
+  syntheticHigh: 70,
+  syntheticModerate: 45,
+  provenanceBroken: 40,
+  corroborationStrong: 60,
+  corroborationWeak: 50,
+} as const;
+
+/**
+ * Confidence term for media authenticity.
+ *
+ * Media events carry a `mediaAuthenticityFactor` in the confidence formula:
+ *
+ *   confidence = reliability x recency x corroboration x mediaAuthenticityFactor
+ *
+ * The factor is the direct implementation of the Golden Rule. It never
+ * discards a media event — VANGUARD does not auto-delete uncertain media. At
+ * or below `windowFloor` risk the factor is 1 (no penalty). Above it, risk is
+ * projected linearly into [MEDIA_RISK_CAP_FACTOR, 1] so maximal manipulation
+ * risk still leaves a live event worth an operator's attention, just one the
+ * system is plain about not trusting. Linear so a judge can verify the
+ * arithmetic by hand.
+ */
+export const MEDIA_AUTHENTICITY_TERM = {
+  windowFloor: 0.45,
+  capFactor: 0.6,
+} as const;
+
+/**
+ * Confidence in the media event BELOW which the briefing is not treated as
+ * tipping any operational decision by itself. Drives briefing phrasing, not
+ * any automated decision.
+ */
+export const MEDIA_UNVERIFIED_SCORE = 60;
