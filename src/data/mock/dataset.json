@@ -1,0 +1,645 @@
+{
+  "generatedAt": "2026-09-08T07:28:04.196Z",
+  "threatLevel": "red",
+  "events": [
+    {
+      "id": "WX-mtsckyn7-01",
+      "sourceType": "weather",
+      "timestamp": "2026-09-08T07:30",
+      "location": {
+        "lat": 28.576448,
+        "lng": 77.18678,
+        "headingDegrees": 282,
+        "speedKnots": 6
+      },
+      "severity": "low",
+      "title": "Normal Meteorological Conditions",
+      "description": "Temp: 31.9°C, Wind: 12 km/h, Precip: 0 mm.",
+      "confidence": 65,
+      "confidenceBreakdown": {
+        "overall": 65,
+        "sourceAgreement": 65,
+        "spatialAgreement": 92,
+        "temporalAgreement": 95,
+        "sourceReliability": 85,
+        "dataFreshness": 76
+      },
+      "corroboratedBy": [],
+      "isAnomaly": false,
+      "raw": {
+        "latitude": 28.576448,
+        "longitude": 77.18678,
+        "generationtime_ms": 104.04646396636963,
+        "utc_offset_seconds": 0,
+        "timezone": "GMT",
+        "timezone_abbreviation": "GMT",
+        "elevation": 214,
+        "current_units": {
+          "time": "iso8601",
+          "interval": "seconds",
+          "temperature_2m": "°C",
+          "precipitation": "mm",
+          "wind_speed_10m": "km/h",
+          "wind_direction_10m": "°",
+          "weather_code": "wmo code"
+        },
+        "current": {
+          "time": "2026-09-08T07:30",
+          "interval": 900,
+          "temperature_2m": 31.9,
+          "precipitation": 0,
+          "wind_speed_10m": 12,
+          "wind_direction_10m": 282,
+          "weather_code": 1
+        }
+      }
+    },
+    {
+      "id": "RAD-EVT-1",
+      "sourceType": "radar",
+      "timestamp": "2026-09-08T07:28:04.195Z",
+      "location": {
+        "lat": 28.641,
+        "lng": 77.241,
+        "altitudeMeters": 450,
+        "speedKnots": 420,
+        "headingDegrees": 185
+      },
+      "severity": "high",
+      "title": "Kinematic Radar Track: RAD-7041 [IFF: UNKNOWN]",
+      "description": "Track RAD-7041 flying at 450m altitude, speed 420 kts. Squawk: 7700. RCS: 1.2 m².",
+      "confidence": 100,
+      "confidenceBreakdown": {
+        "overall": 100,
+        "sourceAgreement": 95,
+        "spatialAgreement": 92,
+        "temporalAgreement": 95,
+        "sourceReliability": 95,
+        "dataFreshness": 100
+      },
+      "corroboratedBy": [
+        "LOG-TRIP-01",
+        "INC-SPOT-101"
+      ],
+      "isAnomaly": true,
+      "raw": {
+        "trackId": "RAD-7041",
+        "squawkCode": "7700",
+        "lat": 28.641,
+        "lng": 77.241,
+        "altitudeMeters": 450,
+        "speedKnots": 420,
+        "headingDegrees": 185,
+        "iffTag": "UNKNOWN",
+        "rcsSquareMeters": 1.2
+      }
+    },
+    {
+      "id": "RAD-EVT-2",
+      "sourceType": "radar",
+      "timestamp": "2026-09-08T07:27:19.195Z",
+      "location": {
+        "lat": 28.591,
+        "lng": 77.171,
+        "altitudeMeters": 3200,
+        "speedKnots": 240,
+        "headingDegrees": 45
+      },
+      "severity": "low",
+      "title": "Kinematic Radar Track: RAD-3012 [IFF: FRIENDLY]",
+      "description": "Track RAD-3012 flying at 3200m altitude, speed 240 kts. Squawk: 1200. RCS: 8.5 m².",
+      "confidence": 95,
+      "confidenceBreakdown": {
+        "overall": 95,
+        "sourceAgreement": 65,
+        "spatialAgreement": 92,
+        "temporalAgreement": 95,
+        "sourceReliability": 95,
+        "dataFreshness": 100
+      },
+      "corroboratedBy": [],
+      "isAnomaly": false,
+      "raw": {
+        "trackId": "RAD-3012",
+        "squawkCode": "1200",
+        "lat": 28.591,
+        "lng": 77.171,
+        "altitudeMeters": 3200,
+        "speedKnots": 240,
+        "headingDegrees": 45,
+        "iffTag": "FRIENDLY",
+        "rcsSquareMeters": 8.5
+      }
+    },
+    {
+      "id": "RAD-EVT-3",
+      "sourceType": "radar",
+      "timestamp": "2026-09-08T07:26:34.195Z",
+      "location": {
+        "lat": 28.682,
+        "lng": 77.291,
+        "altitudeMeters": 180,
+        "speedKnots": 510,
+        "headingDegrees": 220
+      },
+      "severity": "critical",
+      "title": "Kinematic Radar Track: RAD-9902 [IFF: HOSTILE]",
+      "description": "Track RAD-9902 flying at 180m altitude, speed 510 kts. Squawk: 0000. RCS: 0.4 m².",
+      "confidence": 100,
+      "confidenceBreakdown": {
+        "overall": 100,
+        "sourceAgreement": 85,
+        "spatialAgreement": 92,
+        "temporalAgreement": 95,
+        "sourceReliability": 95,
+        "dataFreshness": 100
+      },
+      "corroboratedBy": [
+        "LOG-JAM-02"
+      ],
+      "isAnomaly": true,
+      "raw": {
+        "trackId": "RAD-9902",
+        "squawkCode": "0000",
+        "lat": 28.682,
+        "lng": 77.291,
+        "altitudeMeters": 180,
+        "speedKnots": 510,
+        "headingDegrees": 220,
+        "iffTag": "HOSTILE",
+        "rcsSquareMeters": 0.4
+      }
+    },
+    {
+      "id": "RAD-EVT-4",
+      "sourceType": "radar",
+      "timestamp": "2026-09-08T07:25:49.195Z",
+      "location": {
+        "lat": 28.52,
+        "lng": 77.1,
+        "altitudeMeters": 6500,
+        "speedKnots": 380,
+        "headingDegrees": 120
+      },
+      "severity": "low",
+      "title": "Kinematic Radar Track: RAD-1055 [IFF: NEUTRAL]",
+      "description": "Track RAD-1055 flying at 6500m altitude, speed 380 kts. Squawk: 4410. RCS: 15 m².",
+      "confidence": 95,
+      "confidenceBreakdown": {
+        "overall": 95,
+        "sourceAgreement": 65,
+        "spatialAgreement": 92,
+        "temporalAgreement": 95,
+        "sourceReliability": 95,
+        "dataFreshness": 100
+      },
+      "corroboratedBy": [],
+      "isAnomaly": false,
+      "raw": {
+        "trackId": "RAD-1055",
+        "squawkCode": "4410",
+        "lat": 28.52,
+        "lng": 77.1,
+        "altitudeMeters": 6500,
+        "speedKnots": 380,
+        "headingDegrees": 120,
+        "iffTag": "NEUTRAL",
+        "rcsSquareMeters": 15
+      }
+    },
+    {
+      "id": "PSN-EVT-AST-ALPHA-1",
+      "sourceType": "personnel",
+      "timestamp": "2026-09-08T07:28:04.195Z",
+      "location": {
+        "lat": 28.63,
+        "lng": 77.22,
+        "speedKnots": 25,
+        "headingDegrees": 90
+      },
+      "severity": "medium",
+      "title": "Asset Status: Alpha Patrol 1 [ENGAGED]",
+      "description": "Branch: ARMY. Fuel: 82%, Battery: 95%, Comms Integrity: 100%.",
+      "confidence": 90,
+      "confidenceBreakdown": {
+        "overall": 90,
+        "sourceAgreement": 65,
+        "spatialAgreement": 92,
+        "temporalAgreement": 95,
+        "sourceReliability": 90,
+        "dataFreshness": 100
+      },
+      "corroboratedBy": [],
+      "isAnomaly": false,
+      "raw": {
+        "id": "AST-ALPHA-1",
+        "callsign": "Alpha Patrol 1",
+        "branch": "ARMY",
+        "status": "ENGAGED",
+        "location": {
+          "lat": 28.63,
+          "lng": 77.22,
+          "speedKnots": 25,
+          "headingDegrees": 90
+        },
+        "fuelLevel": 82,
+        "batteryPercent": 95,
+        "commIntegrity": 100,
+        "lastBeacon": "2026-09-08T07:28:04.195Z"
+      }
+    },
+    {
+      "id": "PSN-EVT-AST-FALCON-3",
+      "sourceType": "personnel",
+      "timestamp": "2026-09-08T07:28:04.195Z",
+      "location": {
+        "lat": 28.61,
+        "lng": 77.19,
+        "altitudeMeters": 2500,
+        "speedKnots": 220,
+        "headingDegrees": 310
+      },
+      "severity": "low",
+      "title": "Asset Status: Falcon Recon 3 [READY]",
+      "description": "Branch: AIRFORCE. Fuel: 68%, Battery: 88%, Comms Integrity: 92%.",
+      "confidence": 100,
+      "confidenceBreakdown": {
+        "overall": 100,
+        "sourceAgreement": 85,
+        "spatialAgreement": 92,
+        "temporalAgreement": 95,
+        "sourceReliability": 90,
+        "dataFreshness": 100
+      },
+      "corroboratedBy": [
+        "LOG-SYS-03"
+      ],
+      "isAnomaly": false,
+      "raw": {
+        "id": "AST-FALCON-3",
+        "callsign": "Falcon Recon 3",
+        "branch": "AIRFORCE",
+        "status": "READY",
+        "location": {
+          "lat": 28.61,
+          "lng": 77.19,
+          "altitudeMeters": 2500,
+          "speedKnots": 220,
+          "headingDegrees": 310
+        },
+        "fuelLevel": 68,
+        "batteryPercent": 88,
+        "commIntegrity": 92,
+        "lastBeacon": "2026-09-08T07:28:04.195Z"
+      }
+    },
+    {
+      "id": "PSN-EVT-AST-TRIDENT-2",
+      "sourceType": "personnel",
+      "timestamp": "2026-09-08T07:28:04.195Z",
+      "location": {
+        "lat": 28.55,
+        "lng": 77.25,
+        "speedKnots": 14,
+        "headingDegrees": 180
+      },
+      "severity": "low",
+      "title": "Asset Status: Trident Naval Sector 2 [READY]",
+      "description": "Branch: NAVY. Fuel: 91%, Battery: 100%, Comms Integrity: 98%.",
+      "confidence": 90,
+      "confidenceBreakdown": {
+        "overall": 90,
+        "sourceAgreement": 65,
+        "spatialAgreement": 92,
+        "temporalAgreement": 95,
+        "sourceReliability": 90,
+        "dataFreshness": 100
+      },
+      "corroboratedBy": [],
+      "isAnomaly": false,
+      "raw": {
+        "id": "AST-TRIDENT-2",
+        "callsign": "Trident Naval Sector 2",
+        "branch": "NAVY",
+        "status": "READY",
+        "location": {
+          "lat": 28.55,
+          "lng": 77.25,
+          "speedKnots": 14,
+          "headingDegrees": 180
+        },
+        "fuelLevel": 91,
+        "batteryPercent": 100,
+        "commIntegrity": 98,
+        "lastBeacon": "2026-09-08T07:28:04.195Z"
+      }
+    },
+    {
+      "id": "PSN-EVT-AST-HQ-BASE",
+      "sourceType": "personnel",
+      "timestamp": "2026-09-08T07:28:04.195Z",
+      "location": {
+        "lat": 28.6139,
+        "lng": 77.209
+      },
+      "severity": "low",
+      "title": "Asset Status: Vanguard Command HQ [READY]",
+      "description": "Branch: ARMY. Fuel: 100%, Battery: 100%, Comms Integrity: 100%.",
+      "confidence": 100,
+      "confidenceBreakdown": {
+        "overall": 100,
+        "sourceAgreement": 85,
+        "spatialAgreement": 92,
+        "temporalAgreement": 95,
+        "sourceReliability": 90,
+        "dataFreshness": 100
+      },
+      "corroboratedBy": [
+        "LOG-SYS-03"
+      ],
+      "isAnomaly": false,
+      "raw": {
+        "id": "AST-HQ-BASE",
+        "callsign": "Vanguard Command HQ",
+        "branch": "ARMY",
+        "status": "READY",
+        "location": {
+          "lat": 28.6139,
+          "lng": 77.209
+        },
+        "fuelLevel": 100,
+        "batteryPercent": 100,
+        "commIntegrity": 100,
+        "lastBeacon": "2026-09-08T07:28:04.195Z"
+      }
+    },
+    {
+      "id": "LOG-TRIP-01",
+      "sourceType": "log",
+      "timestamp": "2026-09-08T07:26:04.195Z",
+      "location": {
+        "lat": 28.6425,
+        "lng": 77.243
+      },
+      "severity": "critical",
+      "title": "PERIMETER TRIPWIRE BREACH — Optical Sensor Sector 4",
+      "description": "Fiber-optic fence sensor triggered at Sector 4-B. Unscheduled physical entry detected near radar contact RAD-7041 trajectory.",
+      "confidence": 100,
+      "confidenceBreakdown": {
+        "overall": 100,
+        "sourceAgreement": 95,
+        "spatialAgreement": 92,
+        "temporalAgreement": 95,
+        "sourceReliability": 80,
+        "dataFreshness": 100
+      },
+      "corroboratedBy": [
+        "RAD-EVT-1",
+        "INC-SPOT-101"
+      ],
+      "isAnomaly": true,
+      "raw": {
+        "sensorId": "OPTIC-SEC4-B",
+        "breachType": "PHYSICAL_VIBRATION",
+        "signalLevel": 94
+      }
+    },
+    {
+      "id": "LOG-JAM-02",
+      "sourceType": "log",
+      "timestamp": "2026-09-08T07:23:04.195Z",
+      "location": {
+        "lat": 28.681,
+        "lng": 77.29
+      },
+      "severity": "high",
+      "title": "RF FREQUENCY JAMMING DETECTED — VHF Band",
+      "description": "Wideband RF noise spike registered across 142MHz - 156MHz frequency band near Eastern Perimeter Watchtower.",
+      "confidence": 92,
+      "confidenceBreakdown": {
+        "overall": 92,
+        "sourceAgreement": 85,
+        "spatialAgreement": 92,
+        "temporalAgreement": 95,
+        "sourceReliability": 80,
+        "dataFreshness": 100
+      },
+      "corroboratedBy": [
+        "RAD-EVT-3"
+      ],
+      "isAnomaly": true,
+      "raw": {
+        "band": "VHF",
+        "noiseFloorDbm": -45,
+        "normalDbm": -110
+      }
+    },
+    {
+      "id": "LOG-SYS-03",
+      "sourceType": "log",
+      "timestamp": "2026-09-08T07:18:04.195Z",
+      "location": {
+        "lat": 28.6139,
+        "lng": 77.209
+      },
+      "severity": "low",
+      "title": "Routine Encryption Rekey Completed",
+      "description": "Tactical comms gateway completed automated 30-minute AES-256 key rotation cycle cleanly.",
+      "confidence": 100,
+      "confidenceBreakdown": {
+        "overall": 100,
+        "sourceAgreement": 95,
+        "spatialAgreement": 92,
+        "temporalAgreement": 95,
+        "sourceReliability": 80,
+        "dataFreshness": 99
+      },
+      "corroboratedBy": [
+        "PSN-EVT-AST-FALCON-3",
+        "PSN-EVT-AST-HQ-BASE"
+      ],
+      "isAnomaly": false,
+      "raw": {
+        "module": "CRYPTO-MGR",
+        "event": "REKEY_SUCCESS"
+      }
+    },
+    {
+      "id": "INC-SPOT-101",
+      "sourceType": "incident",
+      "timestamp": "2026-09-08T07:26:34.195Z",
+      "location": {
+        "lat": 28.6418,
+        "lng": 77.242
+      },
+      "severity": "critical",
+      "title": "SPOT REPORT — Unidentified Aerial Vehicle & Perimeter Contact",
+      "description": "SALUTE Report from Alpha Patrol: Visual observation of low-flying rotary-wing UAV near Sector 4 perimeter. Corroborates optic tripwire trigger.",
+      "confidence": 97,
+      "confidenceBreakdown": {
+        "overall": 97,
+        "sourceAgreement": 95,
+        "spatialAgreement": 92,
+        "temporalAgreement": 95,
+        "sourceReliability": 75,
+        "dataFreshness": 100
+      },
+      "corroboratedBy": [
+        "LOG-TRIP-01",
+        "RAD-EVT-1"
+      ],
+      "isAnomaly": true,
+      "raw": {
+        "reportFormat": "SALUTE",
+        "size": "1 UAV (2m wingspan)",
+        "activity": "Low-altitude hovering & perimeter scan",
+        "locationStr": "Grid 28.6418, 77.2420",
+        "unit": "Alpha Patrol 1",
+        "time": "2026-09-08T07:26:34.195Z",
+        "equipment": "Electro-optical payload"
+      }
+    },
+    {
+      "id": "INC-CIVIL-202",
+      "sourceType": "incident",
+      "timestamp": "2026-09-08T07:20:34.195Z",
+      "location": {
+        "lat": 28.58,
+        "lng": 77.15
+      },
+      "severity": "medium",
+      "title": "Civil Power Grid Fluctuation Dispatch",
+      "description": "Regional dispatch report: 15% voltage drop observed at West Grid Substation 3. Emergency maintenance dispatched.",
+      "confidence": 75,
+      "confidenceBreakdown": {
+        "overall": 75,
+        "sourceAgreement": 65,
+        "spatialAgreement": 92,
+        "temporalAgreement": 95,
+        "sourceReliability": 75,
+        "dataFreshness": 99
+      },
+      "corroboratedBy": [],
+      "isAnomaly": false,
+      "raw": {
+        "dispatchId": "EMERG-PWR-88",
+        "gridZone": "SUBSTATION-3",
+        "voltageDropPct": 15
+      }
+    }
+  ],
+  "assets": [
+    {
+      "id": "AST-ALPHA-1",
+      "callsign": "Alpha Patrol 1",
+      "branch": "ARMY",
+      "status": "ENGAGED",
+      "location": {
+        "lat": 28.63,
+        "lng": 77.22,
+        "speedKnots": 25,
+        "headingDegrees": 90
+      },
+      "fuelLevel": 82,
+      "batteryPercent": 95,
+      "commIntegrity": 100,
+      "lastBeacon": "2026-09-08T07:28:04.196Z"
+    },
+    {
+      "id": "AST-FALCON-3",
+      "callsign": "Falcon Recon 3",
+      "branch": "AIRFORCE",
+      "status": "READY",
+      "location": {
+        "lat": 28.61,
+        "lng": 77.19,
+        "altitudeMeters": 2500,
+        "speedKnots": 220,
+        "headingDegrees": 310
+      },
+      "fuelLevel": 68,
+      "batteryPercent": 88,
+      "commIntegrity": 92,
+      "lastBeacon": "2026-09-08T07:28:04.196Z"
+    },
+    {
+      "id": "AST-TRIDENT-2",
+      "callsign": "Trident Naval Sector 2",
+      "branch": "NAVY",
+      "status": "READY",
+      "location": {
+        "lat": 28.55,
+        "lng": 77.25,
+        "speedKnots": 14,
+        "headingDegrees": 180
+      },
+      "fuelLevel": 91,
+      "batteryPercent": 100,
+      "commIntegrity": 98,
+      "lastBeacon": "2026-09-08T07:28:04.196Z"
+    },
+    {
+      "id": "AST-HQ-BASE",
+      "callsign": "Vanguard Command HQ",
+      "branch": "ARMY",
+      "status": "READY",
+      "location": {
+        "lat": 28.6139,
+        "lng": 77.209
+      },
+      "fuelLevel": 100,
+      "batteryPercent": 100,
+      "commIntegrity": 100,
+      "lastBeacon": "2026-09-08T07:28:04.196Z"
+    }
+  ],
+  "sourcesHealth": [
+    {
+      "sourceType": "weather",
+      "sourceName": "Open-Meteo Global Weather Stream",
+      "status": "live",
+      "lastUpdate": "2026-09-08T07:28:02.793Z",
+      "reliabilityScore": 0.85,
+      "activeCount": 1
+    },
+    {
+      "sourceType": "radar",
+      "sourceName": "Primary Air & Surface Surveillance Radar",
+      "status": "live",
+      "lastUpdate": "2026-09-08T07:28:02.798Z",
+      "reliabilityScore": 0.95,
+      "activeCount": 4
+    },
+    {
+      "sourceType": "personnel",
+      "sourceName": "Encrypted Tactical Unit Telemetry Stream",
+      "status": "live",
+      "lastUpdate": "2026-09-08T07:28:02.803Z",
+      "reliabilityScore": 0.9,
+      "activeCount": 4
+    },
+    {
+      "sourceType": "log",
+      "sourceName": "Base Defense Syslog & Perimeter Tripwires",
+      "status": "live",
+      "lastUpdate": "2026-09-08T07:28:02.807Z",
+      "reliabilityScore": 0.8,
+      "activeCount": 3
+    },
+    {
+      "sourceType": "incident",
+      "sourceName": "Tactical Spot Reports & Field Dispatches",
+      "status": "live",
+      "lastUpdate": "2026-09-08T07:28:02.812Z",
+      "reliabilityScore": 0.75,
+      "activeCount": 2
+    }
+  ],
+  "summaryMetrics": {
+    "totalEvents": 14,
+    "criticalCount": 3,
+    "highCount": 2,
+    "anomaliesCount": 5,
+    "activeSourcesCount": 5
+  }
+}
