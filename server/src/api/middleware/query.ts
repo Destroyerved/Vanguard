@@ -122,7 +122,7 @@ export function str(req: Request, name: string): string | undefined {
 /** Standard `limit`/`offset` pagination, capped at the response maximum. */
 export function pagination(req: Request): { limit: number; offset: number } {
   return {
-    limit: int(req, 'limit', { min: 1, max: MAX_EVENTS_PER_RESPONSE, fallback: 100 })!,
+    limit: int(req, 'limit', { min: 1, max: MAX_EVENTS_PER_RESPONSE, fallback: MAX_EVENTS_PER_RESPONSE })!,
     offset: int(req, 'offset', { min: 0, fallback: 0 })!,
   };
 }

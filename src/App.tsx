@@ -66,8 +66,8 @@ export default function App() {
         setTimeline(Array.isArray(timeData) ? timeData : timeData.timeline || []);
       }
 
-      // 3. Events
-      const evtRes = await fetch(`${BACKEND_URL}/events`);
+      // 3. Events (Fetch all unconstrained in-memory events)
+      const evtRes = await fetch(`${BACKEND_URL}/events?limit=5000`);
       if (evtRes.ok) {
         const evtData = await evtRes.json();
         if (!activeScenario || isManualSync) {

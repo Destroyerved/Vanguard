@@ -206,7 +206,7 @@ export const EVENT_STORE_CAPACITY = 5_000;
 export const EVENT_ACTIVE_HORIZON_SECONDS = 3_600;
 
 /** Maximum events returned by a single unpaginated API call. */
-export const MAX_EVENTS_PER_RESPONSE = 500;
+export const MAX_EVENTS_PER_RESPONSE = 5_000;
 
 /** Maximum escalation records retained. */
 export const ESCALATION_LOG_CAPACITY = 200;
