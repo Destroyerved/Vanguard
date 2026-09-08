@@ -238,7 +238,15 @@ export default function LiveNewsFeed({ event }: LiveNewsFeedProps) {
             <div key={idx} className="p-3 bg-slate-900/90 rounded-lg border border-amber-900/60 flex flex-col sm:flex-row gap-3 hover:border-amber-500 transition-colors">
               {item.imageUrl && (
                 <div className="w-full sm:w-28 h-20 rounded-md overflow-hidden bg-slate-950 flex-shrink-0">
-                  <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1579912437766-7892db673cb3?auto=format&fit=crop&w=800&q=80';
+                    }}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               )}
               <div className="flex-1 space-y-1">
