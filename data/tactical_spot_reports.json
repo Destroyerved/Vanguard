@@ -1,0 +1,38 @@
+{
+  "source": "Tactical Field Spot Reports & ICS Incident Dispatches",
+  "standard": "MIL-STD SALUTE / ICS-201 Briefing Standard",
+  "reports": [
+    {
+      "reportId": "SALUTE-2026-0908-01",
+      "reportingUnit": "Alpha Patrol 1",
+      "reporterCallsign": "Alpha-Leader",
+      "timestamp": "2026-09-08T11:58:30Z",
+      "salute": {
+        "size": "1 Low-Altitude Unmanned Aerial Vehicle (approx 2m wingspan)",
+        "activity": "Hovering low over optical fence tripwire, conducting optical scan",
+        "location": { "latitude": 28.6418, "longitude": 77.2420, "gridRef": "43Q-DQ-641-242" },
+        "unit": "Unidentified Hostile Recon Drone",
+        "time": "11:58:30Z",
+        "equipment": "Electro-Optical/Infrared (EO/IR) sensor ball payload"
+      },
+      "urgency": "IMMEDIATE",
+      "status": "ACTIVE_INVESTIGATION"
+    },
+    {
+      "reportId": "ICS-DISPATCH-2026-88",
+      "reportingUnit": "Civil Defense Grid Monitor",
+      "reporterCallsign": "Grid-Watch-3",
+      "timestamp": "2026-09-08T11:52:30Z",
+      "ics201": {
+        "incidentName": "Substation 3 Voltage Fluctuation",
+        "incidentType": "Infrastructure Vulnerability",
+        "location": { "latitude": 28.5800, "longitude": 77.1500 },
+        "summary": "15% voltage sag registered across Western Grid Substation 3. Dispatch maintenance team dispatched for line inspection.",
+        "resourcesAssigned": ["Civil Repair Unit 4", "Substation Backup Generator"],
+        "threatStatus": "CONTAINED"
+      },
+      "urgency": "PRIORITY",
+      "status": "MONITORING"
+    }
+  ]
+}

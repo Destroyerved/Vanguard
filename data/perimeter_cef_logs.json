@@ -1,0 +1,60 @@
+{
+  "source": "Base Defense Cyber & Physical Security Syslog Collector",
+  "format": "ArcSight Common Event Format (CEF:0) / RFC-5424",
+  "logs": [
+    {
+      "cefVersion": 0,
+      "deviceVendor": "VanguardDefense",
+      "deviceProduct": "OpticFence",
+      "deviceVersion": "4.2",
+      "deviceEventClassId": "TRIPWIRE_BREACH",
+      "name": "Optical Perimeter Fence Triggered",
+      "severity": 9,
+      "timestamp": "2026-09-08T11:58:00Z",
+      "extensions": {
+        "sensorId": "OPTIC-SEC4-B",
+        "sector": "Sector 4-B North Perimeter",
+        "latitude": 28.6425,
+        "longitude": 77.2430,
+        "vibrationThresholdDb": 94,
+        "physicalBreachConfirmed": true,
+        "actionTaken": "Escalated to Duty Officer & Camera Preset Swivel"
+      }
+    },
+    {
+      "cefVersion": 0,
+      "deviceVendor": "VanguardDefense",
+      "deviceProduct": "RF-Guard",
+      "deviceVersion": "3.1",
+      "deviceEventClassId": "RF_JAMMING",
+      "name": "VHF Spectrum Anomaly / Jamming Alert",
+      "severity": 8,
+      "timestamp": "2026-09-08T11:55:00Z",
+      "extensions": {
+        "sensorId": "RF-WATCHTOWER-EAST",
+        "frequencyBandMhz": "142.0-156.0",
+        "noiseFloorDbm": -45,
+        "baselineDbm": -110,
+        "latitude": 28.6810,
+        "longitude": 77.2900,
+        "actionTaken": "Frequency Hopping Protocol Activated"
+      }
+    },
+    {
+      "cefVersion": 0,
+      "deviceVendor": "VanguardDefense",
+      "deviceProduct": "CryptoGateway",
+      "deviceVersion": "2.0",
+      "deviceEventClassId": "REKEY_SUCCESS",
+      "name": "Automated Key Rotation Complete",
+      "severity": 2,
+      "timestamp": "2026-09-08T11:50:00Z",
+      "extensions": {
+        "module": "AES256-HSM",
+        "latitude": 28.6139,
+        "longitude": 77.2090,
+        "status": "OPERATIONAL"
+      }
+    }
+  ]
+}

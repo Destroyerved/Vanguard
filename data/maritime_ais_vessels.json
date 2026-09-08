@@ -1,0 +1,57 @@
+{
+  "source": "Global AIS Maritime Tracking Stream",
+  "protocol": "NMEA-0183 / AIS Type 1 & Type 5",
+  "timestamp": "2026-09-08T12:00:00Z",
+  "vessels": [
+    {
+      "mmsi": 419001234,
+      "vesselName": "INS VIKRANT (R11)",
+      "callsign": "VWKC",
+      "imo": 9801234,
+      "shipType": "Naval Aircraft Carrier",
+      "lengthMeters": 262,
+      "beamMeters": 62,
+      "latitude": 28.5500,
+      "longitude": 77.2500,
+      "sogKnots": 14.2,
+      "cogDegrees": 180.0,
+      "trueHeading": 180,
+      "navigationalStatus": "Underway Using Engine",
+      "destination": "PATROL SECTOR SOUTH",
+      "eta": "2026-09-08T18:00:00Z"
+    },
+    {
+      "mmsi": 419005678,
+      "vesselName": "CG TACTICAL-01",
+      "callsign": "VWCG",
+      "shipType": "Coast Guard Fast Patrol Vessel",
+      "lengthMeters": 50,
+      "beamMeters": 8,
+      "latitude": 28.6300,
+      "longitude": 77.2200,
+      "sogKnots": 28.5,
+      "cogDegrees": 90.0,
+      "trueHeading": 92,
+      "navigationalStatus": "Underway Tactical Patrol",
+      "destination": "SECTOR ALPHA PERIMETER",
+      "eta": "2026-09-08T14:30:00Z"
+    },
+    {
+      "mmsi": 419009999,
+      "vesselName": "MV MERCHANT TRADER",
+      "callsign": "VWMTR",
+      "imo": 9123456,
+      "shipType": "Container Ship",
+      "lengthMeters": 180,
+      "beamMeters": 28,
+      "latitude": 28.5100,
+      "longitude": 77.3000,
+      "sogKnots": 8.0,
+      "cogDegrees": 45.0,
+      "trueHeading": 45,
+      "navigationalStatus": "Moored / Restricted Manoeuvrability",
+      "destination": "INLAND PORT",
+      "eta": "2026-09-09T06:00:00Z"
+    }
+  ]
+}
