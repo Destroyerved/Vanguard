@@ -1,435 +1,373 @@
 # 🛡️ VANGUARD
 ### Multi-Source Defence Situational Awareness System
 
-> **One picture. Every source. Zero delay.**  
+> **One picture. Every source. Zero delay.**
 > *From fragmented data streams to one unified, explainable operational picture.*
 
 [![Track](https://img.shields.io/badge/Track-Defense-red.svg)](https://github.com/Destroyerved/Vanguard)
 [![Event](https://img.shields.io/badge/Event-HackHertz%202026-blue.svg)](https://github.com/Destroyerved/Vanguard)
 [![Problem ID](https://img.shields.io/badge/Problem%20ID-D--05-orange.svg)](https://github.com/Destroyerved/Vanguard)
-[![AI](https://img.shields.io/badge/AI-Google%20Gemini%202.0%20%2F%201.5-purple.svg)](https://ai.google.dev/)
+[![Tests](https://img.shields.io/badge/tests-114%20passing-brightgreen.svg)](server/tests)
+[![Backend](https://img.shields.io/badge/backend-operational-brightgreen.svg)](server)
+[![AI](https://img.shields.io/badge/AI-Gemini%202.0%20%2B%20deterministic%20fallback-purple.svg)](https://ai.google.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-VANGUARD is an AI-powered **Common Operating Picture (COP) and decision-support command platform** designed for defense and emergency watchstanders. It aggregates heterogeneous operational data streams, correlates information across space and time, computes transparent confidence metrics, prioritizes critical alerts, and generates grounded executive situation briefings and tactical Courses of Action (COAs).
-
-Instead of forcing decision-makers to cognitively assemble dozens of disconnected screens during high-stress operations, VANGUARD presents an **interactive, unified tactical command view** where every contact is correlated, every claim is traceable to source evidence, and every action is prioritized.
-
----
-
-## 🎯 The Operational Problem
-
-Modern tactical operations centers and emergency command rooms suffer from severe cognitive overload. Data arrives continuously and asynchronously from siloed systems:
-
-- **Surveillance & Radar**: Kinematic contact tracks, transponders, IFF tags
-- **Meteorological Feeds**: Atmospheric conditions, visibility, precipitation radar
-- **Personnel & Unit Readiness**: GPS telemetry, squad health, asset readiness
-- **Operational Logs**: Perimeter sensors, access tripwires, network telemetries
-- **Incident Reports**: Human field reports, emergency dispatches, threat advisories
-
-When operators process these feeds in silos, critical consequences emerge:
-1. **Information Overload**: Hundreds of noisy events obscure high-priority developments.
-2. **Delayed Comprehension**: Minutes lost cross-referencing maps, weather forecasts, and incident reports.
-3. **Conflicting Observations**: Radar tracks contradict ground sensor logs, causing hesitation.
-4. **AI Hallucination Risk**: Generic AI tools produce ungrounded summaries that defense operators cannot verify or trust.
-
-### VANGUARD resolves this by fusing raw multi-source streams into a correlated, explainable, and actionable tactical picture in real time.
+VANGUARD is an AI-powered **Common Operating Picture (COP) and decision-support platform** for
+defense and emergency watchstanders. It ingests five heterogeneous data streams, correlates
+them across space and time, computes transparent confidence, prioritizes what matters, and
+generates evidence-grounded situation briefings and ranked Courses of Action.
 
 ---
 
-## 🚀 Core Capabilities
+## ⚡ The thesis
 
-### 1. Multi-Source Data Fusion Engine
-VANGUARD normalizes heterogeneous streams into an authoritative Common Event Model:
-- **Live Weather Feed**: Real-time atmospheric conditions via the **Open-Meteo API** (zero API key required).
-- **Radar & Sensor Tracks**: High-fidelity kinematic contacts with speed, heading, and altitude vectors.
-- **Personnel & Asset Telemetry**: Real-time position, status, and readiness tracking.
-- **Operational Logs**: Automated perimeter tripwire alerts and system diagnostic logs.
-- **Field Incidents**: Manual and automated tactical dispatch reports.
+> **The fusion engine is the product. The language model is a presentation layer.**
 
-```text
-┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│  OPEN-METEO  │  │    RADAR     │  │  PERSONNEL   │  │ OPERATIONAL  │  │  INCIDENTS   │
-│  LIVE WEATHER│  │ SENSOR TRACKS│  │   TELEMETRY  │  │ SYSTEM LOGS  │  │  DISPATCHES  │
-└───────┬──────┘  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘
-        │                │                 │                 │                 │
-        └────────────────┴────────────┬────┴─────────────────┴─────────────────┘
-                                      │
-                                      ▼
-                      ┌───────────────────────────────┐
-                      │    VANGUARD INGESTION &       │
-                      │     NORMALIZATION ENGINE      │
-                      └───────────────┬───────────────┘
-                                      │
-                                      ▼
-                      ┌───────────────────────────────┐
-                      │  SPATIOTEMPORAL CORRELATION   │
-                      │     & CORROBORATION LAYER     │
-                      └───────────────────────────────┘
+Most AI entries are a prompt with a UI attached — remove the API key and nothing remains.
+VANGUARD inverts that. Every number an operator sees is produced by deterministic, auditable
+code. The model is handed a finished analysis and asked only to phrase it.
+
+**You can verify this in ten seconds:**
+
+```bash
+cd server && npm install && npm run smoke
+```
+
+No API key. No database. No Docker. The pipeline runs, fuses five feeds, and produces a fully
+cited briefing — `provenance.engine: "deterministic"`.
+
+---
+
+## 🚀 Quick start
+
+```bash
+git clone https://github.com/Destroyerved/Vanguard.git
+cd Vanguard/server
+npm install
+npm run dev
+```
+
+```
+HTTP    http://localhost:3001/api/v1
+WS      ws://localhost:3001/stream
+Health  http://localhost:3001/health
+```
+
+**Optional** — richer briefing prose via Gemini:
+
+```bash
+cp .env.example .env      # add GEMINI_API_KEY, then restart
+```
+
+Without a key the deterministic synthesizer runs instead. Every feature stays operational.
+
+### First things to try
+
+```bash
+# The whole picture in one call
+curl localhost:3001/api/v1/situation/current
+
+# Explainability drawer — the full confidence arithmetic for one event
+curl localhost:3001/api/v1/events/<id>/correlations
+
+# Verify the AI is not hallucinating citations
+curl -X POST localhost:3001/api/v1/ai/verify
+
+# Drive an escalation end to end
+curl -X POST localhost:3001/api/v1/simulation/scenario \
+  -H 'content-type: application/json' -d '{"scenario":"border_spike"}'
+
+# Cut the comms and watch confidence fall across the whole board
+curl -X POST localhost:3001/api/v1/simulation/degraded \
+  -H 'content-type: application/json' -d '{"enabled":true}'
 ```
 
 ---
 
-### 2. Intelligent Situation Synthesis & Corroboration
-VANGUARD identifies relationships between events before displaying them:
-- **Spatial Clustering**: Haversine distance proximity windowing ($\le \Delta R$).
-- **Temporal Windowing**: Aligns events unfolding within the same dynamic time slice ($\le \Delta T$).
-- **Corroboration Linking**: When independent sources confirm the same developing threat, VANGUARD links them via `corroboratedBy` and boosts situational certainty.
-- **Anomaly Detection**: Statistical z-score outlier detection flags unusual incident spikes or sensor anomalies *before* LLM synthesis.
+## 📚 Documentation
+
+| Document | What it covers |
+|---|---|
+| **[Master Guidelines](docs/MASTER_GUIDELINES.md)** · [PDF](docs/VANGUARD_Master_Guidelines.pdf) | The learning guide. Domain foundations, engineering principles, the math from first principles, and **the seven real bugs we hit and fixed** |
+| **[Backend Walkthrough](docs/BACKEND_WALKTHROUGH.md)** | File-by-file, stage-by-stage tour of the fusion backend |
+| **[Architecture](docs/ARCHITECTURE.md)** | System design, layer discipline, failure modes, performance |
+| **[Fusion Mathematics](docs/FUSION_MATH.md)** | Every formula, derived and justified |
+| **[API Reference](docs/API.md)** | 30 REST endpoints + 11 WebSocket frame types |
+| **[Data Model](docs/DATA_MODEL.md)** | `UnifiedEvent` v1.1 contract |
+| **[AI Agent Guide](docs/AI_AGENT_GUIDE.md)** | **Read before any agent writes code here** |
+| **[Pitch Deck](docs/presentation/PITCH_DECK.md)** · [PDF](docs/presentation/VANGUARD_Pitch_Deck.pdf) | 14 slides, ~6 minutes, with speaker notes |
+| **[Demo Script](docs/presentation/DEMO_SCRIPT.md)** · [PDF](docs/presentation/VANGUARD_Demo_Script.pdf) | Stage runbook — every command and number verified live |
+| **[PRD](Vanguard_PRD.md)** | Product requirements v1.1 |
 
 ---
 
-### 3. Explainable Confidence Scoring
-Every fused event and AI claim is backed by transparent, deterministic confidence mathematics:
+## 🎯 The operational problem
 
-$$\text{Confidence} = \min\left(100, \text{round}\left(\text{SourceReliability} \times \text{RecencyDecay} \times \text{CorroborationBoost} \times 100\right)\right)$$
+Five systems describe the **same intrusion**, and none of them knows the others exist:
 
-Operators can open the **Interactive Explainability Drawer** to inspect the mathematical breakdown:
+| Feed | Says |
+|---|---|
+| Radar | *"Contact, 23.02N 72.57E, 260 knots, no transponder"* |
+| Perimeter sensors | *"IR trip, sector 4, amplitude 0.87"* |
+| Patrol telemetry | *"GRIZZLY-1 reports visual contact"* |
+| Weather | *"Visibility 1.8 km"* |
+| Dispatch | *"Unauthorized entry, sector 4"* |
 
-```text
-EXPLAINABILITY BREAKDOWN: CONTACT #E-4091
-────────────────────────────────────────────────────
-Overall Confidence Score                    88% (HIGH)
+A watchstander assembles that in their head, under time pressure, while the situation develops.
 
-  • Source Reliability Weight               92%
-  • Spatial Corroboration Agreement         90%
-  • Temporal Correlation Window             85%
-  • Data Freshness (Recency)                96%
-  • Multi-Source Corroboration Boost        +15% (3 independent feeds)
+**Putting it all on one screen is not the answer** — that is aggregation, and it makes the
+overload worse. Fusion asks the harder question: *which of these observations are about the
+same thing?*
 
-Contributing Feeds:
-  [1] RADAR-PRIMARY   (Track #R-204)  - Confirmed Kinematics
-  [2] IR-PERIMETER    (Sensor #P-12)  - Thermal Signature
-  [3] OPEN-METEO      (Station #725)  - Severe Weather Masking
-────────────────────────────────────────────────────
+---
+
+## 🧠 How it works
+
+```
+5 FEEDS  →  NORMALIZE  →  ┌─ 1 DEDUPE      collapse same-source re-reports
+                          │  2 CORRELATE   union-find, ΔR ≤5km ∧ ΔT ≤600s
+                          │  3 CORROBORATE affinity × proximity × simultaneity
+                          │  4 SCORE       reliability × recency × corroboration
+                          │  5 ANOMALY     rate / kinematic / spatial z-scores
+                          └─ 6 ESCALATE    idempotent rules → threat posture
+                                    ↓
+                     AI phrases the finished analysis
+                                    ↓
+                     GROUNDING GATE — enforced in code
+                                    ↓
+                     REST + WebSocket → Command Center
 ```
 
----
+**The stage order is load-bearing.** Deduping *after* correlating would let duplicate
+re-reports count as independent confirmation and manufacture false certainty.
 
-### 4. Alert Prioritization Matrix
-Incoming situations are scored and triaged into four distinct operational severity tiers:
+### 1. Five sources, one contract
 
-```text
-┌───────────┐  Immediate tactical emergency requiring operational intervention.
-│ CRITICAL  │  (Multi-source corroborated threat, perimeter breach, severe storm impact)
-├───────────┤
-│   HIGH    │  Developing contact requiring verification; multiple indicators aligned.
-├───────────┤
-│  MEDIUM   │  Isolated anomaly or weather alert; monitoring required.
-├───────────┤
-│    LOW    │  Routine telemetry, minor maintenance log, or single-sensor anomaly.
-└───────────┘
+| Feed | Kind | Reliability | Poll |
+|---|---|---|---|
+| **Open-Meteo** | 🌍 **Live external API** | 0.95 | 120 s |
+| Radar / surveillance | Persistent kinematic tracks | 0.92 | 3 s |
+| Personnel telemetry | Patrol orbits + visual sightings | 0.88 | 6 s |
+| Operational logs | Perimeter sensors + system events | 0.80 | 4 s |
+| Field incidents | Dispatches with reporter credibility | 0.72 | 5 s |
+
+Everything normalizes into `UnifiedEvent` v1.1 before entering the pipeline. Adding a sixth
+feed touches four files and nothing downstream.
+
+### 2. Explainable confidence
+
+$$\text{Confidence} = \min\!\left(100,\ \text{round}(R_s \times D_t \times B_c \times 100)\right)$$
+
+Live output from `GET /api/v1/events/:id/correlations`:
+
+```
+reliability 0.92 × recency 1.00 × corroboration 1.60 = 100%
+
+breakdown   sourceReliability  92    dataFreshness     100
+            spatialAgreement   57    temporalAgreement  93
+            sourceAgreement   100
+
+counterfactual   without corroboration:  92%
+                              fusion:    +8
 ```
 
----
+**The counterfactual is the number that matters.** It converts "we fuse sources" from a claim
+into a measured quantity.
 
-### 5. Interactive Tactical Command Map
-Hardware-accelerated geospatial canvas powered by **MapLibre GL JS**:
-- **4 Dynamic Switchable Layers**:
-  - `☑ Assets`: Dynamic operational units with heading vectors and speed readouts.
-  - `☑ Alerts`: Severity-coded tactical pins with instant pulse animations on critical contacts.
-  - `☑ Weather`: Real-time Open-Meteo precipitation overlays and wind velocity vectors.
-  - `☑ Zones`: Operational sectors, restricted airspace, geofences, and danger radii.
-- **Contact Clustering**: Smoothly handles high-density contact volumes without visual clutter.
-- **Incident Heatmap Mode**: Instant toggle to visualize geographic incident concentration.
-- **4D Time-Scrubber**: Slider to scrub back in time and replay how a tactical scenario developed.
+Corroboration is **capped at 1.6**, and same-source confirmation counts at only 0.35 — because
+one radar reporting six times is not six confirmations.
 
----
+### 3. The anti-hallucination guarantee
 
-### 6. AI Situation Briefing & Courses of Action (COA)
-VANGUARD utilizes **Google Gemini (2.0 / 1.5 Flash)** to generate structured executive briefings and ranked Courses of Action:
-- **Strict Evidence Grounding**: Every key finding **must cite supporting event IDs**.
-- **Ranked Courses of Action (COAs)**: Provides tactical options with concrete pros and operational tradeoffs.
+Prompting a model not to invent IDs is a request, not a constraint. So VANGUARD assumes it is
+lying and checks:
 
-```text
-CURRENT SITUATIONAL BRIEFING [GREEN → YELLOW → ORANGE → RED]
-──────────────────────────────────────────────────────────────────────────
-STATUS: ORANGE (HEIGHTENED READINESS) | OVERALL CONFIDENCE: 88%
-
-KEY DEVELOPMENTS:
-• Correlated perimeter alert detected in Sector 4 [Events: #E-1024, #E-1029].
-• Heavy precipitation masking primary optical surveillance [Event: #W-0811].
-• Secondary radar confirms fast-moving unidentified contact [Event: #R-4012].
-
-RECOMMENDED COURSES OF ACTION (COA):
-1. [URGENCY 5/5] Intercept & Verify Contact
-   • Pro: Immediate neutralization of potential perimeter breach.
-   • Tradeoff: Diverts Quick Reaction Force (QRF) from Sector 2 standby.
-2. [URGENCY 4/5] Deploy Drone Reconnaissance
-   • Pro: Zero personnel risk; confirms thermal signature through weather.
-   • Tradeoff: 4-minute deployment latency in high-wind conditions.
-3. [URGENCY 2/5] Passive Radar Sensor Gain Adjustment
-   • Pro: Compensates for atmospheric noise without moving ground assets.
-   • Tradeoff: Does not confirm contact identity.
+```
+1. Resolve every supportingEventId against the event store
+2. STRIP    IDs that do not resolve
+3. DISCARD  claims left with zero citations
+4. RECOMPUTE overall confidence from survivors
 ```
 
----
+Enforced in [`ai/grounding.ts`](server/src/ai/grounding.ts). Verify it yourself:
 
-## 🌟 Elite Hackathon Differentiators
-
-VANGUARD integrates 8 purpose-built differentiator capabilities designed to showcase unmatched technical craftsmanship:
-
-| Differentiator | Description | Technical Implementation |
-|---|---|---|
-| **Natural-Language Command Omnibar** | Query the entire tactical picture in plain English (e.g. *"Show all high-severity radar contacts near Sector 3 in the past hour"*). | Gemini function calling / structured filter extraction parsed into instant map/feed filters. |
-| **AI Courses of Action (COA) with Tradeoffs** | Actionable tactical recommendations with explicit tradeoffs rather than passive text summaries. | Structured JSON schema in Gemini prompt engineering. |
-| **Voice Briefing Mode** | Hands-free audio situation report readout for command room realism. | Browser-native Web Speech API synthesis with military cadence. |
-| **Interactive Explainability Drawer** | Drill into any AI claim or event to inspect underlying event IDs and confidence factors. | Sliding slide-over panel with raw JSON and dynamic factor charts. |
-| **4D Time-Scrubber** | Scrub back in time to replay tactical incidents chronologically. | Client-side event timeline buffer with slider controls. |
-| **Dynamic Tactical Threat UI** | Global UI ambient glow and navigation HUD automatically shift according to aggregate threat level (`GREEN` $\to$ `YELLOW` $\to$ `ORANGE` $\to$ `RED`). | Reactive Tailwind CSS theme tokens driven by aggregate state. |
-| **What-If Sandbox & Degraded Comms** | Inject hypothetical incidents or simulate sensor blackout to verify system resilience. | Client-side simulation sandbox + offline cached state fallback banner. |
-| **One-Click SITREP PDF Export** | Export a military-standard Situation Report (SITREP) in one click. | Client-side `jsPDF` formatted document generation. |
-
----
-
-## 🏗️ System Architecture
-
-VANGUARD is architected as a **High-Performance Modular System with Instant Dual-Mode Fallback**:
-1. **Full-Stack WebSocket Mode**: Connects to the Node.js/NestJS ingestion and fusion service.
-2. **Turnkey Standalone Mode**: Includes an in-browser Web Worker simulation engine. Any judge can clone and run `npm run dev` with **zero database configuration, zero Docker setup, and zero friction**.
-
-```text
-                               DATA SOURCES
-                                    │
-                ┌───────────────────┼───────────────────┐
-                │         │         │         │         │
-             Weather    Radar   Personnel   Logs    Incidents
-           (Open-Meteo) (sim)     (sim)     (sim)     (sim)
-                │         │         │         │         │
-                └───────────────────┼───────────────────┘
-                                    │
-                                    ▼
-                         ┌────────────────────┐
-                         │  INGESTION ENGINE  │
-                         └──────────┬─────────┘
-                                    │
-                                    ▼
-                         ┌────────────────────┐
-                         │   NORMALIZATION    │
-                         │ (UnifiedEvent v1.1)│
-                         └──────────┬─────────┘
-                                    │
-                     ┌──────────────┴──────────────┐
-                     │                             │
-                     ▼                             ▼
-          [Backend Service Mode]         [Client Fallback Mode]
-          Node.js / Express / Nest       Web Worker Ingestion
-          WebSocket Streaming            Reactive Zustand Store
-                     │                             │
-                     └──────────────┬──────────────┘
-                                    │
-                                    ▼
-                         ┌────────────────────┐
-                         │   FUSION ENGINE    │
-                         │ • Spatiotemporal   │
-                         │ • Corroboration    │
-                         │ • Confidence Scorer│
-                         │ • Anomaly Detector │
-                         └──────────┬─────────┘
-                                    │
-                                    ▼
-                         ┌────────────────────┐
-                         │  GEMINI AI SYNTH   │
-                         │ • Executive Brief  │
-                         │ • Ranked COAs      │
-                         │ • NL Query Parser  │
-                         └──────────┬─────────┘
-                                    │
-                        ┌───────────┴───────────┐
-                        │                       │
-                        ▼                       ▼
-                  REST Endpoints         WebSocket / SSE
-                        │                       │
-                        └───────────┬───────────┘
-                                    ▼
-                     ┌─────────────────────────────┐
-                     │   VANGUARD COMMAND CENTER   │
-                     │  React 18 • TypeScript     │
-                     │  Tailwind • MapLibre GL     │
-                     │  Recharts • Web Speech      │
-                     └─────────────────────────────┘
+```bash
+curl -X POST localhost:3001/api/v1/ai/verify
+# → { "verified": true, "totalCitations": 42, "ungroundedCitations": [] }
 ```
 
----
+### 4. Anomaly detection runs *before* the model
 
-## 🧩 Unified Event Model
+Three independent z-score detectors — rate, kinematic, spatial. Asking a language model
+"does this look unusual?" would replace a verifiable number with an opinion. The model is
+*told* what is anomalous; it never decides.
 
-All incoming feeds are strictly normalized into the `UnifiedEvent` interface before entering the fusion pipeline:
-
-```typescript
-export interface UnifiedEvent {
-  id: string;                             // Unique event identifier (e.g. "EV-1024")
-  sourceType: 'radar' | 'weather' | 'personnel' | 'log' | 'incident';
-  timestamp: string;                      // ISO 8601 UTC timestamp
-  location: {
-    lat: number;                          // Latitude (-90 to +90)
-    lng: number;                          // Longitude (-180 to +180)
-    altitudeMeters?: number;              // Optional contact altitude
-    headingDegrees?: number;              // Optional contact heading vector (0-360)
-    speedKnots?: number;                  // Optional contact speed
-  };
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  title: string;                          // Concise tactical title
-  description: string;                    // Operational context
-  confidence: number;                     // 0 to 100 integer score
-  confidenceBreakdown?: {
-    overall: number;
-    sourceReliability: number;
-    spatialAgreement: number;
-    temporalAgreement: number;
-    dataFreshness: number;
-  };
-  corroboratedBy: string[];               // Linked IDs of confirming events
-  isAnomaly: boolean;                     // Flagged by outlier detection engine
-  raw: Record<string, unknown>;           // Original raw telemetry payload
-}
+```
+kinematic z=2.98 : Speed 312kt is 3.0 sigma from the 92kt mean (sigma 93kt) across 19 contacts
+spatial   z=4.57 : Isolated contact: nearest activity 11.7km away, 4.6 sigma beyond normal
 ```
 
-### Example Normalized Event (JSON)
+### 5. Degradation propagates into the math
 
-```json
-{
-  "id": "EV-4091",
-  "sourceType": "radar",
-  "timestamp": "2026-09-08T11:45:00Z",
-  "location": {
-    "lat": 23.0325,
-    "lng": 72.5841,
-    "altitudeMeters": 1200,
-    "headingDegrees": 135,
-    "speedKnots": 240
-  },
-  "severity": "high",
-  "title": "Uncorrelated Fast Contact",
-  "description": "Primary radar detected fast-moving contact crossing restricted airspace sector 4.",
-  "confidence": 88,
-  "confidenceBreakdown": {
-    "overall": 88,
-    "sourceReliability": 92,
-    "spatialAgreement": 90,
-    "temporalAgreement": 85,
-    "dataFreshness": 96
-  },
-  "corroboratedBy": ["EV-4088", "EV-4090"],
-  "isAnomaly": true,
-  "raw": {
-    "transponder": "NONE",
-    "radarFreqGhz": 9.4,
-    "radarRcsM2": 1.8
-  }
-}
-```
+Feed health multiplies directly into the confidence formula. Cutting the comms does not paint
+an amber dot — it lowers the trust weight of every feed, so **every score across the picture
+falls**.
+
+| | Before | Degraded | Restored |
+|---|---|---|---|
+| Mean confidence | 93% | **43%** | 92% |
+| Feed reliability | 0.92 | 0.37 | 0.92 |
 
 ---
 
-## 📡 REST & WebSocket API Specification
+## 📡 API surface
 
-### REST Endpoints
+Full reference: **[docs/API.md](docs/API.md)** · `GET /api/v1` returns a live index.
+
 ```http
-# Situational Overview
-GET  /api/v1/situation/current          # Current threat level, active count, executive summary
-GET  /api/v1/situation/timeline         # Threat level escalation history log
+GET  /api/v1/situation/current            posture, counts, source health
+GET  /api/v1/situation/timeline           escalation audit log
+GET  /api/v1/situation/replay?at=<ms>     4D time-scrubber snapshot
 
-# Events & Corroboration
-GET  /api/v1/events                     # Filterable by ?source=&severity=&limit=
-GET  /api/v1/events/:id                 # Detailed event inspection
-GET  /api/v1/events/:id/correlations    # Supporting events linked by corroboration engine
+GET  /api/v1/events                       ?source= &severity= &near=lat,lng,km &q=
+GET  /api/v1/events/:id/correlations   ★  explainability drawer + counterfactual
+GET  /api/v1/events/:id/candidates        links the engine REJECTED, and why
 
-# Tactical Map Data
-GET  /api/v1/map/assets                 # Unit positions, vectors, and statuses
-GET  /api/v1/map/alerts                 # Active spatial alerts
-GET  /api/v1/map/weather                # Real-time Open-Meteo weather grid
-GET  /api/v1/map/zones                  # Operational GeoJSON zones and boundaries
+GET  /api/v1/map/{assets|alerts|weather|zones|heatmap|all}    GeoJSON layers
 
-# AI Intelligence & Decision Support
-POST /api/v1/ai/briefing                # Triggers on-demand Gemini synthesis
-GET  /api/v1/ai/briefing/latest         # Fetches latest cached briefing and COAs
-POST /api/v1/ai/query                   # Natural-language query bar parser
-GET  /api/v1/intelligence/source-health # Up/degraded/down metrics for all feeds
+POST /api/v1/ai/briefing?deterministic=   force synthesis (or force no-model)
+GET  /api/v1/ai/briefing/latest           cached, never blocks
+POST /api/v1/ai/query                     natural-language omnibar
+POST /api/v1/ai/verify                 ★  independently re-check citations
+
+GET  /api/v1/intelligence/config       ★  every live tuning constant
+GET  /api/v1/intelligence/fusion          per-stage timings and counts
+GET  /api/v1/intelligence/anomalies       z-scores with detector attribution
+
+POST /api/v1/simulation/scenario          border_spike | perimeter_breach | ...
+POST /api/v1/simulation/degraded          cut/restore comms
+POST /api/v1/simulation/inject            what-if sandbox
 ```
 
-### Real-Time WebSocket Channel (`ws://localhost:3001/stream`)
-```json
-{
-  "type": "EVENT_STREAM",
-  "timestamp": "2026-09-08T11:45:01Z",
-  "payload": {
-    "event": { "id": "EV-4091", "severity": "high", "confidence": 88 }
-  }
-}
+**WebSocket** `ws://localhost:3001/stream` — 11 frame types, push-only, per-connection
+sequence numbers for gap detection.
+
+---
+
+## 📊 Measured performance
+
+| Metric | Value |
+|---|---|
+| Fusion pass (118 events) | **2–37 ms** against a 3000 ms tick budget |
+| Correlation comparisons | 803 grid-indexed vs ~7,000 naive |
+| NL query (heuristic) | **0–2 ms**, no API call |
+| Mean tick duration | ~56 ms (≈50× headroom) |
+| Runtime dependencies | 4 (`express`, `ws`, `cors`, `dotenv`) |
+| Tests | 114 passing, strict TypeScript, zero `any` |
+
+---
+
+## 🔬 Engineering honesty
+
+Seven real bugs were found by **running** the system, not reading it. Each has a regression
+test, and each is documented with its lesson in
+[Master Guidelines Part IV](docs/MASTER_GUIDELINES.md).
+
+| Bug | Root cause |
+|---|---|
+| Whole board turned CRITICAL in a minute | Escalation compounded from *current* severity across ticks |
+| 188 events for 10 radar contacts | Every sweep minted a new event ID → false corroboration |
+| 37 of 45 events escalated | Escalation keyed on *cluster* source diversity; clusters are transitive |
+| Uncorroborated contacts marked CRITICAL | Promotion needed only confidence, which a fresh sensor reaches alone |
+| A routine network log reached CRITICAL | Two escalation rules chained within one pass |
+| Posture booted at RED | Thresholds calibrated for a far smaller picture |
+| A feed empty for the first 15 s | Stochastic reporting with no seeded backlog |
+
+---
+
+## 🏗️ Repository layout
+
+```
+Vanguard/
+├── server/                        Node.js + TypeScript fusion backend
+│   ├── src/
+│   │   ├── ingestion/             5 source adapters (1 live API, 4 simulators)
+│   │   ├── normalization/         → UnifiedEvent + validation boundary
+│   │   ├── fusion/                the 6-stage pipeline
+│   │   ├── state/                 event store, threat state, source health
+│   │   ├── ai/                    Gemini + grounding + deterministic fallback
+│   │   ├── api/                   REST routes and middleware
+│   │   ├── ws/                    WebSocket broadcast hub
+│   │   └── orchestrator/          the single tick loop
+│   ├── tests/                     114 tests
+│   └── scripts/smoke.ts           15s end-to-end invariant check
+├── docs/                          architecture, math, API, guidelines, PDFs
+└── Vanguard_PRD.md                product requirements v1.1
 ```
 
 ---
 
-## ⚙️ Technology Stack
+## 🛠️ Commands
 
-| Layer | Technology | Role |
+```bash
+npm run dev         # tsx watch, hot reload
+npm run build       # tsc → dist/
+npm start           # run the build
+npm test            # 114 tests
+npm run typecheck   # strict, noUncheckedIndexedAccess
+npm run smoke       # 15s end-to-end pipeline assertions
+```
+
+`npm run smoke` asserts what actually broke during development: no uncorroborated CRITICAL
+promotions, no event escalated more than two tiers, radar tracks stable across sweeps, posture
+not pinned at RED, **zero ungrounded citations**, and confidence falling under degraded comms.
+
+**Run it before a demo.**
+
+---
+
+## 📈 Evaluation alignment
+
+| Criterion | Weight | Implementation |
 |---|---|---|
-| **Frontend Framework** | **React 18 + TypeScript + Vite** | High-performance, low-latency command center UI. |
-| **Tactical Map** | **MapLibre GL JS** | WebGL vector map rendering, clustering, and GeoJSON overlays. |
-| **Styling & HUD** | **Tailwind CSS + Custom CSS** | Dark tactical aesthetics, HUD scanlines, glassmorphism. |
-| **Data Visualization**| **Recharts + Lucide Icons** | Confidence factor gauges, severity breakdowns, tactical icons. |
-| **State Management** | **Zustand** | Instantaneous reactive state for maps, feeds, and filters. |
-| **AI Intelligence** | **Google Gemini 2.0 / 1.5 Flash** | Sub-second executive situation briefing and ranked COA generation. |
-| **Live Weather** | **Open-Meteo API** | Real-world global weather without API keys or rate limits. |
-| **Backend / Streaming**| **Node.js + Express / WS** | Multi-source event ingestion, fusion pipeline, and WebSocket broadcast. |
-| **Voice Synthesis** | **Web Speech API** | Hands-free browser-native tactical audio briefing. |
-| **Reporting** | **jsPDF** | One-click military-standard SITREP PDF generation. |
+| **Data fusion & multi-source integration** | 30% | 5 feeds incl. live Open-Meteo · `UnifiedEvent` normalization · haversine + temporal correlation with union-find closure · explainable confidence with counterfactual · 3 anomaly detectors · health→reliability coupling |
+| **Command map & geospatial UX** | 25% | MapLibre-ready GeoJSON for 4 layers · marker clustering · severity-weighted density heatmap · 4D time-scrubber via `snapshotAt` with `firstSeen` semantics |
+| **AI summarization & prioritization** | 25% | Grounded briefings with **enforced** citation checking · ranked COAs with honest tradeoffs · NL omnibar (Gemini + 2 ms heuristic) · explainability drawer with rejected-candidate view |
+| **Scalability & craftsmanship** | 20% | 114 tests · ~50× perf headroom · dual-mode AI fallback · degraded-comms simulation · zero-friction setup · 4 runtime dependencies |
 
 ---
 
-## 📈 Evaluation Alignment
+## 🛣️ Status
 
-VANGUARD is engineered to systematically score maximum points across all HackHertz defense criteria:
-
-| Evaluation Area | Weight | Vanguard Implementation |
-|---|---|---|
-| **Data Fusion & Multi-Source Integration** | **30%** | Ingestion of 5 diverse streams (including live Open-Meteo), schema normalization, spatiotemporal corroboration, mathematical confidence engine, and source health monitoring. |
-| **Command Map & Geospatial UX** | **25%** | MapLibre GL tactical canvas, 4 dynamic toggleable layers, contact clustering, interactive popups, density heatmap, and 4D time-scrubber replay. |
-| **AI Situation Summarization & Alert Prioritization** | **25%** | Gemini-powered executive briefings with mandatory event citation, ranked Courses of Action (COAs) with tradeoffs, explainability drawer, and NL query bar. |
-| **System Scalability & UI Craftsmanship** | **20%** | Military HUD theme, dynamic threat level glow, voice briefing readout, what-if sandbox, degraded comms simulation, and zero-friction dual-mode deployment. |
-
----
-
-## 🛣️ Development Roadmap
-
-- [x] **Phase 1: Architecture & Unified Model (Data Fusion 30%)**
-  - [x] Harmonize PRD and README specifications
-  - [x] Authoritative `UnifiedEvent` schema and type definitions
-  - [x] Mathematical confidence scoring formula
-  - [ ] Multi-source mock generator & Open-Meteo weather client
-  - [ ] Spatiotemporal corroboration engine
-
-- [ ] **Phase 2: Geospatial Command Map (Geospatial UX 25%)**
-  - [ ] MapLibre GL dark tactical basemap
-  - [ ] 4 toggleable layers (Assets, Alerts, Weather, Zones)
-  - [ ] Contact clustering and popup inspection cards
-  - [ ] Incident density heatmap
-  - [ ] 4D time-scrubber replay controls
-
-- [ ] **Phase 3: AI Intelligence & Decision Support (AI Summarization 25%)**
-  - [ ] Gemini API structured briefing pipeline
-  - [ ] Hard event grounding (`supportingEventIds`)
-  - [ ] Ranked Courses of Action (COAs) with tradeoff analysis
-  - [ ] Natural-language command query bar parser
-  - [ ] Slide-out Explainability Drawer
-
-- [ ] **Phase 4: Craftsmanship & Polish (Craftsmanship 20%)**
-  - [ ] Military dark HUD theme & dynamic threat glow (`GREEN` $\to$ `RED`)
-  - [ ] Radar sweep animation & alert sound cues
-  - [ ] Voice briefing readout (Web Speech API)
-  - [ ] Alert escalation timeline
-
-- [ ] **Phase 5: Demonstration Scenarios & Resilience (Stretch)**
-  - [ ] Coordinated border spike simulation scenario
-  - [ ] Degraded comms blackout fallback mode
-  - [ ] One-click military SITREP PDF export
+- [x] **Phase 1 — Ingestion & Fusion Engine** *(complete, verified)*
+  - [x] `UnifiedEvent` v1.1 schema and validation boundary
+  - [x] 5 source adapters incl. live Open-Meteo with 3-level fallback
+  - [x] 6-stage fusion pipeline with per-stage timings
+  - [x] Explainable confidence + counterfactual
+  - [x] 3 statistical anomaly detectors
+  - [x] Threat posture with hysteresis and audit log
+- [x] **Phase 3 — AI Intelligence** *(complete, verified)*
+  - [x] Gemini structured-output integration
+  - [x] **Enforced citation grounding** + independent verification endpoint
+  - [x] Deterministic fallback synthesizer
+  - [x] Ranked COAs with tradeoffs · NL omnibar
+- [x] **Backend API & streaming** *(complete, verified)*
+  - [x] 30 REST endpoints · 11 WebSocket frame types
+  - [x] Operator simulation controls (scenarios, degraded comms, what-if)
+- [ ] **Phase 2 — Geospatial Command Map** *(API complete; React client pending)*
+- [ ] **Phase 4 — Command Center UI & craftsmanship**
+- [ ] **Phase 5 — SITREP PDF export, voice briefing**
 
 ---
 
-## 👥 Team & Attribution
+## 👥 Team & scope
 
-**Team:** Destroyer of Worlds  
-**Event:** HackHertz 2026 — Defense Track  
-**Project:** VANGUARD (Multi-Source Defence Situational Awareness System)  
+**Team:** Destroyer of Worlds
+**Event:** HackHertz 2026 — Defense Track · Problem ID **D-05**
 
-*Note: VANGUARD is a purely defensive situational awareness and decision-support system. It does not automate kinetic targeting, offensive weapons release, or lethal autonomous decisions.*
+> **Defensive scope, enforced in code.** VANGUARD is a situational awareness and
+> decision-support system. It does not automate kinetic targeting, weapons release, or lethal
+> autonomous decisions. Course-of-action generation is constrained by system instruction to
+> observation, verification, reinforcement, evacuation, deconfliction and communication.
+
+[MIT License](LICENSE)
