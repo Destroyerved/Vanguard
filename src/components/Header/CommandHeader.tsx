@@ -16,7 +16,11 @@ import { useEventStore } from '../../store/useEventStore';
 import { OmniSearchBar } from './OmniSearchBar';
 import { downloadSitrepText } from '../../services/sitrepGenerator';
 
-export const CommandHeader: React.FC = () => {
+interface CommandHeaderProps {
+  onBackToLanding?: () => void;
+}
+
+export const CommandHeader: React.FC<CommandHeaderProps> = ({ onBackToLanding }) => {
   const [timeUtc, setTimeUtc] = useState('');
   const [timeLocal, setTimeLocal] = useState('');
 
@@ -87,6 +91,15 @@ export const CommandHeader: React.FC = () => {
             <span className="px-1.5 py-0.2 bg-cyan-900/60 border border-cyan-400/30 rounded text-[9px] text-cyan-300 font-bold uppercase tracking-wider">
               C4ISR COP v1.1
             </span>
+            {onBackToLanding && (
+              <button
+                onClick={onBackToLanding}
+                className="px-2 py-0.5 bg-slate-850 hover:bg-cyan-950 border border-cyan-500/40 rounded text-[9px] text-cyan-300 font-bold uppercase tracking-wider transition hover:border-cyan-300"
+                title="Return to Landing Page Overview"
+              >
+                « LANDING PAGE
+              </button>
+            )}
             {isDegradedMode && (
               <span className="px-1.5 py-0.2 bg-amber-900/80 border border-amber-400 rounded text-[9px] text-amber-300 font-bold animate-pulse flex items-center space-x-1">
                 <WifiOff className="w-2.5 h-2.5 mr-1" />

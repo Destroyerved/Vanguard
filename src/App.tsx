@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useEventStore } from './store/useEventStore';
+import { LandingPage } from './components/Landing/LandingPage';
 import { CommandHeader } from './components/Header/CommandHeader';
 import { TacticalMap } from './components/Map/TacticalMap';
 import { AIBriefingPanel } from './components/Briefing/AIBriefingPanel';
@@ -8,17 +9,16 @@ import { PhosphorRadar } from './components/Radar/PhosphorRadar';
 import { RafaleStrikeHUD } from './components/Rafale/RafaleStrikeHUD';
 import { NukeStrikeModal } from './components/Rafale/NukeStrikeModal';
 import { ExplainabilityModal } from './components/Explainability/ExplainabilityModal';
-import { Activity, Layers, Radio, ShieldAlert, Cpu } from 'lucide-react';
+import { Activity, Radio, Cpu } from 'lucide-react';
 
 export function App() {
+  const [currentView, setCurrentView] = useState<'landing' | 'command'>('landing');
+  const [activeRightTab, setActiveRightTab] = useState<'widgets' | 'feed'>('widgets');
+
   const kinematicTick = useEventStore((s) => s.kinematicTick);
   const screenShake = useEventStore((s) => s.screenShake);
   const screenNukeFlash = useEventStore((s) => s.screenNukeFlash);
   const sourceHealth = useEventStore((s) => s.sourceHealth);
-  const threatLevel = useEventStore((s) => s.threatLevel);
-
-  // Tab switcher for right-hand column or modular views if needed
-  const [activeRightTab, setActiveRightTab] = useState<'widgets' | 'feed'>('widgets');
 
   // Background Kinematic simulation tick (every 1s)
   useEffect(() => {
@@ -28,6 +28,12 @@ export function App() {
     return () => clearInterval(interval);
   }, [kinematicTick]);
 
+  // If on Landing Page, render Landing Page
+  if (currentView === 'landing') {
+    return <LandingPage onEnterCommandRoom={() => setCurrentView('command')} />;
+  }
+
+  // Otherwise render full Tactical Command Center
   return (
     <div
       className={`relative w-screen h-screen flex flex-col bg-[#04070b] text-[#c9d8e6] overflow-hidden select-none ${
@@ -43,7 +49,7 @@ export function App() {
       <div className="absolute inset-0 scanlines opacity-60 z-30 pointer-events-none" />
 
       {/* Top Tactical Command Header */}
-      <CommandHeader />
+      <CommandHeader onBackToLanding={() => setCurrentView('landing')} />
 
       {/* Main Command Center Layout Grid */}
       <main className="flex-1 p-2 grid grid-cols-12 gap-2 overflow-hidden z-20">
