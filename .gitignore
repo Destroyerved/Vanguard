@@ -52,3 +52,7 @@ CLAUDE.md
 .cursorrules
 .windsurfrules
 .clinerules
+
+# Scratch / local
+*.local
+.vanguard-scratch/
