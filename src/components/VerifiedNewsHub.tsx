@@ -163,12 +163,9 @@ export default function VerifiedNewsHub({ event, isStandaloneTab = false }: Veri
       {/* HUB HEADER & CONTROLS */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
         <div>
-          <h2 className="font-hud font-bold text-xl text-slate-100 flex items-center gap-2">
-            <Newspaper className="w-5 h-5 text-amber-400 animate-pulse" /> VERIFIED GLOBAL NEWS & OSINT INTELLIGENCE HUB
+          <h2 className="font-hud font-bold text-lg text-slate-100 flex items-center gap-2">
+            <Newspaper className="w-5 h-5 text-amber-400" /> VERIFIED GLOBAL NEWS & OSINT HUB
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Real-time breaking news articles with verified photographs from top global agencies (Reuters, BBC, AP, Bloomberg, CISA, USGS).
-          </p>
         </div>
 
         <button

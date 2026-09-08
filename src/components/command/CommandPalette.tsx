@@ -15,7 +15,7 @@ import {
   Zap,
   Globe
 } from 'lucide-react';
-import { NavSection } from './CommandRail';
+import { NavSection } from './TopTacticalHeader';
 import { UnifiedEvent } from '../../types/schema';
 import { DemoScenarioMode } from '../../data/scenarioEngine';
 

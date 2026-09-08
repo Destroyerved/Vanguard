@@ -3,8 +3,7 @@ import { UnifiedEvent } from './types/schema';
 import { getScenarioDataset, DemoScenarioMode } from './data/scenarioEngine';
 
 // Components
-import CommandRail, { NavSection } from './components/command/CommandRail';
-import TopTacticalHeader from './components/command/TopTacticalHeader';
+import TopTacticalHeader, { NavSection } from './components/command/TopTacticalHeader';
 import CommandPalette from './components/command/CommandPalette';
 import OverviewCanvas from './components/views/OverviewCanvas';
 import SignalHorizonStream from './components/intelligence/SignalHorizonStream';
@@ -21,7 +20,6 @@ const BACKEND_URL = 'http://localhost:3001/api/v1';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<NavSection>('overview');
-  const [railCollapsed, setRailCollapsed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [serverOnline, setServerOnline] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date().toUTCString());
@@ -180,40 +178,26 @@ export default function App() {
   const anomalyCount = events.filter((e) => e.isAnomaly).length;
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#05070a] text-slate-200 font-sans">
-      {/* 1. PERSISTENT NARROW COMMAND RAIL */}
-      <CommandRail
-        activeTab={activeTab}
-        onTabChange={(tab) => {
-          setActiveTab(tab);
-        }}
-        collapsed={railCollapsed}
-        onToggleCollapse={() => setRailCollapsed(!railCollapsed)}
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#05070a] text-slate-200 font-sans">
+      {/* 1. TOP TACTICAL COMMAND HEADER */}
+      <TopTacticalHeader
+        currentTime={currentTime}
+        situation={situation}
         serverOnline={serverOnline}
+        easyMode={easyMode}
+        onToggleEasyMode={() => setEasyMode(!easyMode)}
+        activeScenario={activeScenario}
+        onOpenCommandPalette={() => setCommandPaletteOpen(true)}
+        onManualRefresh={() => fetchBackendData(true)}
+        refreshing={refreshing}
+        activeTab={activeTab}
+        onTabChange={(tab) => setActiveTab(tab)}
         eventCount={events.length}
         anomalyCount={anomalyCount}
       />
 
-      {/* 2. PRIMARY OPERATIONAL VIEWPORT */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-        {/* TOP TACTICAL CHRONOMETER & HEADER */}
-        <TopTacticalHeader
-          currentTime={currentTime}
-          situation={situation}
-          serverOnline={serverOnline}
-          easyMode={easyMode}
-          onToggleEasyMode={() => setEasyMode(!easyMode)}
-          activeScenario={activeScenario}
-          onOpenCommandPalette={() => setCommandPaletteOpen(true)}
-          onManualRefresh={() => fetchBackendData(true)}
-          refreshing={refreshing}
-          activeTab={activeTab}
-          onTabChange={(tab) => setActiveTab(tab)}
-          eventCount={events.length}
-          anomalyCount={anomalyCount}
-        />
-
-        {/* MAIN APPLICATION CANVAS WORKSPACE */}
+      {/* 2. PRIMARY FULL-WIDTH OPERATIONAL WORKSPACE */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <main className="flex-1 overflow-y-auto p-4 md:p-5 relative">
           {/* DEGRADED COMMS AMBER SCANLINE OVERLAY */}
           {isDegradedComms && (

@@ -256,7 +256,6 @@ export default function SpatialThreatField3D({
           <span className="text-slate-200 font-semibold uppercase tracking-wider">
             3D SPATIAL THREAT & CORRELATION TOPOLOGY
           </span>
-          <span className="text-[10px] text-slate-500">| X/Y: Spatial, Z: Severity Height</span>
         </div>
 
         <div className="flex items-center gap-1.5 bg-[#070b10]/90 border border-white/10 rounded p-1 backdrop-blur">
@@ -300,22 +299,21 @@ export default function SpatialThreatField3D({
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-rose-500 shadow-threat-red" />
-            <span>Critical Severity (Z: +90m)</span>
+            <span>Critical (+90m)</span>
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-orange-500" />
-            <span>High Severity</span>
+            <span>High</span>
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-yellow-500" />
-            <span>Medium Severity</span>
+            <span>Medium</span>
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-3 border-b border-cyan-400 border-dashed" />
-            <span>Union-Find Correlation Arc</span>
+            <span>Correlation Arc</span>
           </span>
         </div>
-        <span className="text-slate-500">Click any beacon to open Edge Investigation Drawer</span>
       </div>
     </div>
   );
