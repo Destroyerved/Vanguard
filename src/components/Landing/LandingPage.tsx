@@ -45,14 +45,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterCommandRoom }) 
         <div className="fixed inset-0 z-50 bg-white pointer-events-none animate-nuke-flash" />
       )}
 
-      {/* Pristine Cosmic Galaxy Background Image */}
+      {/* Atmospheric Special Forces Night Tactical Background Image */}
       <div
         className="fixed inset-0 bg-cover bg-center bg-no-repeat pointer-events-none z-0 transition-all duration-700"
         style={{
-          backgroundImage: `url('/assets/clean_galaxy.jpg')`,
+          backgroundImage: `url('/assets/night_soldiers_bg.jpg')`,
           filter: nukeActive ? 'brightness(1.5) contrast(1.2) hue-rotate(-15deg)' : 'brightness(1.0)'
         }}
       />
+
+      {/* Ambient Vignette & CRT Scanlines */}
+      <div className="fixed inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/70 pointer-events-none z-10" />
+      <div className="fixed inset-0 scanlines opacity-25 pointer-events-none z-10" />
 
       {/* TOP HEADER NAVIGATION (Minimalist, matching reference image) */}
       <header className="relative z-30 px-8 sm:px-16 pt-8 pb-4 flex items-center justify-between text-xs sm:text-sm font-sans tracking-widest text-slate-300 select-none">
@@ -83,14 +87,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterCommandRoom }) 
         <Rafale3D onNukeScreen={handleNukeTriggered} />
       </div>
 
-      {/* BOTTOM-RIGHT ENLARGED 3D RADAR DISH */}
-      <div className="absolute bottom-4 right-4 sm:right-12 z-20 pointer-events-auto">
+      {/* UPWARDS-ELEVATED 3D RADAR DISH (Top-Right / Mid-Right) */}
+      <div className="absolute top-12 right-4 sm:right-12 z-20 pointer-events-auto">
         <RadarDish3D />
       </div>
 
-      {/* MAIN CENTER HERO: LUXURY COSMIC TYPOGRAPHY & MOON */}
-      <main className="relative z-10 min-h-[calc(100vh-140px)] flex flex-col items-center justify-center text-center px-4 select-none">
-        {/* Massive Centerpiece "VANGUARD" (Matching GALAXY Reference Exactly) */}
+      {/* MAIN CENTER HERO: LUXURY COSMIC/DEFENSE TYPOGRAPHY & MOON */}
+      <main className="relative z-10 min-h-[calc(100vh-140px)] flex flex-col items-center justify-center text-center px-4 select-none mt-8 sm:mt-12">
+        {/* Massive Centerpiece "VANGUARD" (Matching Reference Style) */}
         <div className="relative inline-block cursor-pointer group" onClick={handleLaunch}>
           <h1
             className="font-galaxy font-black text-7xl sm:text-9xl md:text-[11rem] lg:text-[13rem] tracking-wider leading-none text-transparent bg-clip-text bg-gradient-to-r from-[#9ef7ea] via-[#b6e5fb] to-[#9ebbfa] drop-shadow-[0_0_40px_rgba(0,240,255,0.45)] transition-transform duration-500 group-hover:scale-105"
@@ -111,7 +115,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterCommandRoom }) 
           )}
         </div>
 
-        {/* Glowing Moon Sphere with Sleek Horizontal Gradient Axis Line */}
+        {/* Glowing Tactical Moon Sphere with Sleek Horizontal Gradient Axis Line */}
         <div className="relative flex items-center justify-center w-full max-w-xl mx-auto mt-2 mb-6">
           {/* Left glowing gradient line & green dot endpoint */}
           <div className="flex-1 flex items-center">
@@ -128,7 +132,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterCommandRoom }) 
             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border border-cyan-300/60 shadow-[0_0_35px_rgba(0,240,255,0.8)] overflow-hidden transition-transform duration-500 group-hover/moon:scale-115">
               <img
                 src="/assets/clean_galaxy.jpg"
-                alt="Moon"
+                alt="Tactical Moon"
                 className="w-full h-full object-cover transform scale-150 group-hover/moon:rotate-12 transition-transform duration-700"
               />
             </div>
