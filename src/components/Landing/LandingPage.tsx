@@ -3,6 +3,8 @@ import { ChevronRight } from 'lucide-react';
 import { soundFx } from '../../services/soundFx';
 import { Rafale3D } from './Rafale3D';
 import { RadarDish3D } from './RadarDish3D';
+import { RadarTrackingBackground } from './RadarTrackingBackground';
+import { NukeEffect } from './NukeEffect';
 import { useEventStore } from '../../store/useEventStore';
 
 interface LandingPageProps {
@@ -10,23 +12,23 @@ interface LandingPageProps {
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onEnterCommandRoom }) => {
-  const [screenNukeFlash, setScreenNukeFlash] = useState(false);
   const [screenShake, setScreenShake] = useState(false);
   const [nukeActive, setNukeActive] = useState(false);
 
   const executeDetonation = useEventStore((s) => s.executeDetonation);
 
   const handleNukeTriggered = () => {
-    setScreenNukeFlash(true);
     setScreenShake(true);
     setNukeActive(true);
     executeDetonation();
 
     setTimeout(() => {
-      setScreenNukeFlash(false);
       setScreenShake(false);
-      setTimeout(() => setNukeActive(false), 2000);
-    }, 1200);
+    }, 3200);
+
+    setTimeout(() => {
+      setNukeActive(false);
+    }, 4500);
   };
 
   const handleLaunch = () => {
@@ -40,26 +42,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterCommandRoom }) 
         screenShake ? 'animate-screen-shake' : ''
       }`}
     >
-      {/* Nuclear Detonation Blinding Flash Overlay */}
-      {screenNukeFlash && (
-        <div className="fixed inset-0 z-50 bg-white pointer-events-none animate-nuke-flash" />
-      )}
+      {/* Tactical Nuclear Strike Effect (Fireball, Supersonic Shockwave & Embers) */}
+      <NukeEffect active={nukeActive} />
 
       {/* Atmospheric Special Forces Night Tactical Background Image */}
       <div
         className="fixed inset-0 bg-cover bg-center bg-no-repeat pointer-events-none z-0 transition-all duration-700"
         style={{
           backgroundImage: `url('/assets/night_soldiers_bg.jpg')`,
-          filter: nukeActive ? 'brightness(1.5) contrast(1.2) hue-rotate(-15deg)' : 'brightness(1.0)'
+          filter: nukeActive ? 'brightness(1.4) contrast(1.3) hue-rotate(-15deg)' : 'brightness(0.95)'
         }}
       />
 
+      {/* Opaque Tactical Radar Tracking System Grid in the Background */}
+      <RadarTrackingBackground />
+
       {/* Ambient Vignette & CRT Scanlines */}
-      <div className="fixed inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/70 pointer-events-none z-10" />
-      <div className="fixed inset-0 scanlines opacity-25 pointer-events-none z-10" />
+      <div className="fixed inset-0 bg-gradient-to-b from-black/45 via-transparent to-black/75 pointer-events-none z-10" />
+      <div className="fixed inset-0 scanlines opacity-20 pointer-events-none z-10" />
 
       {/* TOP HEADER NAVIGATION (Minimalist, matching reference image) */}
-      <header className="relative z-30 px-8 sm:px-16 pt-8 pb-4 flex items-center justify-between text-xs sm:text-sm font-sans tracking-widest text-slate-300 select-none">
+      <header className="relative z-30 px-8 sm:px-16 pt-7 pb-3 flex items-center justify-between text-xs sm:text-sm font-sans tracking-widest text-slate-300 select-none">
         {/* Top Left */}
         <button
           onClick={handleLaunch}
@@ -69,7 +72,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterCommandRoom }) 
         </button>
 
         {/* Top Center Handle */}
-        <div className="text-xs sm:text-sm font-mono tracking-widest text-cyan-200/90 font-medium">
+        <div className="text-xs sm:text-sm font-mono tracking-widest text-cyan-200 font-semibold drop-shadow-[0_0_10px_rgba(0,240,255,0.4)]">
           @DESTROYER_OF_WORLDS
         </div>
 
@@ -82,35 +85,38 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterCommandRoom }) 
         </button>
       </header>
 
-      {/* TOP-LEFT ENLARGED 3D RAFALE FIGHTER JET */}
-      <div className="absolute top-12 left-4 sm:left-12 z-20 pointer-events-auto">
+      {/* TOP-RIGHT COMBAT-READY 3D RAFALE FIGHTER JET */}
+      <div className="absolute top-8 right-2 sm:right-10 z-20 pointer-events-auto">
         <Rafale3D onNukeScreen={handleNukeTriggered} />
       </div>
 
-      {/* UPWARDS-ELEVATED 3D RADAR DISH (Top-Right / Mid-Right) */}
-      <div className="absolute top-12 right-4 sm:right-12 z-20 pointer-events-auto">
+      {/* LEFT-BOTTOM ROTATING 3D RADAR DISH */}
+      <div className="absolute bottom-0 left-0 sm:left-6 z-20 pointer-events-auto">
         <RadarDish3D />
       </div>
 
-      {/* MAIN CENTER HERO: LUXURY COSMIC/DEFENSE TYPOGRAPHY & MOON */}
-      <main className="relative z-10 min-h-[calc(100vh-140px)] flex flex-col items-center justify-center text-center px-4 select-none mt-8 sm:mt-12">
-        {/* Massive Centerpiece "VANGUARD" (Matching Reference Style) */}
+      {/* MAIN CENTER HERO: SOLID OPAQUE VANGUARD TITLE & MOON */}
+      <main className="relative z-20 min-h-[calc(100vh-140px)] flex flex-col items-center justify-center text-center px-4 select-none mt-6 sm:mt-10">
+        {/* Crisp, Opaque, Grand Luxury Typography "VANGUARD" */}
         <div className="relative inline-block cursor-pointer group" onClick={handleLaunch}>
           <h1
-            className="font-galaxy font-black text-7xl sm:text-9xl md:text-[11rem] lg:text-[13rem] tracking-wider leading-none text-transparent bg-clip-text bg-gradient-to-r from-[#9ef7ea] via-[#b6e5fb] to-[#9ebbfa] drop-shadow-[0_0_40px_rgba(0,240,255,0.45)] transition-transform duration-500 group-hover:scale-105"
+            className="font-galaxy font-black text-7xl sm:text-9xl md:text-[11rem] lg:text-[13rem] tracking-wider leading-none text-white drop-shadow-[0_8px_35px_rgba(0,240,255,0.6)] transition-transform duration-500 group-hover:scale-105"
             style={{
               letterSpacing: '0.08em',
-              textShadow: nukeActive ? '0 0 80px #ff2a4b, 0 0 120px #ffaa00' : undefined
+              background: 'linear-gradient(180deg, #ffffff 20%, #c4efff 65%, #88d4f8 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              opacity: 0.96
             }}
           >
             VANGUARD
           </h1>
 
-          {/* Nuclear Blast Ripple on Center Title when Fired */}
+          {/* Nuclear Strike Scorch on Title when Fired */}
           {nukeActive && (
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
-              <div className="w-48 h-48 rounded-full bg-red-600/50 border-4 border-yellow-300 animate-ping"></div>
-              <div className="w-72 h-72 rounded-full border-2 border-cyan-400 animate-ping delay-100"></div>
+              <div className="w-56 h-56 rounded-full bg-red-600/40 border-4 border-yellow-300 animate-ping"></div>
+              <div className="w-80 h-80 rounded-full border-2 border-orange-500 animate-ping delay-100"></div>
             </div>
           )}
         </div>
@@ -149,7 +155,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterCommandRoom }) 
         {/* Sleek CTA Button */}
         <button
           onClick={handleLaunch}
-          className="px-8 py-3 bg-gradient-to-r from-cyan-400/90 via-sky-400/90 to-blue-500/90 hover:from-cyan-300 hover:to-blue-400 text-black font-sans font-black text-xs sm:text-sm uppercase tracking-widest rounded shadow-[0_0_30px_rgba(0,240,255,0.7)] transition transform hover:scale-105 active:scale-95 flex items-center space-x-2"
+          className="px-8 py-3.5 bg-gradient-to-r from-cyan-400/90 via-sky-400/90 to-blue-500/90 hover:from-cyan-300 hover:to-blue-400 text-black font-sans font-black text-xs sm:text-sm uppercase tracking-widest rounded shadow-[0_0_35px_rgba(0,240,255,0.7)] transition transform hover:scale-105 active:scale-95 flex items-center space-x-2"
         >
           <span>ENTER COMMAND ROOM</span>
           <ChevronRight className="w-4 h-4" />
@@ -157,7 +163,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterCommandRoom }) 
       </main>
 
       {/* BOTTOM FOOTER (Minimalist, matching reference image) */}
-      <footer className="relative z-30 px-8 sm:px-16 pb-8 pt-4 flex items-center justify-between text-xs sm:text-sm font-sans tracking-widest text-slate-400 select-none">
+      <footer className="relative z-30 px-8 sm:px-16 pb-7 pt-3 flex items-center justify-between text-xs sm:text-sm font-sans tracking-widest text-slate-400 select-none">
         <a
           href="https://github.com/Destroyerved/Vanguard"
           target="_blank"
