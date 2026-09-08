@@ -1,17 +1,17 @@
-# Product Requirements Document
+# Product Requirements Document (PRD)
 # VANGUARD
 ### Multi-Source Defence Situational Awareness System
 
-**Problem ID:** D-05 | **Track:** Defense | **Event:** HackHertz 2026
-**Team:** Destroyer of Worlds
-**Document Version:** 1.0
-**Status:** Draft for Build
+**Problem ID:** D-05 | **Track:** Defense | **Event:** HackHertz 2026  
+**Team:** Destroyer of Worlds  
+**Document Version:** 1.1 (Harmonized & Production-Aligned)  
+**Status:** Approved for Build  
 
 ---
 
 ## 1. Executive Summary
 
-Vanguard is a unified command & decision-support platform that fuses siloed defense/emergency data streams — surveillance, radar, personnel/equipment status, weather, logs, and incident reports — into a single, AI-synthesized operational picture. It replaces the cognitive burden of manually cross-referencing multiple dashboards with one geospatial command center that tells an operator, in real time: **what's happening, how confident we are, and what to do next.**
+Vanguard is a unified command and decision-support platform that fuses siloed defense and emergency data streams — surveillance radar, personnel and equipment status, live weather conditions, operational logs, and field incident reports — into a single, AI-synthesized Common Operating Picture (COP). It replaces the cognitive burden of manually cross-referencing multiple dashboards with an interactive geospatial command center that tells an operator in real time: **what is happening, how confident the system is, and what tactical actions to take next.**
 
 **Tagline:** *One picture. Every source. Zero delay.*
 
@@ -19,7 +19,14 @@ Vanguard is a unified command & decision-support platform that fuses siloed defe
 
 ## 2. Problem Statement
 
-Command room decision-makers receive information from multiple disconnected sources — surveillance feeds, equipment reports, weather conditions, maps, and incident reports. Processing this information separately makes it difficult to obtain a clear overall picture, causing cognitive overload during fast-evolving tactical or peacetime emergency operations. Decisions get slower and error-prone exactly when speed and accuracy matter most.
+Command room decision-makers receive information simultaneously from multiple disconnected sources:
+- Radar and surveillance tracking feeds
+- Live meteorological and environmental observations
+- Personnel and asset readiness monitors
+- Structured operational logs and telemetry
+- Dynamic emergency and tactical incident dispatches
+
+Processing these disparate sources separately creates severe cognitive overload during fast-evolving tactical operations or peacetime crisis management. Conflicting reports, stale data, and spatial ambiguity delay situational comprehension at the exact moments when speed and precision are vital.
 
 ---
 
@@ -27,250 +34,366 @@ Command room decision-makers receive information from multiple disconnected sour
 
 | Goal | Success Metric |
 |---|---|
-| Eliminate manual cross-referencing | Single screen shows fused data from 5+ sources |
-| Faster comprehension | AI briefing reduces "time to understood situation" |
-| Trustworthy AI output | Every AI claim traceable to source events + confidence score |
-| Demo-ready realism | Live-streaming simulated data indistinguishable from real feed during judging |
-| Craftsmanship | Judges visually impressed within first 10 seconds |
+| **Eliminate Manual Cross-Referencing** | Unified screen synchronizes and correlates data from 5+ heterogeneous streams in real time. |
+| **Accelerate Situational Comprehension** | AI-generated executive briefing reduces "time to understand the operational picture" to under 10 seconds. |
+| **Trustworthy & Explainable AI** | 100% of AI claims cite supporting event IDs; interactive explainability drawer reveals confidence math. |
+| **Actionable Decision Support** | Beyond summaries, AI generates ranked Courses of Action (COAs) with explicit tactical tradeoffs. |
+| **Demo-Ready Realism & Resilience** | Real-time Open-Meteo live weather combined with high-fidelity simulated radar/incident streaming, resilient to network dropout. |
+| **Visual Craftsmanship & Impact** | Military-grade dark HUD aesthetic, glassmorphism, smooth animations, and zero-latency interactions. |
 
-### Non-Goals (out of scope for hackathon)
-- Real classified/live military data integration
-- Full auth/RBAC system (stub only if time allows)
-- Native mobile app
-- Persistent long-term data warehouse
-
----
-
-## 4. Personas
-
-| Persona | Primary Need |
-|---|---|
-| **Command Operator** | Fast situational read — map + AI brief, minimal noise |
-| **Analyst** | Drill into raw source feeds, verify AI conclusions, explore confidence math |
-| **Duty Officer** | Prioritized action items, alert escalation, minimal false positives |
+### Non-Goals (Hackathon Boundary)
+- Integration with real-world classified or military MIL-STD networks.
+- Full multi-tenant authentication / RBAC enforcement (mock operator profile switcher provided for demo).
+- Native mobile applications (optimized for desktop command displays and multi-monitor layouts).
+- Multi-year enterprise data warehousing.
 
 ---
 
-## 5. Feature Set
+## 4. Operational Personas
 
-### TIER 1 — Core (score floor, must be flawless)
-
-#### 5.1 Data Fusion Engine (maps to 30% weightage)
-- Ingest ≥5 sources: **weather (real API), radar/sensor (simulated), personnel/equipment status (simulated), operational logs (simulated), incident reports (simulated)**
-- Normalize all events into one **Unified Event Schema** (see §7)
-- **Confidence scoring**: `confidence = sourceReliability × recencyDecay × corroborationBoost`
-- **Corroboration engine**: detect when 2+ independent sources report events in the same spatiotemporal window → link them, boost confidence
-- **Source health monitor**: live up/degraded/down indicator per feed, with simulated dropout injected for realism
-- **Deduplication**: prevent duplicate events from cluttering the map/feed
-
-#### 5.2 Interactive Tactical Map (maps to 25% weightage)
-- MapLibre GL / Leaflet base map
-- **Toggleable layers**: Assets, Alerts, Weather, Zones — independently switchable
-- Marker clustering for dense regions
-- Click-to-inspect popup: fused event detail, contributing sources, confidence badge
-- **Heatmap mode**: incident density overlay
-- **Time-scrubber**: drag to replay last N hours of events unfolding
-- Zone/geofence overlays (patrol zones, restricted areas, incident radii)
-
-#### 5.3 AI Situation Synthesis Engine (maps to 25% weightage)
-- Periodic + trigger-based LLM call (Gemini/Claude) fed the current fused event window
-- Structured JSON output: executive summary, risk level, prioritized action items
-- **Every summary claim cites its supporting event IDs** — no ungrounded hallucination
-- Risk-level flag (Green → Yellow → Orange → Red) drives global UI theme/alert state
-
-#### 5.4 Confidence Indicator System
-- Per-event and per-AI-claim confidence (0–100, color-coded Low/Med/High)
-- Visual badges everywhere confidence-bearing data is shown — map markers, feed list, AI panel
+| Persona | Role | Primary Needs |
+|---|---|---|
+| **Command Operator** | Watchstander | High-level situational read, live tactical map, immediate alert escalation, minimal cognitive noise. |
+| **Intelligence Analyst** | Deep Investigator | Drill down into raw sensor feeds, inspect corroboration chains, verify AI confidence math and source reliability. |
+| **Duty Officer** | Tactical Decision Maker | Prioritized action items, AI Courses of Action (COAs) with tradeoffs, one-click PDF situation report export. |
 
 ---
 
-### TIER 2 — Differentiators (this is where Vanguard wins)
+## 5. Feature Specifications
 
-#### 5.5 Anomaly Detection Layer
-Rule/statistics-based outlier flagging (sudden incident cluster, sensor spike, abnormal report frequency) that runs **before** AI summarization — demonstrates engineering depth beyond "just call an LLM."
+### TIER 1 — Core Operational Foundation (Score Floor)
 
-#### 5.6 Natural-Language Command Query Bar
-Free-text query ("show all high-severity events near Zone 3 in the last hour") → LLM parses to filter params → map/feed update live. High demo wow-factor, low build cost.
+#### 5.1 Multi-Source Data Fusion Engine (Targeting 30% Weight)
+- **5 Stream Ingestion**:
+  1. **Weather**: Real live API ingestion via Open-Meteo (precipitation, wind vector, visibility, temperature; zero API key required).
+  2. **Radar / Surveillance**: High-fidelity simulated kinematic tracks (velocity, heading, altitude, IFF tag).
+  3. **Personnel & Assets**: Unit readiness, status telemetry, vehicle positions.
+  4. **Operational Logs**: System events, communication logs, perimeter tripwires.
+  5. **Incident Reports**: Tactical and civil dispatches with severity annotations.
+- **Normalization**: Ingested feeds are mapped into the strict `UnifiedEvent` schema (§7).
+- **Spatiotemporal Corroboration**: Correlates events occurring within defined spatial radii (Haversine distance $\le \Delta R$) and temporal windows ($\le \Delta T$). Corroborating sources are linked via `corroboratedBy`.
+- **Explainable Confidence Scoring**:
+  $$\text{Confidence} = \min\left(100, \text{round}\left(\text{SourceReliability} \times \text{RecencyDecay} \times \text{CorroborationBoost} \times 100\right)\right)$$
+  - *Source Reliability*: Static/dynamic weight per feed type ($0.0 - 1.0$).
+  - *Recency Decay*: Exponential decay based on event age ($e^{-\lambda \Delta t}$).
+  - *Corroboration Boost*: Progressive scaling for multi-source confirmation ($1.0 + 0.15 \times (N - 1)$).
+- **Source Health Monitoring**: Live status indicator (`live`, `degraded`, `down`) with simulated dropout injection.
+- **Deduplication & Anomaly Flagging**: Statistical z-score outlier detection on incident frequency and sensor deviations.
 
-#### 5.7 AI-Generated Courses of Action (COA)
-Beyond "what happened": 2–3 ranked response options with tradeoffs, directly targeting the AI Summarization & Alert Prioritization criterion.
+#### 5.2 Interactive Tactical Command Map (Targeting 25% Weight)
+- **Engine**: MapLibre GL JS / Leaflet vector map styled with a custom dark tactical basemap.
+- **4 Dynamic Toggleable Layers**:
+  - `☑ Assets`: Ground, naval, and aerial unit markers with directional headings.
+  - `☑ Alerts`: Prioritized tactical alerts color-coded by severity (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`).
+  - `☑ Weather`: Real-time weather overlays (radar precipitation, wind vector particles).
+  - `☑ Zones`: Operational sectors, restricted airspace, patrol perimeters, and incident geofences.
+- **Marker Clustering & Fly-to Focus**: Dense contact points automatically cluster; clicking an alert flies the camera to the hotspot.
+- **Interactive Event Popups**: Immediate summary badge, confidence meter, corroborating source tags, and drill-down trigger.
+- **Incident Heatmap Mode**: Dynamic density surface displaying spatial concentration of high-severity events.
+- **4D Time-Scrubber**: Slider allowing operators to scrub backwards in time and replay how the operational picture unfolded.
 
-#### 5.8 Voice Briefing Mode
-Text-to-speech reads the executive summary aloud (Web Speech API — no backend cost). Strong command-room realism for the demo.
+#### 5.3 AI Situation Synthesis & Alert Prioritization (Targeting 25% Weight)
+- **Model**: Google Gemini 2.0 / 1.5 Flash via structured JSON response schema.
+- **Grounded Executive Briefing**:
+  - High-level threat assessment and situational summary.
+  - Overall threat status badge (`GREEN`, `YELLOW`, `ORANGE`, `RED`).
+  - Strict grounding: **every key development must cite contributing `supportingEventIds`**. Zero hallucination.
+- **Ranked Action Items**: Prioritized tactical directives with urgency scores ($1 - 5$).
 
-#### 5.9 Common Operating Picture Sync
-Two browser tabs/windows reflect the same live state (WebSocket/polling) — visually demonstrates multi-operator scalability.
+#### 5.4 Confidence & Alert Indicator System
+- Color-coded confidence badges across all UI surfaces:
+  - High ($\ge 80\%$): Emerald Green
+  - Medium ($50\% - 79\%$): Amber Yellow
+  - Low ($< 50\%$): Crimson Red
+- Global threat status drives ambient HUD accents and flashing indicators during `RED` / `CRITICAL` spikes.
+
+---
+
+### TIER 2 — Competitive Differentiators (Winning Capabilities)
+
+#### 5.5 Natural-Language Command Query Bar
+- Free-form omnibar input (e.g., *"Show all high-severity radar anomalies near Sector 4 in the past 30 minutes"*).
+- Gemini function calling / structured parsing extracts temporal, spatial, severity, and source filters.
+- Real-time instant filtering of the tactical map, event feed, and statistics.
+
+#### 5.6 AI Courses of Action (COA) with Tradeoff Analysis
+- Generates 2–3 distinct tactical courses of action for the commanding officer (e.g., *COA 1: Rapid Interception*, *COA 2: Perimeter Containment*, *COA 3: Reconnaissance Drone Dispatch*).
+- Each COA includes an operational summary, pros, risks, and resource tradeoffs.
+
+#### 5.7 Voice Briefing Mode (Tactical Audio Synthesis)
+- Hands-free audio situation report leveraging the browser's native Web Speech API.
+- Converts the latest Gemini executive briefing into a crisp, military-style voice readout with play/pause controls.
+
+#### 5.8 Interactive Explainability Drawer
+- Clicking any AI summary bullet or event opens a sliding inspection drawer showing:
+  - Supporting source event cards with raw JSON view.
+  - Contributing factor breakdown (Source Agreement, Spatial Agreement, Temporal Agreement, Source Reliability, Data Freshness).
+  - Mathematical confidence computation breakdown.
+
+#### 5.9 Dynamic Tactical Threat Level UI
+- The aggregate threat level (`GREEN`, `YELLOW`, `ORANGE`, `RED`) adapts the global UI lighting, top navigation warning bar, and audible alert tones.
 
 #### 5.10 Alert Escalation Timeline
-Vertical ticker showing how risk level evolved through the session, annotated with the trigger event for each change.
-
-#### 5.11 Explainability Drawer
-Click any AI claim → see exact source events + confidence math behind it. Strong "trustworthy AI" signal, especially resonant for a defense judging panel.
+- Chronological vertical timeline logging every alert level shift and the specific trigger event responsible.
 
 ---
 
-### TIER 3 — Moonshot Polish (only if time remains)
+### TIER 3 — Polish & Moonshot Capabilities (Craftsmanship 20%)
 
-#### 5.12 What-If Simulation Mode
-Operator drags a hypothetical incident onto the map → fusion + AI re-run live to show downstream impact.
+#### 5.11 What-If Scenario Sandbox
+- Drag-and-drop hypothetical threats (e.g., severe storm, radar jamming, hostile contact) onto the map.
+- Triggers instant client-side re-fusion and updates the briefing to show projected operational impact.
 
-#### 5.13 Tactical Visual Theme
-Dark UI, animated radar sweep, glassmorphism panels, subtle scanline/HUD aesthetic — cheap craftsmanship points (20% weight).
+#### 5.12 Degraded-Comms Simulation
+- One-click trigger simulating communications blackout or sensor jamming.
+- System displays an amber "DEGRADED MODE — SERVING CACHED COP" banner, freezes last-known positions, and visibly increases uncertainty metrics.
 
-#### 5.14 Degraded-Mode Simulation
-"Comms lost" banner demo — system falls back gracefully to last-known cached picture. On-theme for defense credibility.
-
-#### 5.15 One-Click Situation Report Export (PDF)
-Exports current fused picture + AI summary as a shareable report — makes the demo feel like a real deliverable.
+#### 5.13 One-Click Situation Report (SITREP) PDF Export
+- Generates a military-formatted SITREP document containing current timestamp, threat level, executive briefing, active COAs, map snapshot, and critical event tables via client-side PDF generation.
 
 ---
 
 ## 6. System Architecture
 
-```
-┌───────────────────────────────────────────────────────────┐
-│                     VANGUARD FRONTEND                       │
-│                    (React 18 + TypeScript)                  │
-│                                                               │
-│  ┌────────────┐  ┌───────────────┐  ┌───────────────────┐  │
-│  │  Tactical   │  │  AI Briefing   │  │   Source Feed /    │  │
-│  │    Map      │  │     Panel      │  │   Event List       │  │
-│  │ (MapLibre)  │  │ (summary, COA, │  │  (filterable,       │  │
-│  │  + layers   │  │  risk, voice)  │  │   confidence tags)  │  │
-│  └──────┬──────┘  └───────┬───────┘  └──────────┬─────────┘  │
-│         │                  │                      │            │
-│         └──────────────────┼──────────────────────┘            │
-│                    Unified Event Store                          │
-│                   (Zustand / Context API)                       │
-└──────────────────────────┬───────────────────────────────────┘
-                            │
-        ┌────────────────────┴─────────────────────┐
-        │          FUSION / INGESTION LAYER          │
-        │  • Normalizer         • Anomaly Detector    │
-        │  • Confidence Scorer  • Dedup/Corroboration │
-        └───┬────────┬────────┬────────┬─────────────┘
-            │         │        │        │
-        Weather    Radar   Personnel  Incidents/Logs
-       (Open-Meteo (sim)     (sim)       (sim)
-        real API)
-                            │
-                  ┌──────────┴───────────┐
-                  │   AI Synthesis Layer   │
-                  │  (Gemini/Claude API)   │
-                  │  Summary · COA · Query │
-                  │      Parsing           │
-                  └────────────────────────┘
+VANGUARD implements a **Modular Full-Stack Architecture with Instant Dual-Mode Fallback**. This ensures robust multi-service engineering while guaranteeing 100% turnkey operation during local judge evaluation.
+
+```text
+                               DATA SOURCES
+                                    │
+                ┌───────────────────┼───────────────────┐
+                │         │         │         │         │
+             Weather    Radar   Personnel   Logs    Incidents
+           (Open-Meteo) (sim)     (sim)     (sim)     (sim)
+                │         │         │         │         │
+                └───────────────────┼───────────────────┘
+                                    │
+                                    ▼
+                         ┌────────────────────┐
+                         │  INGESTION ENGINE  │
+                         └──────────┬─────────┘
+                                    │
+                                    ▼
+                         ┌────────────────────┐
+                         │   NORMALIZATION    │
+                         │ (UnifiedEvent v1.1)│
+                         └──────────┬─────────┘
+                                    │
+                     ┌──────────────┴──────────────┐
+                     │                             │
+                     ▼                             ▼
+          [Backend Service Mode]         [Client Fallback Mode]
+          Node.js / Express / Nest       Web Worker Ingestion
+          WebSocket Streaming            Reactive Zustand Store
+                     │                             │
+                     └──────────────┬──────────────┘
+                                    │
+                                    ▼
+                         ┌────────────────────┐
+                         │   FUSION ENGINE    │
+                         │ • Spatiotemporal   │
+                         │ • Corroboration    │
+                         │ • Confidence Scorer│
+                         │ • Anomaly Detector │
+                         └──────────┬─────────┘
+                                    │
+                                    ▼
+                         ┌────────────────────┐
+                         │  GEMINI AI SYNTH   │
+                         │ • Executive Brief  │
+                         │ • Ranked COAs      │
+                         │ • NL Query Parser  │
+                         └──────────┬─────────┘
+                                    │
+                        ┌───────────┴───────────┐
+                        │                       │
+                        ▼                       ▼
+                  REST Endpoints         WebSocket / SSE
+                        │                       │
+                        └───────────┬───────────┘
+                                    ▼
+                     ┌─────────────────────────────┐
+                     │   VANGUARD COMMAND CENTER   │
+                     │  React 18 • TypeScript     │
+                     │  Tailwind • MapLibre GL     │
+                     │  Recharts • Web Speech      │
+                     └─────────────────────────────┘
 ```
 
 ---
 
-## 7. Data Model
+## 7. Data Models & API Contracts
+
+### 7.1 Authoritative TypeScript Interfaces
 
 ```typescript
-interface UnifiedEvent {
+export type SourceType = 'radar' | 'weather' | 'personnel' | 'log' | 'incident';
+export type SeverityLevel = 'low' | 'medium' | 'high' | 'critical';
+export type ThreatLevel = 'green' | 'yellow' | 'orange' | 'red';
+
+export interface GeoLocation {
+  lat: number;
+  lng: number;
+  altitudeMeters?: number;
+  headingDegrees?: number;
+  speedKnots?: number;
+}
+
+export interface ConfidenceBreakdown {
+  overall: number;              // 0-100
+  sourceAgreement: number;       // 0-100
+  spatialAgreement: number;      // 0-100
+  temporalAgreement: number;     // 0-100
+  sourceReliability: number;     // 0-100
+  dataFreshness: number;         // 0-100
+}
+
+export interface UnifiedEvent {
   id: string;
-  sourceType: 'weather' | 'radar' | 'personnel' | 'log' | 'incident';
-  timestamp: string;              // ISO 8601
-  location: { lat: number; lng: number };
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  sourceType: SourceType;
+  timestamp: string;            // ISO 8601
+  location: GeoLocation;
+  severity: SeverityLevel;
   title: string;
   description: string;
-  confidence: number;             // 0-100
-  corroboratedBy: string[];       // linked event IDs
+  confidence: number;           // 0-100
+  confidenceBreakdown?: ConfidenceBreakdown;
+  corroboratedBy: string[];     // IDs of linked corroborating events
   isAnomaly: boolean;
   raw: Record<string, unknown>;
 }
 
-interface AISummary {
-  generatedAt: string;
-  executiveSummary: string;
-  riskLevel: 'green' | 'yellow' | 'orange' | 'red';
-  prioritizedActions: {
-    action: string;
-    urgency: number;              // 1-5
-    supportingEventIds: string[];
-  }[];
-  coursesOfAction: {
-    title: string;
-    description: string;
-    tradeoffs: string;
-  }[];
+export interface CourseOfAction {
+  id: string;
+  title: string;
+  description: string;
+  pros: string[];
+  tradeoffs: string[];
+  recommendedUrgency: number;   // 1-5
 }
 
-interface SourceHealth {
-  sourceType: string;
+export interface AISummary {
+  generatedAt: string;
+  threatLevel: ThreatLevel;
+  headline: string;
+  executiveSummary: string;
+  keyDevelopments: {
+    point: string;
+    supportingEventIds: string[];
+  }[];
+  prioritizedActions: {
+    action: string;
+    urgency: number;            // 1-5
+    supportingEventIds: string[];
+  }[];
+  coursesOfAction: CourseOfAction[];
+}
+
+export interface SourceHealth {
+  sourceType: SourceType;
+  sourceName: string;
   status: 'live' | 'degraded' | 'down';
   lastUpdate: string;
-  reliabilityScore: number;       // 0-1, used in confidence calc
+  reliabilityScore: number;     // 0.0 - 1.0
+  activeCount: number;
+}
+```
+
+### 7.2 REST & WebSocket API Contracts
+
+#### REST Endpoints
+```http
+# Current Operational State
+GET  /api/v1/situation/current          -> Returns { threatLevel, summary, activeAlertsCount }
+GET  /api/v1/situation/timeline         -> Returns chronological threat level escalations
+
+# Events & Correlations
+GET  /api/v1/events                     -> Returns UnifiedEvent[] (supports ?source=&severity=&limit=)
+GET  /api/v1/events/:id                 -> Returns single UnifiedEvent
+GET  /api/v1/events/:id/correlations    -> Returns corroborating UnifiedEvent[]
+
+# Map Layers
+GET  /api/v1/map/assets                 -> Returns unit positions & vectors
+GET  /api/v1/map/alerts                 -> Returns active alerts with coordinates
+GET  /api/v1/map/weather                -> Returns live Open-Meteo weather grid
+GET  /api/v1/map/zones                  -> Returns GeoJSON operational zones
+
+# Intelligence & AI
+POST /api/v1/ai/briefing                -> Triggers new Gemini briefing generation
+GET  /api/v1/ai/briefing/latest         -> Returns latest cached AISummary
+POST /api/v1/ai/query                   -> Free-text NL command bar query parser
+GET  /api/v1/intelligence/source-health -> Returns SourceHealth[]
+```
+
+#### WebSocket Stream (`ws://localhost:3001/stream`)
+```json
+{
+  "type": "EVENT_STREAM" | "ALERT_TRIGGER" | "BRIEFING_UPDATE" | "HEALTH_STATUS",
+  "payload": {}
 }
 ```
 
 ---
 
-## 8. Tech Stack
+## 8. Technology Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | React 18, TypeScript, Tailwind CSS |
-| Map | MapLibre GL JS (no API key needed) |
-| Charts | Recharts (trends, severity breakdown) |
-| State | Zustand |
-| AI | Gemini API (structured JSON mode) |
-| Real data | Open-Meteo (free weather API, no key) |
-| Simulated data | Seeded interval-based generators |
-| Voice | Web Speech API |
-| Sync | WebSocket or polling (for multi-tab demo) |
-| Export | jsPDF or similar |
-
----
-
-## 9. Build Priority (mapped to evaluation weightage)
-
-| Phase | Focus | Weight Targeted |
+| Component | Selected Technology | Rationale |
 |---|---|---|
-| Phase 1 | Unified schema, mock generators, fusion + confidence scoring, anomaly detection | Data Fusion 30% |
-| Phase 2 | Map with layers, clustering, time-scrubber | Map/Geospatial UX 25% |
-| Phase 3 | AI summary pipeline, COA generation, explainability drawer, NL query bar | AI Summarization 25% |
-| Phase 4 | Theme, voice mode, escalation timeline, animations, responsive polish | Scalability/Craftsmanship 20% |
-| Phase 5 (if time) | What-if mode, degraded-mode demo, PDF export | Stretch/wow-factor |
+| **Frontend Framework** | React 18 + TypeScript + Vite | Rapid development, strong typing, instantaneous HMR. |
+| **Styling & HUD** | Vanilla CSS + Tailwind CSS | Ultra-fast military command aesthetics, custom glassmorphism, responsive grid. |
+| **Tactical Map** | MapLibre GL JS / Leaflet | WebGL hardware-accelerated rendering, no proprietary API keys needed, GeoJSON native. |
+| **Data Visualization** | Recharts | Smooth confidence trendlines, severity distributions, source health meters. |
+| **Client State** | Zustand | Zero-boilerplate reactive store connecting map, feed, time-scrubber, and AI drawer. |
+| **AI Intelligence** | Google Gemini API (2.0 / 1.5 Flash) | Ultra-low latency, native structured JSON output, high context window. |
+| **Live External Data** | Open-Meteo API | Authentic meteorological data, zero authentication friction. |
+| **Backend & Ingestion**| Node.js / Express (or NestJS) + WS | High-throughput async event ingestion, WebSocket event dispatch. |
+| **Audio Readout** | Web Speech API | Client-side text-to-speech with zero server dependency. |
+| **Report Generation** | jsPDF / html2canvas | Instant military SITREP PDF download. |
 
 ---
 
-## 10. Demo Script
+## 9. Build Priority & Execution Plan
 
-1. **Open** — map live-populating with events streaming across all layers, tactical theme visible immediately
-2. **Toggle layers** — show assets/alerts/weather/zones independently
-3. **Click an event** — show fused sources, corroboration links, confidence score
-4. **Query bar** — type a natural-language filter, watch map/feed respond live
-5. **AI Briefing** — walk through executive summary, prioritized actions, COAs; open explainability drawer on one claim
-6. **Voice mode** — trigger spoken briefing
-7. **Escalation** — simulate a spike (weather escalation + incident cluster) → watch risk flip to red, AI re-summarize, timeline log the change
-8. **(Stretch)** — trigger degraded-mode banner, then recovery
-9. **Close** — export situation report as PDF
+| Phase | Milestone | Primary Focus | Weight |
+|---|---|---|---|
+| **Phase 1** | Ingestion & Unified Fusion Engine | Open-Meteo ingestion, mock generators, schema normalization, confidence formula, anomaly flags. | **30%** |
+| **Phase 2** | Geospatial Tactical Command Map | MapLibre setup, 4 dynamic layers, marker clustering, popups, heatmap, 4D time scrubber. | **25%** |
+| **Phase 3** | AI Situation Synthesis & Intelligence | Gemini API integration, structured briefing, cited claims, COA tradeoffs, explainability drawer, NL query bar. | **25%** |
+| **Phase 4** | Command Center UI & Craftsmanship | Dark tactical theme, radar sweep animation, voice briefing, threat level glow, alert escalation timeline. | **20%** |
+| **Phase 5** | Demo Scenarios & Stress Polish | What-If sandbox, degraded comms simulation, PDF SITREP export, multi-tab sync test. | **Bonus** |
 
 ---
 
-## 11. Risks & Mitigations
+## 10. Live Demonstration Script (Judging Walkthrough)
 
-| Risk | Mitigation |
-|---|---|
-| LLM latency live on stage | Trigger-based (not per-event) calls; pre-cached fallback summary |
-| Map perf with many markers | Clustering + viewport-based rendering |
-| Judges question data authenticity | Clear "SIMULATED FEED" labeling builds credibility, not distrust |
-| Scope creep across 15 features | Strict phase gating — Tier 1 must be 100% done before Tier 2 starts |
-| AI hallucination in defense context | Hard grounding: every claim requires supportingEventIds; explainability drawer surfaces this |
+1. **First 10 Seconds (Visual Wow Factor)**:
+   - Command Center opens in full-screen dark HUD mode with animated radar sweep.
+   - Dynamic tactical map displays live streaming radar contacts, active patrol zones, and real Open-Meteo weather.
+2. **Layer Interactivity & Fusion**:
+   - Toggle layers independently (`Assets`, `Alerts`, `Weather`, `Zones`).
+   - Click a high-priority contact on the map: view popup showing fused data from 3 separate feeds (Radar + Sensor + Weather) with an $88\%$ confidence rating.
+3. **Interactive Explainability**:
+   - Open the **Explainability Drawer** on an alert: show the exact formula breakdown ($\text{Reliability} \times \text{Recency} \times \text{Corroboration}$) and corroborating event IDs.
+4. **Natural Language Query**:
+   - In the omnibar, type: *"Highlight all high severity radar contacts in the eastern sector"*.
+   - Watch the map and event feed filter instantly via Gemini parser.
+5. **AI Situation Briefing & Voice Readout**:
+   - Review the Gemini-generated situation briefing with grounded citations.
+   - Expand the **Courses of Action (COAs)** to review tactical tradeoffs.
+   - Click **Voice Briefing**: browser delivers a crisp audio readout of the SITREP.
+6. **Dynamic Escalation & Simulation Injection**:
+   - Click "Inject Incident Spike": simulate a coordinated border anomaly.
+   - Threat status transitions dynamically from `YELLOW` to `RED`, ambient lighting flashes, and the timeline logs the escalation.
+7. **Resilience & SITREP Export**:
+   - Toggle "Degraded Comms Mode": demonstrate cached COP stability with visual uncertainty tags.
+   - Click **Export SITREP**: instant military-grade PDF download.
 
 ---
 
-## 12. Evaluation Alignment Summary
+## 11. Risk Assessment & Mitigations
 
-| Criterion | Weight | Vanguard Features Targeting It |
+| Risk | Impact | Mitigation Strategy |
 |---|---|---|
-| Data Fusion & Multi-Source Integration | 30% | Unified schema, corroboration engine, confidence scoring, anomaly detection, source health |
-| Command Map & Geospatial UX | 25% | Layer toggles, clustering, heatmap, time-scrubber, zone overlays |
-| AI Situation Summarization & Alert Prioritization | 25% | Executive summary, COA generation, explainability drawer, NL query bar |
-| System Scalability & UI Craftsmanship | 20% | Tactical theme, multi-tab sync, voice mode, responsive/animated UI |
-
----
-
-*End of PRD — Vanguard, Team Destroyer of Worlds, HackHertz 2026*
+| **LLM Latency During Live Pitch** | Presentation stalls waiting for AI response. | Background pre-generation with instant cached snapshot; Gemini 1.5/2.0 Flash for sub-second inference. |
+| **External Weather API Flakiness** | Blank weather layer during demo. | Built-in fallback cache to seed realistic meteorological patterns if Open-Meteo fails. |
+| **Map Rendering Bottlenecks** | Stuttering frames with high contact counts. | MapLibre WebGL clustering and viewport spatial filtering. |
+| **Judging Doubt on AI Hallucinations** | Defense judges question automated text. | Hard grounding: every claim references immutable event IDs; explainability drawer allows instant verification. |
