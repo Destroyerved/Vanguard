@@ -58,7 +58,7 @@ const PRESET_OSINT_DATABASE: ExtractedSocialResult[] = [
     publishedAt: '12 mins ago',
     duration: '01:45',
     viewsOrEngagement: '14.2K views',
-    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    videoUrl: 'https://www.youtube.com/watch?v=ScMzIvxBSi4',
     embedVideoId: 'ScMzIvxBSi4',
     thumbnailUrl: 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=600&q=80',
     location: { lat: 23.0825, lng: 72.5814, sectorName: 'Sector 4 North Corridor' },
@@ -77,8 +77,8 @@ const PRESET_OSINT_DATABASE: ExtractedSocialResult[] = [
     publishedAt: '28 mins ago',
     duration: '02:30',
     viewsOrEngagement: '38.9K views',
-    videoUrl: 'https://www.youtube.com/watch?v=kXYiU_JCYtU',
-    embedVideoId: 'kXYiU_JCYtU',
+    videoUrl: 'https://www.youtube.com/watch?v=3S9v_xYyWv8',
+    embedVideoId: '3S9v_xYyWv8',
     thumbnailUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=600&q=80',
     location: { lat: 23.0112, lng: 72.6341, sectorName: 'Eastern Border Perimeter' },
     confidenceScore: 78,
@@ -96,7 +96,8 @@ const PRESET_OSINT_DATABASE: ExtractedSocialResult[] = [
     publishedAt: '45 mins ago',
     duration: '00:22',
     viewsOrEngagement: '92.4K views',
-    videoUrl: 'https://www.instagram.com/p/C99xyzFakeAlert',
+    videoUrl: 'https://www.youtube.com/watch?v=2g811Eo7K8U',
+    embedVideoId: '2g811Eo7K8U',
     thumbnailUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80',
     location: { lat: 23.0955, lng: 72.5102, sectorName: 'Sector 7 Industrial Outskirts' },
     confidenceScore: 21,
@@ -112,8 +113,10 @@ const PRESET_OSINT_DATABASE: ExtractedSocialResult[] = [
     title: 'Civilian Emergency Radio Hails Medical Assistance In Sector Grid Beta',
     channelOrAuthor: '@RegionalScanner_News',
     publishedAt: '6 mins ago',
+    duration: '01:15',
     viewsOrEngagement: '5.1K reposts',
-    videoUrl: 'https://x.com/RegionalScanner_News/status/1832948201',
+    videoUrl: 'https://www.youtube.com/watch?v=qWbHSOPlC2c',
+    embedVideoId: 'qWbHSOPlC2c',
     thumbnailUrl: 'https://images.unsplash.com/photo-1587740896339-96a76170508d?auto=format&fit=crop&w=600&q=80',
     location: { lat: 23.0814, lng: 72.6803, sectorName: 'Sector Grid Beta Emergency' },
     confidenceScore: 92,
@@ -135,6 +138,12 @@ export default function SocialOsintSearchExtractor({
   const [results, setResults] = useState<ExtractedSocialResult[]>(PRESET_OSINT_DATABASE);
   const [injectedIds, setInjectedIds] = useState<Set<string>>(new Set());
   const [selectedResult, setSelectedResult] = useState<ExtractedSocialResult | null>(PRESET_OSINT_DATABASE[0]);
+  const [isPlayingEmbed, setIsPlayingEmbed] = useState(false);
+
+  const handleSelectResult = (result: ExtractedSocialResult) => {
+    setSelectedResult(result);
+    setIsPlayingEmbed(false);
+  };
 
   // Execute OSINT search or link parsing
   const handleSearch = (e?: React.FormEvent) => {
@@ -381,7 +390,7 @@ export default function SocialOsintSearchExtractor({
             return (
               <div
                 key={result.id}
-                onClick={() => setSelectedResult(result)}
+                onClick={() => handleSelectResult(result)}
                 className={`p-3 rounded-lg border transition-all cursor-pointer space-y-2 ${
                   isSelected
                     ? 'bg-cyan-950/40 border-cyan-500/70 shadow-hud-glow'
@@ -471,32 +480,42 @@ export default function SocialOsintSearchExtractor({
 
             {/* VIDEO PREVIEW BANNER & TELEMETRY */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-              {/* VIDEO THUMBNAIL / EMBED */}
-              <div className="md:col-span-6 relative rounded-lg overflow-hidden border border-white/10 bg-black aspect-video flex items-center justify-center group">
-                {selectedResult.thumbnailUrl ? (
-                  <img
-                    src={selectedResult.thumbnailUrl}
-                    alt={selectedResult.title}
-                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+              {/* VIDEO THUMBNAIL / EMBED PLAYER */}
+              <div className="md:col-span-6 relative rounded-lg overflow-hidden border border-cyan-500/30 bg-black aspect-video flex items-center justify-center group shadow-md">
+                {isPlayingEmbed && selectedResult.embedVideoId ? (
+                  <iframe
+                    src={`https://www.youtube-nocookie.com/embed/${selectedResult.embedVideoId}?autoplay=1&mute=1`}
+                    title={selectedResult.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full border-0"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-slate-950">
-                    <Video className="w-8 h-8 text-slate-600" />
-                  </div>
+                  <>
+                    {selectedResult.thumbnailUrl ? (
+                      <img
+                        src={selectedResult.thumbnailUrl}
+                        alt={selectedResult.title}
+                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-slate-950">
+                        <Video className="w-8 h-8 text-slate-600" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
+                    <button
+                      onClick={() => setIsPlayingEmbed(true)}
+                      className="absolute p-3 rounded-full bg-cyan-950/90 border border-cyan-500 text-cyan-300 hover:scale-110 transition-transform shadow-hud-glow flex items-center gap-1.5 font-bold text-xs"
+                      title="Play Embedded Tactical Clip"
+                    >
+                      <Play className="w-4 h-4 fill-cyan-300" />
+                    </button>
+                    <span className="absolute bottom-2 left-2 text-[10px] text-white font-bold bg-black/70 px-1.5 py-0.5 rounded">
+                      {selectedResult.duration || 'LIVE CLIP'} • {selectedResult.viewsOrEngagement}
+                    </span>
+                  </>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
-                <a
-                  href={selectedResult.videoUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="absolute p-3 rounded-full bg-cyan-950/90 border border-cyan-500 text-cyan-300 hover:scale-110 transition-transform shadow-lg"
-                  title="Watch on External Source"
-                >
-                  <Play className="w-4 h-4 fill-cyan-300" />
-                </a>
-                <span className="absolute bottom-2 left-2 text-[10px] text-white font-bold bg-black/70 px-1.5 py-0.5 rounded">
-                  {selectedResult.duration || 'LIVE CLIP'} • {selectedResult.viewsOrEngagement}
-                </span>
               </div>
 
               {/* SENSOR & RADAR MATCH DATA */}
