@@ -27,6 +27,7 @@ export default {
         }
       },
       fontFamily: {
+        galaxy: ['"Cinzel Decorative"', '"Syne"', 'Georgia', 'serif'],
         mono: ['"JetBrains Mono"', '"Share Tech Mono"', '"Fira Code"', 'Consolas', 'monospace'],
         display: ['"Chakra Petch"', '"Orbitron"', 'system-ui', 'sans-serif'],
       },
