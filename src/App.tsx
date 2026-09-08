@@ -1,12 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { UnifiedEvent } from './types/schema';
+import React, { useState, useEffect, useCallback } from 'react';
+import { UnifiedEvent, AISummary, CorrelationCluster, BriefingLatestResponse } from './types/schema';
 import { getScenarioDataset, DemoScenarioMode } from './data/scenarioEngine';
+import {
+  getSituation,
+  getTimeline,
+  getEvents,
+  getClusters,
+  getBriefingLatest,
+  postBriefing,
+  postQuery,
+  postDegraded,
+} from './data/apiClient';
+import { LiveStreamClient } from './data/wsClient';
 import { AuthProvider } from './context/AuthContext';
 import OperatorAuthModal from './components/auth/OperatorAuthModal';
 
 // Components
 import TopTacticalHeader, { NavSection } from './components/command/TopTacticalHeader';
 import CommandPalette from './components/command/CommandPalette';
+import NlQueryBar from './components/command/NlQueryBar';
 import OverviewCanvas from './components/views/OverviewCanvas';
 import SignalHorizonStream from './components/intelligence/SignalHorizonStream';
 import TemporalIntelligenceTimeline from './components/timeline/TemporalIntelligenceTimeline';
@@ -19,13 +31,12 @@ import EventInvestigationDrawer from './components/intelligence/EventInvestigati
 import EventReconMedia from './components/EventReconMedia';
 import VanguardLandingPage from './components/landing/VanguardLandingPage';
 
-const BACKEND_URL = 'http://localhost:3001/api/v1';
-
 function AppContent() {
   const [viewMode, setViewMode] = useState<'landing' | 'console'>('landing');
   const [activeTab, setActiveTab] = useState<NavSection>('overview');
   const [loading, setLoading] = useState(true);
   const [serverOnline, setServerOnline] = useState(false);
+  const [wsLive, setWsLive] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date().toUTCString());
   const [refreshing, setRefreshing] = useState(false);
 
@@ -34,6 +45,13 @@ function AppContent() {
   const [timeline, setTimeline] = useState<any[]>([]);
   const [events, setEvents] = useState<UnifiedEvent[]>([]);
   const [sourcesHealth, setSourcesHealth] = useState<any[]>([]);
+  const [clusters, setClusters] = useState<CorrelationCluster[]>([]);
+  const [briefing, setBriefing] = useState<AISummary | null>(null);
+  const [briefingMeta, setBriefingMeta] = useState<Pick<BriefingLatestResponse, 'ageMs' | 'generating' | 'groundingVerified'>>({
+    ageMs: 0,
+    generating: false,
+    groundingVerified: false,
+  });
   const [selectedEvent, setSelectedEvent] = useState<UnifiedEvent | null>(null);
   const [easyMode, setEasyMode] = useState<boolean>(true);
   const [activeScenario, setActiveScenario] = useState<DemoScenarioMode | null>(null);
@@ -41,61 +59,138 @@ function AppContent() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  // Fetch live backend data from REST server
-  const fetchBackendData = async (isManualSync = false) => {
+  // Natural-language omnibar filter (POST /ai/query)
+  const [nlQuery, setNlQuery] = useState<string>('');
+  const [nlResult, setNlResult] = useState<{ interpretation: string; parser: string; latencyMs: number; matchedEventIds: string[] } | null>(null);
+
+  // Fetch live backend data from the fusion REST server
+  const fetchBackendData = useCallback(async (isManualSync = false) => {
     if (isManualSync) {
       setRefreshing(true);
       setActiveScenario(null);
     }
-    // Only set full loading indicator on initial first load or manual sync
     if (events.length === 0 || isManualSync) {
       setLoading(true);
     }
     try {
       // 1. Situation Current
-      const sitRes = await fetch(`${BACKEND_URL}/situation/current`);
-      if (sitRes.ok) {
-        const sitData = await sitRes.json();
-        setServerOnline(true);
-        if (!activeScenario || isManualSync) {
-          setSituation(sitData.situation);
-          setSourcesHealth(sitData.sources || []);
-        }
+      const sitRes = await getSituation();
+      setServerOnline(true);
+      if (!activeScenario || isManualSync) {
+        setSituation(sitRes.situation);
+        setSourcesHealth(sitRes.sources);
       }
 
-      // 2. Timeline
-      const timeRes = await fetch(`${BACKEND_URL}/situation/timeline`);
-      if (timeRes.ok) {
-        const timeData = await timeRes.json();
-        setTimeline(Array.isArray(timeData) ? timeData : timeData.timeline || []);
+      // 2. Timeline (escalation audit log)
+      const timeRes = await getTimeline();
+      setTimeline(Array.isArray(timeRes) ? timeRes : timeRes.timeline || []);
+
+      // 3. Events (active in-memory events, capped)
+      const evtRes = await getEvents();
+      if (!activeScenario || isManualSync) {
+        setEvents(evtRes.events || []);
       }
 
-      // 3. Events (Fetch active in-memory events)
-      const evtRes = await fetch(`${BACKEND_URL}/events?limit=500`);
-      if (evtRes.ok) {
-        const evtData = await evtRes.json();
-        if (!activeScenario || isManualSync) {
-          setEvents(evtData.events || evtData || []);
-        }
-      }
+      // 4. Correlation clusters (map clustering + topology)
+      const cluRes = await getClusters();
+      setClusters((cluRes.clusters ?? []).map(({ events: _e, ...cluster }) => cluster));
+
+      // 5. Cached AI briefing (never blocks).
+      await refreshBriefing();
     } catch (err) {
-      console.warn('[Frontend] Server unreachable at localhost:3001, utilizing resilient fallback:', err);
+      console.warn('[Frontend] Backend unreachable at localhost:3001, utilizing resilient fallback:', err);
       setServerOnline(false);
     } finally {
       setLoading(false);
       if (isManualSync) setRefreshing(false);
     }
-  };
+  }, [events.length, activeScenario]);
 
+  const refreshBriefing = useCallback(async () => {
+    try {
+      const brief = await getBriefingLatest();
+      setBriefingMeta({
+        ageMs: brief.ageMs,
+        generating: brief.generating,
+        groundingVerified: brief.groundingVerified,
+      });
+      if (brief.summary) {
+        setBriefing(brief.summary);
+      } else if (!brief.generating) {
+        // No briefing cached yet and none generating — trigger the first synthesis.
+        const forced = await postBriefing();
+        setBriefing(forced.summary);
+        setBriefingMeta((m) => ({ ...m, groundingVerified: forced.groundingVerified }));
+      }
+    } catch {
+      // Backend down — briefing stays at its last value (or null on first load).
+    }
+  }, []);
+
+  // Polling + clock
   useEffect(() => {
     fetchBackendData();
-    const timer = setInterval(() => setCurrentTime(new Date().toUTCString()), 1000);
+    const clockTimer = setInterval(() => setCurrentTime(new Date().toUTCString()), 1000);
     const pollTimer = setInterval(() => fetchBackendData(false), 5000);
     return () => {
-      clearInterval(timer);
+      clearInterval(clockTimer);
       clearInterval(pollTimer);
     };
-  }, [activeScenario]);
+  }, [fetchBackendData]);
+
+  // WebSocket live pump — restructure polling when frames drop.
+  useEffect(() => {
+    const client = new LiveStreamClient(undefined, {
+      state: (state) => setWsLive(state === 'open'),
+      situationUpdate: (frame) => {
+        if (activeScenario) return;
+        setSituation(frame.payload.situation);
+      },
+      healthStatus: (frame) => {
+        if (activeScenario) return;
+        setSourcesHealth(frame.payload.sources);
+      },
+      briefingUpdate: (frame) => {
+        if (activeScenario) return;
+        setBriefing(frame.payload.summary);
+        setBriefingMeta((m) => ({ ...m, groundingVerified: true }));
+      },
+      eventStream: (frame) => {
+        if (activeScenario) return; // scenario mode overrides the live picture
+        setEvents((prev) => {
+          const byId = new Map(prev.map((e) => [e.id, e]));
+          for (const evt of frame.payload.events) byId.set(evt.id, evt);
+          return [...byId.values()];
+        });
+      },
+      clusterUpdate: (frame) => {
+        if (activeScenario) return;
+        setClusters(frame.payload.clusters);
+      },
+      escalation: (frame) => {
+        if (activeScenario) return;
+        setTimeline((prev) => [frame.payload.record, ...prev].slice(0, 200));
+      },
+      degradedMode: (frame) => {
+        if (activeScenario) return;
+        setIsDegradedComms(frame.payload.enabled);
+      },
+      alertTrigger: (frame) => {
+        if (activeScenario) return;
+        const evt = frame.payload.event;
+        setEvents((prev) => {
+          const byId = new Map(prev.map((e) => [e.id, e]));
+          byId.set(evt.id, evt);
+          return [...byId.values()];
+        });
+      },
+      resync: () => {
+        fetchBackendData(false);
+      },
+    });
+    client.connect();
+    return () => client.close();
+  }, [fetchBackendData, activeScenario]);
 
   // Global Keyboard Shortcuts
   useEffect(() => {
@@ -171,18 +266,35 @@ function AppContent() {
   const handleToggleDegradedComms = async (enabled: boolean) => {
     setIsDegradedComms(enabled);
     try {
-      await fetch(`${BACKEND_URL}/simulation/degraded`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled }),
-      });
+      await postDegraded(enabled);
       fetchBackendData(false);
     } catch (e) {
       console.warn('Degraded comms simulation fallback');
     }
   };
 
+const handleRunNlQuery = async (query: string) => {
+  setNlQuery(query);
+  try {
+    const res = await postQuery(query);
+      setNlResult({
+        interpretation: res.interpretation,
+        parser: res.parser,
+        latencyMs: res.latencyMs,
+        matchedEventIds: res.matchedEventIds,
+      });
+    } catch {
+      setNlResult(null);
+    }
+  };
+
+  const handleClearNlQuery = () => {
+    setNlQuery('');
+    setNlResult(null);
+  };
+
   const anomalyCount = events.filter((e) => e.isAnomaly).length;
+  const viewEvents = nlResult ? events.filter((e) => nlResult.matchedEventIds.includes(e.id)) : events;
 
   if (viewMode === 'landing') {
     return (
@@ -201,7 +313,8 @@ function AppContent() {
       <TopTacticalHeader
         currentTime={currentTime}
         situation={situation}
-        serverOnline={serverOnline}
+        serverOnline={serverOnline && wsLive}
+        wsLive={wsLive}
         easyMode={easyMode}
         onToggleEasyMode={() => setEasyMode(!easyMode)}
         activeScenario={activeScenario}
@@ -210,7 +323,7 @@ function AppContent() {
         refreshing={refreshing}
         activeTab={activeTab}
         onTabChange={(tab) => setActiveTab(tab)}
-        eventCount={events.length}
+        eventCount={viewEvents.length}
         anomalyCount={anomalyCount}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onNavigateToLanding={() => setViewMode('landing')}
@@ -228,7 +341,10 @@ function AppContent() {
           {activeTab === 'overview' && (
             <OverviewCanvas
               situation={situation}
-              events={events}
+              events={viewEvents}
+              briefing={briefing}
+              briefingMeta={briefingMeta}
+              clusters={clusters}
               selectedEventId={selectedEvent?.id}
               onSelectEvent={(evt) => setSelectedEvent(evt)}
               onSelectEventId={handleSelectEventId}
@@ -238,18 +354,28 @@ function AppContent() {
           )}
 
           {activeTab === 'events' && (
-            <SignalHorizonStream
-              events={events}
-              selectedEventId={selectedEvent?.id}
-              onSelectEvent={(evt) => setSelectedEvent(evt)}
-              easyMode={easyMode}
-            />
+            <div className="flex flex-col gap-3 h-full">
+              <NlQueryBar
+                activeQuery={nlQuery}
+                result={nlResult}
+                onRun={handleRunNlQuery}
+                onClear={handleClearNlQuery}
+              />
+              <div className="flex-1 min-h-0">
+                <SignalHorizonStream
+                  events={viewEvents}
+                  selectedEventId={selectedEvent?.id}
+                  onSelectEvent={(evt) => setSelectedEvent(evt)}
+                  easyMode={easyMode}
+                />
+              </div>
+            </div>
           )}
 
           {activeTab === 'timeline' && (
             <TemporalIntelligenceTimeline
               timeline={timeline}
-              events={events}
+              events={viewEvents}
               selectedEventId={selectedEvent?.id}
               onSelectEvent={(evt) => setSelectedEvent(evt)}
             />

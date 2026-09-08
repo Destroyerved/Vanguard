@@ -140,7 +140,7 @@ export function runFusionPipeline(input: FusionInput): FusionResult {
 
     for (const m of members) m.clusterId = cluster.id;
 
-    for (const [eventId, links] of corroborateCluster(members)) {
+    for (const [eventId, links] of corroborateCluster(members, correlation.neighborsByEvent)) {
       corroborationLinks.set(eventId, links);
     }
   }

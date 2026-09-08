@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { UnifiedEvent } from '../types/schema';
+import { UnifiedEvent, CorrelationCluster } from '../types/schema';
 import {
   Globe,
   ShieldAlert,
@@ -30,6 +30,7 @@ import {
 
 interface TacticalMapProps {
   events: UnifiedEvent[];
+  clusters?: CorrelationCluster[];
   selectedEventId?: string;
   onSelectEvent: (event: UnifiedEvent) => void;
 }
@@ -59,8 +60,14 @@ function getMetersPerPixel(lat: number, zoom: number) {
   return (156543.03392 * Math.cos((lat * Math.PI) / 180)) / Math.pow(2, zoom);
 }
 
+/** True when the selected event is a member of this cluster (highlights it). */
+function aliveMemberId(cluster: CorrelationCluster, selectedEventId?: string): boolean {
+  return Boolean(selectedEventId && cluster.eventIds.includes(selectedEventId));
+}
+
 export default function TacticalMap({
   events,
+  clusters = [],
   selectedEventId,
   onSelectEvent
 }: TacticalMapProps) {
@@ -131,6 +138,13 @@ export default function TacticalMap({
       setZoom(11);
     }
   }, [filteredEvents]);
+
+  // Click a cluster badge → fly to its centroid and drive zoom in so members separate.
+  const flyToCluster = useCallback((cluster: CorrelationCluster) => {
+    const zoomed = cluster.eventIds.length >= 6 ? zoom + 3 : zoom + 2;
+    setCenter({ lat: cluster.centroid.lat, lng: cluster.centroid.lng });
+    setZoom(() => Math.min(16, Math.max(12, zoomed)));
+  }, [zoom]);
 
   // Mouse Drag to Pan
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -274,6 +288,40 @@ export default function TacticalMap({
     };
   }, [center, zoom, dimensions]);
 
+  // Fusion correlation clusters → screen positions (F-13 map clustering).
+  const projectedClusters = useMemo(() => {
+    const { width, height } = dimensions;
+    const centerWorld = latLngToWorld(center.lat, center.lng, zoom);
+    const x0 = centerWorld.x - width / 2;
+    const y0 = centerWorld.y - height / 2;
+    const mPerPx = getMetersPerPixel(center.lat, zoom);
+
+    return clusters
+      .map((cluster) => {
+        const lat = cluster.centroid?.lat ?? 23.0225;
+        const lng = cluster.centroid?.lng ?? 72.5714;
+        const world = latLngToWorld(lat, lng, zoom);
+        const screenX = world.x - x0;
+        const screenY = world.y - y0;
+        const isVisible =
+          screenX >= -(cluster.radiusMeters / mPerPx) - 40 &&
+          screenX <= width + (cluster.radiusMeters / mPerPx) + 40 &&
+          screenY >= -(cluster.radiusMeters / mPerPx) - 40 &&
+          screenY <= height + (cluster.radiusMeters / mPerPx) + 40;
+
+        return {
+          ...cluster,
+          lat,
+          lng,
+          screenX,
+          screenY,
+          isVisible,
+          radiusPx: cluster.radiusMeters / mPerPx,
+        };
+      })
+      .filter((c) => c.isVisible);
+  }, [clusters, center, zoom, dimensions]);
+
   // Range rings radius in pixels
   const mPerPx = getMetersPerPixel(center.lat, zoom);
   const ring10kmPx = 10000 / mPerPx;
@@ -355,6 +403,11 @@ export default function TacticalMap({
           <span className="text-[10px] text-cyan-400 font-bold px-1.5 py-0.2 rounded bg-cyan-950/80 border border-cyan-500/40">
             {filteredEvents.length} TRACKS LIVE
           </span>
+          {clusters.length > 0 && (
+            <span className="text-[10px] text-violet-300 font-bold px-1.5 py-0.2 rounded bg-violet-950/80 border border-violet-500/40">
+              {clusters.length} CLUSTERS
+            </span>
+          )}
         </div>
 
         {/* CONTROLS: LAYER SELECTOR, FILTERS, ZOOM */}
@@ -562,6 +615,59 @@ export default function TacticalMap({
 
       {/* 4. REAL-TIME DATA ENTITY MARKERS */}
       <div className="absolute inset-0 pointer-events-none z-20">
+        {/* FUSION CLUSTER BADGES — click to fly-to / zoom in */}
+        {projectedClusters.map((cluster) => {
+          const isSelected = aliveMemberId(cluster, selectedEventId);
+          const clusterColor =
+            cluster.peakSeverity === 'critical'
+              ? 'bg-rose-950/80 border-rose-400 text-rose-300'
+              : cluster.peakSeverity === 'high'
+              ? 'bg-orange-950/80 border-orange-400 text-orange-300'
+              : cluster.peakSeverity === 'medium'
+              ? 'bg-yellow-950/80 border-yellow-400 text-yellow-300'
+              : 'bg-violet-950/80 border-violet-400 text-violet-300';
+
+          return (
+            <div
+              key={cluster.id}
+              style={{
+                position: 'absolute',
+                left: `${cluster.screenX}px`,
+                top: `${cluster.screenY}px`,
+                transform: 'translate(-50%, -50%)'
+              }}
+              className="pointer-events-auto cursor-pointer group"
+              onClick={(e) => {
+                e.stopPropagation();
+                flyToCluster(cluster);
+              }}
+              title={`Cluster ${cluster.id} — ${cluster.eventIds.length} events, peak ${cluster.peakSeverity}, ~${(cluster.radiusMeters / 1000).toFixed(1)} km radius (click to focus)`}
+            >
+              {/* Radius ring */}
+              <div
+                className={`absolute rounded-full border border-dashed pointer-events-none ${isSelected ? 'border-cyan-400 animate-pulse' : 'border-white/25'}`}
+                style={{
+                  width: `${Math.max(28, cluster.radiusPx * 2)}px`,
+                  height: `${Math.max(28, cluster.radiusPx * 2)}px`,
+                  left: `${-Math.max(14, cluster.radiusPx)}px`,
+                  top: `${-Math.max(14, cluster.radiusPx)}px`,
+                }}
+              />
+              {/* Badge */}
+              <div
+                className={`w-10 h-10 rounded-full border-2 ${clusterColor} bg-[#070b10] flex flex-col items-center justify-center shadow-xl transition-all group-hover:scale-110`}
+              >
+                <span className="text-[9px] font-bold leading-none">{cluster.eventIds.length}</span>
+                <span className="text-[6px] uppercase leading-none opacity-80 mt-0.5">Linked</span>
+              </div>
+              {/* Label */}
+              <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 px-1.5 py-0.2 rounded bg-black/85 border border-white/10 text-[8px] text-slate-300 whitespace-nowrap shadow-lg pointer-events-none">
+                {cluster.distinctSources.length} sources · {cluster.meanConfidence}% conf
+              </div>
+            </div>
+          );
+        })}
+
         {projectedEvents.map((evt) => {
           if (!evt.isVisible) return null;
 
