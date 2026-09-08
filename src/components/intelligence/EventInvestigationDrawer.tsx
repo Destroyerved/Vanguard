@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { UnifiedEvent } from '../../types/schema';
 import { explainEvent } from '../../data/eventExplainer';
+import EventReconMedia from '../EventReconMedia';
+import LiveNewsFeed from '../LiveNewsFeed';
 import {
   X,
   ShieldCheck,
@@ -17,7 +19,9 @@ import {
   Check,
   ExternalLink,
   Zap,
-  Info
+  Info,
+  Camera,
+  Newspaper
 } from 'lucide-react';
 
 interface EventInvestigationDrawerProps {
@@ -34,7 +38,7 @@ export default function EventInvestigationDrawer({
   onOpenRawJson
 }: EventInvestigationDrawerProps) {
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<'EXPLAIN' | 'MATH' | 'CORRELATIONS' | 'RAW'>('EXPLAIN');
+  const [activeTab, setActiveTab] = useState<'EXPLAIN' | 'RECON' | 'NEWS' | 'MATH' | 'CORRELATIONS' | 'RAW'>('EXPLAIN');
 
   if (!event) return null;
 
@@ -102,17 +106,19 @@ export default function EventInvestigationDrawer({
       </div>
 
       {/* 2. SUB-TABS */}
-      <div className="flex items-center border-b border-white/10 px-4 bg-[#05070a]">
+      <div className="flex items-center border-b border-white/10 px-3 bg-[#05070a] overflow-x-auto">
         {[
-          { id: 'EXPLAIN', label: 'Summary & Assessment' },
-          { id: 'MATH', label: 'Confidence Math (Rs × Dt × Bc)' },
+          { id: 'EXPLAIN', label: 'Summary' },
+          { id: 'RECON', label: 'Satellite Recon' },
+          { id: 'NEWS', label: 'News Wires' },
+          { id: 'MATH', label: 'Confidence Math' },
           { id: 'CORRELATIONS', label: `Corroborators (${event.corroboratedBy?.length || 0})` },
-          { id: 'RAW', label: 'Raw Payload' }
+          { id: 'RAW', label: 'JSON' }
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`px-3 py-2.5 text-[11px] font-semibold border-b-2 transition-all ${
+            className={`px-3 py-2.5 text-[11px] font-semibold border-b-2 transition-all whitespace-nowrap ${
               activeTab === tab.id
                 ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
@@ -124,7 +130,7 @@ export default function EventInvestigationDrawer({
       </div>
 
       {/* 3. DRAWER BODY SCROLL AREA */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-5">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* KEY TELEMETRY STRIP */}
         <div className="grid grid-cols-3 gap-2 p-2.5 rounded bg-[#0a0f15] border border-white/10 text-slate-300">
           <div>
@@ -133,7 +139,11 @@ export default function EventInvestigationDrawer({
           </div>
           <div>
             <div className="text-[10px] text-slate-500 uppercase">Coordinates</div>
-            <div className="font-semibold">{event.location.lat.toFixed(4)}°N, {event.location.lng.toFixed(4)}°E</div>
+            <div className="font-semibold">
+              {typeof event.location?.lat === 'number' && typeof event.location?.lng === 'number'
+                ? `${event.location.lat.toFixed(4)}°N, ${event.location.lng.toFixed(4)}°E`
+                : 'Sector Grid Alpha'}
+            </div>
           </div>
           <div>
             <div className="text-[10px] text-slate-500 uppercase">Overall Confidence</div>
@@ -191,7 +201,21 @@ export default function EventInvestigationDrawer({
           </div>
         )}
 
-        {/* TAB 2: DETAILED CONFIDENCE MATH */}
+        {/* TAB 2: HIGH-RESOLUTION SATELLITE RECON */}
+        {activeTab === 'RECON' && (
+          <div className="space-y-3">
+            <EventReconMedia event={event} />
+          </div>
+        )}
+
+        {/* TAB 3: VERIFIED NEWS WIRES */}
+        {activeTab === 'NEWS' && (
+          <div className="space-y-3">
+            <LiveNewsFeed event={event} />
+          </div>
+        )}
+
+        {/* TAB 4: DETAILED CONFIDENCE MATH */}
         {activeTab === 'MATH' && (
           <div className="space-y-4">
             <div className="p-3 rounded bg-[#0a0f15] border border-white/10 space-y-3">
@@ -242,7 +266,7 @@ export default function EventInvestigationDrawer({
           </div>
         )}
 
-        {/* TAB 3: CORRELATIONS LIST */}
+        {/* TAB 5: CORRELATIONS LIST */}
         {activeTab === 'CORRELATIONS' && (
           <div className="space-y-2">
             <div className="text-xs text-slate-400 pb-1">
@@ -271,7 +295,7 @@ export default function EventInvestigationDrawer({
           </div>
         )}
 
-        {/* TAB 4: RAW JSON PAYLOAD */}
+        {/* TAB 6: RAW JSON PAYLOAD */}
         {activeTab === 'RAW' && (
           <pre className="p-3 rounded bg-[#05070a] border border-white/10 text-[11px] font-mono text-cyan-300/90 overflow-x-auto">
             {JSON.stringify(event, null, 2)}

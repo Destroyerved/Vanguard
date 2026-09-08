@@ -137,12 +137,16 @@ export default function TacticalMap({
           <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
             {filteredEvents.map((evt) => {
               if (!evt.corroboratedBy || evt.corroboratedBy.length === 0) return null;
-              const srcPos = getCanvasPos(evt.location.lat, evt.location.lng);
+              const srcLat = typeof evt.location?.lat === 'number' ? evt.location.lat : 23.0225;
+              const srcLng = typeof evt.location?.lng === 'number' ? evt.location.lng : 72.5714;
+              const srcPos = getCanvasPos(srcLat, srcLng);
 
               return evt.corroboratedBy.map((corrId) => {
                 const target = filteredEvents.find((e) => e.id === corrId);
                 if (!target) return null;
-                const tgtPos = getCanvasPos(target.location.lat, target.location.lng);
+                const tgtLat = typeof target.location?.lat === 'number' ? target.location.lat : 23.0225;
+                const tgtLng = typeof target.location?.lng === 'number' ? target.location.lng : 72.5714;
+                const tgtPos = getCanvasPos(tgtLat, tgtLng);
 
                 return (
                   <line
@@ -163,7 +167,9 @@ export default function TacticalMap({
 
         {/* PLOTTED TACTICAL EVENT BEACONS */}
         {filteredEvents.map((evt) => {
-          const pos = getCanvasPos(evt.location.lat, evt.location.lng);
+          const lat = typeof evt.location?.lat === 'number' ? evt.location.lat : 23.0225;
+          const lng = typeof evt.location?.lng === 'number' ? evt.location.lng : 72.5714;
+          const pos = getCanvasPos(lat, lng);
           const isSelected = selectedEventId === evt.id;
 
           const beaconColor =
@@ -211,12 +217,21 @@ export default function TacticalMap({
                 </div>
                 <div className="text-slate-200 font-semibold">{evt.title}</div>
                 <div className="text-slate-400 text-[9px]">
-                  {evt.location.lat.toFixed(3)}°N, {evt.location.lng.toFixed(3)}°E • {evt.sourceType}
+                  {lat.toFixed(3)}°N, {lng.toFixed(3)}°E • {evt.sourceType}
                 </div>
               </div>
             </div>
           );
         })}
+
+        {filteredEvents.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-xs font-mono">
+            <div className="text-center p-4 rounded bg-[#070b10]/80 border border-white/10">
+              <Compass className="w-6 h-6 text-cyan-500/40 mx-auto mb-1 animate-spin" />
+              <span>ACTIVE SCANNING // NO CONTACTS MATCHING CRITERIA</span>
+            </div>
+          </div>
+        )}
 
         {/* MAP BOTTOM TELEMETRY OVERLAY */}
         <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-[10px] text-slate-400 bg-[#070b10]/90 border border-white/10 rounded px-3 py-1.5 backdrop-blur pointer-events-none">

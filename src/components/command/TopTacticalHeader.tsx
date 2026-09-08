@@ -12,9 +12,16 @@ import {
   Clock,
   Sparkles,
   Wifi,
-  WifiOff
+  WifiOff,
+  Map as MapIcon,
+  Globe,
+  Newspaper,
+  ShieldCheck,
+  Server,
+  Play
 } from 'lucide-react';
 import { DemoScenarioMode } from '../../data/scenarioEngine';
+import { NavSection } from './CommandRail';
 
 interface TopTacticalHeaderProps {
   currentTime: string;
@@ -26,6 +33,10 @@ interface TopTacticalHeaderProps {
   onOpenCommandPalette: () => void;
   onManualRefresh: () => void;
   refreshing: boolean;
+  activeTab?: NavSection;
+  onTabChange?: (tab: NavSection) => void;
+  eventCount?: number;
+  anomalyCount?: number;
 }
 
 export default function TopTacticalHeader({
@@ -37,7 +48,11 @@ export default function TopTacticalHeader({
   activeScenario,
   onOpenCommandPalette,
   onManualRefresh,
-  refreshing
+  refreshing,
+  activeTab = 'overview',
+  onTabChange,
+  eventCount = 0,
+  anomalyCount = 0
 }: TopTacticalHeaderProps) {
   const threatLevel = situation?.threatLevel || 'green';
   const threatScore = situation?.threatScore ?? 0;
@@ -131,6 +146,56 @@ export default function TopTacticalHeader({
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-cyan-400' : ''}`} />
         </button>
       </div>
+
+      {/* 4. QUICK MODULE SELECTOR RIBBON */}
+      {onTabChange && (
+        <div className="w-full flex items-center gap-1.5 pt-1.5 border-t border-white/5 overflow-x-auto text-xs font-mono scrollbar-none">
+          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider pr-1 hidden xl:inline">
+            TACTICAL VIEWS:
+          </span>
+          {[
+            { id: 'overview', label: 'Overview', icon: Activity, key: 'O' },
+            { id: 'map', label: 'Tactical Map', icon: MapIcon, count: eventCount, key: 'M' },
+            { id: 'news', label: 'Verified News', icon: Newspaper, tag: 'LIVE', key: 'N' },
+            { id: 'spatial_3d', label: '3D Spatial Field', icon: Globe, key: 'G' },
+            { id: 'events', label: 'Signal Stream', icon: Radio, count: anomalyCount ? `${anomalyCount} Anom` : undefined, key: 'E' },
+            { id: 'osint', label: 'OSINT Verifier', icon: ShieldCheck, key: 'V' },
+            { id: 'recon', label: 'Satellite Recon', icon: Globe, key: 'R' },
+            { id: 'timeline', label: 'Threat Timeline', icon: Clock, key: 'T' },
+            { id: 'sources', label: 'Source Topology', icon: Server, key: 'S' },
+            { id: 'simulation', label: 'Scenarios', icon: Play, key: 'X' },
+            { id: 'api_tester', label: 'API Console', icon: Terminal, key: 'D' },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isSelected = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => onTabChange(tab.id as NavSection)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium whitespace-nowrap transition-all ${
+                  isSelected
+                    ? 'bg-cyan-950/80 border border-cyan-500/60 text-cyan-300 shadow-hud-glow font-bold'
+                    : 'bg-[#05070a] border border-white/10 text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{tab.label}</span>
+                {tab.count !== undefined && (
+                  <span className="px-1 py-0.2 rounded bg-cyan-900/60 text-[9px] text-cyan-200 font-mono">
+                    {tab.count}
+                  </span>
+                )}
+                {tab.tag && (
+                  <span className="px-1 py-0.2 rounded bg-emerald-950 border border-emerald-500/40 text-[9px] text-emerald-300 font-mono">
+                    {tab.tag}
+                  </span>
+                )}
+                <span className="text-[9px] opacity-40 font-mono hidden md:inline">[{tab.key}]</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </header>
   );
 }

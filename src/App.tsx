@@ -17,6 +17,7 @@ import SourceTopologyMatrix from './components/sources/SourceTopologyMatrix';
 import ScenarioSimulationController from './components/system/ScenarioSimulationController';
 import ApiConsoleDiagnostics from './components/system/ApiConsoleDiagnostics';
 import EventInvestigationDrawer from './components/intelligence/EventInvestigationDrawer';
+import EventReconMedia from './components/EventReconMedia';
 
 const BACKEND_URL = 'http://localhost:3001/api/v1';
 
@@ -114,6 +115,8 @@ export default function App() {
         setActiveTab('news');
       } else if (e.key === 'v' || e.key === 'V') {
         setActiveTab('osint');
+      } else if (e.key === 'r' || e.key === 'R') {
+        setActiveTab('recon');
       } else if (e.key === 's' || e.key === 'S') {
         setActiveTab('sources');
       } else if (e.key === 'x' || e.key === 'X') {
@@ -207,6 +210,10 @@ export default function App() {
           onOpenCommandPalette={() => setCommandPaletteOpen(true)}
           onManualRefresh={() => fetchBackendData(true)}
           refreshing={refreshing}
+          activeTab={activeTab}
+          onTabChange={(tab) => setActiveTab(tab)}
+          eventCount={events.length}
+          anomalyCount={anomalyCount}
         />
 
         {/* MAIN APPLICATION CANVAS WORKSPACE */}
@@ -225,11 +232,12 @@ export default function App() {
               onSelectEvent={(evt) => setSelectedEvent(evt)}
               onSelectEventId={handleSelectEventId}
               easyMode={easyMode}
+              onNavigateToTab={(tab) => setActiveTab(tab)}
             />
           )}
 
           {activeTab === 'map' && (
-            <div className="h-[calc(100vh-120px)] flex flex-col">
+            <div className="h-[calc(100vh-140px)] flex flex-col">
               <TacticalMap
                 events={events}
                 selectedEventId={selectedEvent?.id}
@@ -239,7 +247,7 @@ export default function App() {
           )}
 
           {activeTab === 'spatial_3d' && (
-            <div className="h-[calc(100vh-120px)] flex flex-col">
+            <div className="h-[calc(100vh-140px)] flex flex-col">
               <SpatialThreatField3D
                 events={events}
                 selectedEventId={selectedEvent?.id}
@@ -266,7 +274,37 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'news' && <VerifiedNewsHub />}
+          {activeTab === 'news' && (
+            <div className="h-[calc(100vh-140px)] flex flex-col overflow-y-auto">
+              <VerifiedNewsHub
+                event={selectedEvent || events[0]}
+                isStandaloneTab={true}
+              />
+            </div>
+          )}
+
+          {activeTab === 'recon' && (
+            <div className="h-[calc(100vh-140px)] flex flex-col overflow-y-auto">
+              <EventReconMedia
+                event={
+                  selectedEvent ||
+                  events[0] || {
+                    id: 'RECON-001',
+                    sourceType: 'radar',
+                    title: 'Sector 04 Satellite Surveillance & Recon Grid',
+                    description: 'High-resolution orbital satellite optical surveillance and multispectral reconnaissance imagery of Sector 04 AO.',
+                    location: { lat: 23.0225, lng: 72.5714 },
+                    severity: 'high',
+                    confidence: 92,
+                    timestamp: new Date().toISOString(),
+                    corroboratedBy: [],
+                    isAnomaly: false,
+                    raw: {}
+                  }
+                }
+              />
+            </div>
+          )}
 
           {activeTab === 'osint' && (
             <OsintAuthenticityVerifier

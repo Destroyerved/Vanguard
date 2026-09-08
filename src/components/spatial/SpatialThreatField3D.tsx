@@ -114,8 +114,10 @@ export default function SpatialThreatField3D({
       }> = [];
 
       events.forEach((evt) => {
-        const dx = ((evt.location.lng - centerLng) / lngSpan) * gridSize;
-        const dy = -((evt.location.lat - centerLat) / latSpan) * gridSize;
+        const lat = typeof evt.location?.lat === 'number' ? evt.location.lat : centerLat;
+        const lng = typeof evt.location?.lng === 'number' ? evt.location.lng : centerLng;
+        const dx = ((lng - centerLng) / lngSpan) * gridSize;
+        const dy = -((lat - centerLat) / latSpan) * gridSize;
 
         // Elevation based on Severity & Confidence
         const severityWeight =
@@ -228,8 +230,10 @@ export default function SpatialThreatField3D({
     let minDist = 30;
 
     events.forEach((evt) => {
-      const dx = ((evt.location.lng - centerLng) / lngSpan) * gridSize;
-      const dy = -((evt.location.lat - centerLat) / latSpan) * gridSize;
+      const lat = typeof evt.location?.lat === 'number' ? evt.location.lat : centerLat;
+      const lng = typeof evt.location?.lng === 'number' ? evt.location.lng : centerLng;
+      const dx = ((lng - centerLng) / lngSpan) * gridSize;
+      const dy = -((lat - centerLat) / latSpan) * gridSize;
       const dist = Math.hypot(dx - clickX, dy - clickY);
 
       if (dist < minDist) {

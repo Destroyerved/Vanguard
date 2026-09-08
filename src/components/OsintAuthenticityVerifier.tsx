@@ -611,7 +611,10 @@ export default function OsintAuthenticityVerifier({ events, onSelectEvent }: Osi
               {/* ACTION FOOTER */}
               <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
                 <span className="text-xs text-slate-400 font-mono">
-                  Coordinates: {activeEvent.location.lat.toFixed(4)}°N, {activeEvent.location.lng.toFixed(4)}°E
+                  Coordinates:{' '}
+                  {typeof activeEvent.location?.lat === 'number' && typeof activeEvent.location?.lng === 'number'
+                    ? `${activeEvent.location.lat.toFixed(4)}°N, ${activeEvent.location.lng.toFixed(4)}°E`
+                    : 'Sector Grid MGRS'}
                 </span>
                 {onSelectEvent && (
                   <button

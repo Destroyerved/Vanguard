@@ -27,7 +27,9 @@ export interface EventExplanation {
 
 export function explainEvent(evt: UnifiedEvent): EventExplanation {
   const { id, sourceType, severity, title, description, confidence, confidenceBreakdown, corroboratedBy, isAnomaly, location, raw } = evt;
-  const latLngStr = `${location.lat.toFixed(4)}°N, ${location.lng.toFixed(4)}°E`;
+  const lat = typeof location?.lat === 'number' ? location.lat : 23.0225;
+  const lng = typeof location?.lng === 'number' ? location.lng : 72.5714;
+  const latLngStr = `${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`;
   const mediaAudit = evaluateMediaAuthenticity(evt);
 
   // --- 1. TECHNICAL DETAILED EXPLANATION ---
@@ -356,10 +358,12 @@ export function explainEvent(evt: UnifiedEvent): EventExplanation {
       break;
   }
 
-  const speedKmh = location.speedKnots ? Math.round(location.speedKnots * 1.852) : null;
-  const altFt = location.altitudeMeters ? Math.round(location.altitudeMeters * 3.28084) : null;
+  const speedKmh = location?.speedKnots ? Math.round(location.speedKnots * 1.852) : null;
+  const altFt = location?.altitudeMeters ? Math.round(location.altitudeMeters * 3.28084) : null;
 
-  let simpleTelemetry = `Location: Sector near (${location.lat.toFixed(2)}°, ${location.lng.toFixed(2)}°)`;
+  let simpleTelemetry = location && typeof location.lat === 'number' && typeof location.lng === 'number'
+    ? `Location: Sector near (${location.lat.toFixed(2)}°, ${location.lng.toFixed(2)}°)`
+    : 'Location: Tactical Grid AO';
   if (speedKmh) simpleTelemetry += ` | Speed: ~${speedKmh} km/h`;
   if (altFt) simpleTelemetry += ` | Height: ~${altFt} feet above ground`;
 
