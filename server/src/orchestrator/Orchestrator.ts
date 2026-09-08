@@ -40,6 +40,8 @@ import { normalizeBatch } from '../normalization/normalize.js';
 import { validateBatch } from '../normalization/validate.js';
 import { RateBaseline, runFusionPipeline, type FusionResult } from '../fusion/pipeline.js';
 import { EventStore } from '../state/EventStore.js';
+import { RedisEventStore } from '../state/RedisEventStore.js';
+import { getRedisClient } from '../config/redis.js';
 import { SourceHealthRegistry } from '../state/SourceHealthRegistry.js';
 import { ThreatState } from '../state/ThreatState.js';
 import type { CorrelationCluster, TacticalAsset, UnifiedEvent } from '../types/events.js';
@@ -54,7 +56,7 @@ const log = createLogger('orchestr');
 export const SERVER_VERSION = '1.1.0';
 
 export class Orchestrator {
-  readonly store = new EventStore();
+  readonly store: EventStore = new RedisEventStore(getRedisClient());
   readonly health = new SourceHealthRegistry();
   readonly threat = new ThreatState();
   readonly briefingCache = new BriefingCache();
