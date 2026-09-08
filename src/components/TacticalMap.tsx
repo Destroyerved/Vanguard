@@ -1,19 +1,39 @@
 import React, { useState } from 'react';
 import { UnifiedEvent } from '../types/schema';
-import { Globe, ShieldAlert, Navigation, Layers, Filter, Maximize2, ExternalLink } from 'lucide-react';
+import {
+  Globe,
+  ShieldAlert,
+  Navigation,
+  Layers,
+  Filter,
+  Maximize2,
+  ExternalLink,
+  Radio,
+  Eye,
+  Crosshair,
+  Compass,
+  AlertTriangle
+} from 'lucide-react';
 
 interface TacticalMapProps {
   events: UnifiedEvent[];
+  selectedEventId?: string;
   onSelectEvent: (event: UnifiedEvent) => void;
 }
 
-export default function TacticalMap({ events, onSelectEvent }: TacticalMapProps) {
+export default function TacticalMap({
+  events,
+  selectedEventId,
+  onSelectEvent
+}: TacticalMapProps) {
   const [selectedSource, setSelectedSource] = useState<string>('all');
   const [selectedSeverity, setSelectedSeverity] = useState<string>('all');
   const [showAnomaliesOnly, setShowAnomaliesOnly] = useState<boolean>(false);
+  const [showRangeRings, setShowRangeRings] = useState<boolean>(true);
+  const [showCorrelationArcs, setShowCorrelationArcs] = useState<boolean>(true);
   const [activeHoverEvent, setActiveHoverEvent] = useState<UnifiedEvent | null>(null);
 
-  // Filter events based on user selection
+  // Filter events based on selection
   const filteredEvents = events.filter((evt) => {
     if (selectedSource !== 'all' && evt.sourceType !== selectedSource) return false;
     if (selectedSeverity !== 'all' && evt.severity !== selectedSeverity) return false;
@@ -21,193 +41,188 @@ export default function TacticalMap({ events, onSelectEvent }: TacticalMapProps)
     return true;
   });
 
-  // Compute map bounding box bounds for coordinate projection
-  // Default centered around Sector Alpha (lat ~23.0, lng ~72.5 or 28.6 / 77.2)
+  // Calculate dynamic coordinate bounds
   const lats = filteredEvents.map((e) => e.location?.lat).filter(Boolean);
   const lngs = filteredEvents.map((e) => e.location?.lng).filter(Boolean);
 
-  const minLat = lats.length ? Math.min(...lats) - 0.1 : 22.0;
-  const maxLat = lats.length ? Math.max(...lats) + 0.1 : 29.0;
-  const minLng = lngs.length ? Math.min(...lngs) - 0.1 : 72.0;
-  const maxLng = lngs.length ? Math.max(...lngs) + 0.1 : 78.0;
+  const minLat = lats.length ? Math.min(...lats) - 0.08 : 22.8;
+  const maxLat = lats.length ? Math.max(...lats) + 0.08 : 23.4;
+  const minLng = lngs.length ? Math.min(...lngs) - 0.08 : 72.3;
+  const maxLng = lngs.length ? Math.max(...lngs) + 0.08 : 72.9;
 
   const getCanvasPos = (lat: number, lng: number) => {
-    const latSpan = maxLat - minLat || 1;
-    const lngSpan = maxLng - minLng || 1;
+    const latSpan = maxLat - minLat || 0.1;
+    const lngSpan = maxLng - minLng || 0.1;
 
-    // Projected X (0 to 100%) and Y (0 to 100%, flipped Y axis)
-    const x = Math.min(95, Math.max(5, ((lng - minLng) / lngSpan) * 100));
-    const y = Math.min(95, Math.max(5, (1 - (lat - minLat) / latSpan) * 100));
+    const x = Math.min(94, Math.max(6, ((lng - minLng) / lngSpan) * 100));
+    const y = Math.min(94, Math.max(6, (1 - (lat - minLat) / latSpan) * 100));
     return { x, y };
   };
 
   return (
-    <div className="hud-card p-6 rounded-2xl border border-cyan-500/30 bg-slate-900/80 font-mono shadow-2xl flex flex-col gap-4">
-      {/* MAP HEADER CONTROLS */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-        <div>
-          <h2 className="font-hud font-bold text-xl text-slate-100 flex items-center gap-2">
-            <Globe className="w-5 h-5 text-cyan-400 animate-pulse" /> COMMAND TACTICAL GEOSPATIAL MAP
-          </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Plotting {filteredEvents.length} active multi-source tactical events across Sector Alpha & Beta coordinates.
-          </p>
+    <div className="instrument-panel rounded-sm border border-white/10 corner-brackets font-mono select-none flex flex-col h-full overflow-hidden shadow-tactical">
+      {/* 1. MAP TOP CONTROL BAR */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 border-b border-white/10 bg-[#070b10]">
+        <div className="flex items-center gap-2">
+          <Compass className="w-4 h-4 text-cyan-400" />
+          <span className="font-heading font-bold text-sm tracking-wider text-slate-100 uppercase">
+            GEOSPATIAL COMMON OPERATING PICTURE
+          </span>
+          <span className="text-[10px] text-slate-400">| SECTOR 4 ({filteredEvents.length} TRACKS)</span>
         </div>
 
-        {/* FILTERS */}
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          {/* Source Filter */}
+        {/* LAYER TOGGLES & FILTERS */}
+        <div className="flex items-center gap-2 text-xs">
           <select
             value={selectedSource}
             onChange={(e) => setSelectedSource(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-cyan-300 px-3 py-1.5 rounded-lg focus:outline-none focus:border-cyan-500"
+            className="bg-[#05070a] border border-white/10 text-cyan-300 px-2 py-1 rounded text-xs outline-none focus:border-cyan-500/40"
           >
-            <option value="all">All Stream Sources</option>
+            <option value="all">All Feeds</option>
             <option value="radar">Radar Tracks</option>
             <option value="weather">Weather Hazards</option>
-            <option value="personnel">Personnel Units</option>
-            <option value="log">Cyber Logs</option>
-            <option value="incident">Incidents</option>
+            <option value="personnel">Patrol Squads</option>
+            <option value="log">Perimeter Sensors</option>
+            <option value="incident">Dispatch</option>
           </select>
 
-          {/* Severity Filter */}
-          <select
-            value={selectedSeverity}
-            onChange={(e) => setSelectedSeverity(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-cyan-300 px-3 py-1.5 rounded-lg focus:outline-none focus:border-cyan-500"
+          <button
+            onClick={() => setShowCorrelationArcs(!showCorrelationArcs)}
+            className={`px-2 py-1 rounded text-xs border transition-all ${
+              showCorrelationArcs
+                ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300'
+                : 'bg-[#05070a] border-white/10 text-slate-400'
+            }`}
+            title="Toggle Union-Find Correlation Arcs"
           >
-            <option value="all">All Severities</option>
-            <option value="critical">Critical Only</option>
-            <option value="high">High & Critical</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
+            ARCS
+          </button>
 
-          {/* Anomaly Toggle */}
           <button
             onClick={() => setShowAnomaliesOnly(!showAnomaliesOnly)}
-            className={`px-3 py-1.5 rounded-lg border flex items-center gap-1.5 transition-all ${
+            className={`px-2 py-1 rounded text-xs border transition-all ${
               showAnomaliesOnly
-                ? 'bg-rose-950 border-rose-600 text-rose-300 font-bold'
-                : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                ? 'bg-rose-950/80 border-rose-500/60 text-rose-300 font-bold'
+                : 'bg-[#05070a] border-white/10 text-slate-400 hover:text-slate-200'
             }`}
           >
-            <ShieldAlert className="w-3.5 h-3.5" />
-            <span>{showAnomaliesOnly ? 'Anomalies Only (Active)' : 'Filter Anomalies'}</span>
+            ANOMALIES
           </button>
         </div>
       </div>
 
-      {/* TACTICAL MAP DISPLAY */}
-      <div className="relative w-full h-[520px] bg-[#070b14] rounded-xl border border-slate-800 overflow-hidden shadow-inner flex items-center justify-center">
-        {/* RADAR SWEEP ANIMATION OVERLAY */}
-        <div className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(circle_at_center,rgba(6,182,212,0.15)_0%,transparent_70%)]"></div>
-
-        {/* GEOSPATIAL TACTICAL GRID LINES */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none stroke-cyan-500/10 stroke-[1]">
-          {/* Horizontal Grid */}
-          <line x1="0" y1="20%" x2="100%" y2="20%" />
-          <line x1="0" y1="40%" x2="100%" y2="40%" />
-          <line x1="0" y1="60%" x2="100%" y2="60%" />
-          <line x1="0" y1="80%" x2="100%" y2="80%" />
-          {/* Vertical Grid */}
-          <line x1="20%" y1="0" x2="20%" y2="100%" />
-          <line x1="40%" y1="0" x2="40%" y2="100%" />
-          <line x1="60%" y1="0" x2="60%" y2="100%" />
-          <line x1="80%" y1="0" x2="80%" y2="100%" />
-          {/* Concentric Radar Rings */}
-          <circle cx="50%" cy="50%" r="15%" fill="none" strokeDasharray="4 4" />
-          <circle cx="50%" cy="50%" r="30%" fill="none" strokeDasharray="4 4" />
-          <circle cx="50%" cy="50%" r="45%" fill="none" strokeDasharray="4 4" />
-        </svg>
-
-        {/* RADAR SWEEP CONE */}
-        <div className="absolute w-[500px] h-[500px] rounded-full border border-cyan-500/20 pointer-events-none animate-spin [animation-duration:12s]">
-          <div className="w-1/2 h-1/2 bg-gradient-to-br from-cyan-500/20 to-transparent rounded-tl-full"></div>
-        </div>
-
-        {/* MAP HUD OVERLAYS */}
-        <div className="absolute top-3 left-3 bg-slate-950/90 border border-slate-800 p-2.5 rounded-lg text-[10px] text-slate-400 space-y-1 backdrop-blur-md">
-          <div className="text-cyan-400 font-bold flex items-center gap-1">
-            <Navigation className="w-3 h-3" /> AO BOUNDS
+      {/* 2. GEOSPATIAL VECTOR CANVAS CONTAINER */}
+      <div className="relative flex-1 bg-[#05070a] tactical-grid-bg min-h-[380px] overflow-hidden">
+        {/* ROTATING RADAR SWEEP CONE */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="relative w-[340px] h-[340px] rounded-full border border-cyan-500/15">
+            {/* Range Rings */}
+            {showRangeRings && (
+              <>
+                <div className="absolute inset-8 rounded-full border border-cyan-500/10" />
+                <div className="absolute inset-20 rounded-full border border-cyan-500/10" />
+                <div className="absolute inset-32 rounded-full border border-cyan-500/10" />
+              </>
+            )}
+            {/* Center Crosshair */}
+            <div className="absolute top-1/2 left-0 right-0 h-px bg-cyan-500/20" />
+            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-cyan-500/20" />
+            {/* Sweep Line */}
+            <div className="absolute top-1/2 left-1/2 w-1/2 h-0.5 bg-gradient-to-r from-transparent via-cyan-400/40 to-cyan-300 origin-left animate-sweep" />
           </div>
-          <div>LAT: {minLat.toFixed(2)}°N ➔ {maxLat.toFixed(2)}°N</div>
-          <div>LNG: {minLng.toFixed(2)}°E ➔ {maxLng.toFixed(2)}°E</div>
-          <div className="text-emerald-400 font-bold">MODE: REAL-TIME TELEMETRY</div>
         </div>
 
-        {/* MAP MARKERS */}
+        {/* CORRELATION ARCS BETWEEN CLUSTERED CONTACTS */}
+        {showCorrelationArcs && (
+          <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
+            {filteredEvents.map((evt) => {
+              if (!evt.corroboratedBy || evt.corroboratedBy.length === 0) return null;
+              const srcPos = getCanvasPos(evt.location.lat, evt.location.lng);
+
+              return evt.corroboratedBy.map((corrId) => {
+                const target = filteredEvents.find((e) => e.id === corrId);
+                if (!target) return null;
+                const tgtPos = getCanvasPos(target.location.lat, target.location.lng);
+
+                return (
+                  <line
+                    key={`${evt.id}-${corrId}`}
+                    x1={`${srcPos.x}%`}
+                    y1={`${srcPos.y}%`}
+                    x2={`${tgtPos.x}%`}
+                    y2={`${tgtPos.y}%`}
+                    stroke="rgba(6, 182, 212, 0.45)"
+                    strokeWidth="1.5"
+                    strokeDasharray="4 4"
+                  />
+                );
+              });
+            })}
+          </svg>
+        )}
+
+        {/* PLOTTED TACTICAL EVENT BEACONS */}
         {filteredEvents.map((evt) => {
-          if (!evt.location?.lat || !evt.location?.lng) return null;
-          const { x, y } = getCanvasPos(evt.location.lat, evt.location.lng);
+          const pos = getCanvasPos(evt.location.lat, evt.location.lng);
+          const isSelected = selectedEventId === evt.id;
 
-          const isCritical = evt.severity === 'critical';
-          const isHigh = evt.severity === 'high';
-          const isSelected = activeHoverEvent?.id === evt.id;
-
-          const colorClass = isCritical
-            ? 'bg-rose-500 border-rose-300 shadow-rose-500/50'
-            : isHigh
-            ? 'bg-amber-500 border-amber-300 shadow-amber-500/50'
-            : 'bg-cyan-500 border-cyan-300 shadow-cyan-500/50';
+          const beaconColor =
+            evt.severity === 'critical'
+              ? 'bg-rose-500 shadow-threat-red border-rose-300'
+              : evt.severity === 'high'
+              ? 'bg-orange-500 border-orange-300'
+              : evt.severity === 'medium'
+              ? 'bg-yellow-500 border-yellow-300'
+              : 'bg-cyan-500 border-cyan-300';
 
           return (
             <div
               key={evt.id}
-              style={{ left: `${x}%`, top: `${y}%` }}
-              className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10 group"
+              style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
               onClick={() => onSelectEvent(evt)}
               onMouseEnter={() => setActiveHoverEvent(evt)}
               onMouseLeave={() => setActiveHoverEvent(null)}
+              className={`absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-20 group transition-transform ${
+                isSelected ? 'scale-125 z-30' : 'hover:scale-110'
+              }`}
             >
-              {/* Pulsating Ring for Critical/High Events */}
-              {(isCritical || isHigh || evt.isAnomaly) && (
-                <div
-                  className={`absolute inset-0 rounded-full animate-ping opacity-75 ${
-                    isCritical ? 'bg-rose-500' : 'bg-amber-500'
-                  }`}
-                ></div>
+              {/* Pulsing Outer Halo for Critical / Selected */}
+              {(isSelected || evt.severity === 'critical') && (
+                <div className="absolute -inset-2.5 rounded-full bg-cyan-400/25 animate-ping pointer-events-none" />
               )}
 
-              {/* Marker Pin */}
+              {/* Pin Node */}
               <div
-                className={`relative w-4 h-4 rounded-full border-2 shadow-lg transition-transform group-hover:scale-150 ${colorClass}`}
-              ></div>
+                className={`w-3.5 h-3.5 rounded-full border-2 ${beaconColor} flex items-center justify-center transition-all`}
+              >
+                {isSelected && <div className="w-1 h-1 rounded-full bg-white" />}
+              </div>
 
-              {/* Tooltip Hover Overlay */}
-              <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 hidden group-hover:flex flex-col bg-slate-950 border border-cyan-500/80 p-2.5 rounded-lg text-[11px] text-slate-200 whitespace-nowrap z-30 shadow-2xl backdrop-blur-md">
-                <div className="font-hud font-bold text-cyan-400 mb-0.5">{evt.title}</div>
-                <div className="text-slate-400">
-                  {evt.id} • {evt.sourceType.toUpperCase()} • {evt.severity.toUpperCase()}
+              {/* Mini Label */}
+              <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 px-1 py-0.2 rounded bg-black/80 border border-white/10 text-[9px] text-slate-300 whitespace-nowrap pointer-events-none">
+                {evt.id}
+              </div>
+
+              {/* HOVER DETAILS CARD */}
+              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block z-40 p-2.5 rounded bg-[#070b10] border border-cyan-500/50 shadow-2xl text-[10px] whitespace-nowrap pointer-events-none space-y-1">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-bold text-cyan-300">[{evt.id}]</span>
+                  <span className="text-emerald-400 font-bold">{evt.confidence}% CONF</span>
                 </div>
-                <div className="text-slate-300 font-bold">
-                  {evt.location.lat.toFixed(4)}°, {evt.location.lng.toFixed(4)}°
+                <div className="text-slate-200 font-semibold">{evt.title}</div>
+                <div className="text-slate-400 text-[9px]">
+                  {evt.location.lat.toFixed(3)}°N, {evt.location.lng.toFixed(3)}°E • {evt.sourceType}
                 </div>
-                <div className="text-emerald-400 text-[10px] mt-1 font-bold">CLICK TO EXPLAIN EVENT ➔</div>
               </div>
             </div>
           );
         })}
-      </div>
 
-      {/* FOOTER ACTIONS & EXTERNAL MAP LINK */}
-      <div className="flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 border-t border-slate-800 pt-3 gap-2">
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> Critical Track</span>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> High Severity</span>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-cyan-500 inline-block"></span> Medium / Low</span>
+        {/* MAP BOTTOM TELEMETRY OVERLAY */}
+        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-[10px] text-slate-400 bg-[#070b10]/90 border border-white/10 rounded px-3 py-1.5 backdrop-blur pointer-events-none">
+          <span>CENTER: 23.0225°N, 72.5714°E (RADAR AHMEDABAD WEST)</span>
+          <span className="text-cyan-400">BEARING: 045° TAC-NORTH | GRID: MGRS-43R</span>
         </div>
-
-        {activeHoverEvent && (
-          <a
-            href={`https://www.openstreetmap.org/?mlat=${activeHoverEvent.location?.lat}&mlon=${activeHoverEvent.location?.lng}#map=13/${activeHoverEvent.location?.lat}/${activeHoverEvent.location?.lng}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-bold hover:underline"
-          >
-            <ExternalLink className="w-3.5 h-3.5" /> View Coordinates in OpenStreetMap
-          </a>
-        )}
       </div>
     </div>
   );
