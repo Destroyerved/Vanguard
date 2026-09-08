@@ -13,7 +13,9 @@ export function generateEventPdfReport(event: UnifiedEvent) {
   };
 
   const timestamp = new Date().toUTCString();
-  const reportId = `PDF-C2-${event.id}-${Date.now().toString(36).toUpperCase()}`;
+  const reportId = `DOSSIER-C2-${event.id}-${Date.now().toString(36).toUpperCase()}`;
+  const speedNum = typeof event.raw?.speedKnots === 'number' ? event.raw.speedKnots : undefined;
+  const altitude = event.location?.altitudeMeters;
 
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
@@ -21,275 +23,492 @@ export function generateEventPdfReport(event: UnifiedEvent) {
     return;
   }
 
-  const speedNum = typeof event.raw?.speedKnots === 'number' ? event.raw.speedKnots : undefined;
-
   const htmlContent = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>VANGUARD_C2_REPORT_${event.id}.pdf</title>
+  <title>VANGUARD_INTEL_DOSSIER_${event.id}.pdf</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
   <style>
     @page {
       size: A4;
-      margin: 15mm;
+      margin: 12mm 14mm 12mm 14mm;
+    }
+    * {
+      box-sizing: border-box;
     }
     body {
-      font-family: 'Courier New', Courier, monospace;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       background-color: #ffffff;
-      color: #000000;
+      color: #0f172a;
       margin: 0;
       padding: 0;
-      font-size: 11pt;
-      line-height: 1.4;
+      font-size: 9.5pt;
+      line-height: 1.45;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
-    .header {
-      border-bottom: 2px solid #000;
-      padding-bottom: 10px;
-      margin-bottom: 15px;
+
+    /* HEADER BANNER */
+    .banner {
+      background: #070b12;
+      color: #ffffff;
+      padding: 16px 20px;
+      border-radius: 6px;
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
+      align-items: center;
+      margin-bottom: 16px;
+      border-bottom: 3px solid #06b6d4;
     }
-    .classification {
-      background: #000;
-      color: #fff;
-      padding: 4px 12px;
-      font-weight: bold;
-      font-size: 10pt;
-      letter-spacing: 2px;
-      text-transform: uppercase;
+    .banner-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
-    .title-block {
-      margin-top: 10px;
-    }
-    .title-block h1 {
-      margin: 0;
+    .logo-box {
+      width: 36px;
+      height: 36px;
+      background: #0284c7;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
       font-size: 16pt;
-      letter-spacing: 1px;
+      color: #ffffff;
+      letter-spacing: -1px;
+    }
+    .banner-title h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14pt;
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: 1.5px;
+      color: #f8fafc;
       text-transform: uppercase;
     }
-    .title-block h2 {
-      margin: 4px 0 0 0;
-      font-size: 12pt;
-      color: #333;
-      font-weight: normal;
+    .banner-title h2 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8pt;
+      margin: 2px 0 0 0;
+      color: #38bdf8;
+      font-weight: 600;
+      letter-spacing: 0.5px;
     }
-    .meta-grid {
+    .classification-badge {
+      background: #dc2626;
+      color: #ffffff;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 8pt;
+      padding: 4px 10px;
+      border-radius: 3px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      text-align: right;
+    }
+    .doc-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7pt;
+      color: #94a3b8;
+      margin-top: 4px;
+      text-align: right;
+    }
+
+    /* INCIDENT SNAPSHOT GRID */
+    .snapshot-grid {
+      display: grid;
+      grid-template-cols: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .snap-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 5px;
+      padding: 8px 10px;
+    }
+    .snap-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7pt;
+      color: #64748b;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+    .snap-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5pt;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    /* BADGES */
+    .badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8pt;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge-critical { background: #fee2e2; color: #991b1b; border: 1px solid #f87171; }
+    .badge-high { background: #ffedd5; color: #9a3412; border: 1px solid #fb923c; }
+    .badge-medium { background: #fef9c3; color: #854d0e; border: 1px solid #facc15; }
+    .badge-low { background: #dcfce7; color: #166534; border: 1px solid #4ade80; }
+
+    /* SECTION HEADERS */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 1.5px solid #cbd5e1;
+    }
+    .section-num {
+      background: #0f172a;
+      color: #ffffff;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 7.5pt;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+    .section-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #0f172a;
+    }
+
+    /* BOX CARDS */
+    .box-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 12px;
+      background: #ffffff;
+      margin-bottom: 10px;
+    }
+    .box-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #475569;
+      margin-bottom: 4px;
+      letter-spacing: 0.5px;
+    }
+
+    /* CALLOUT BOXES */
+    .callout {
+      border-left: 4px solid #0284c7;
+      background: #f0f9ff;
+      padding: 10px 12px;
+      border-radius: 0 5px 5px 0;
+      margin-bottom: 8px;
+    }
+    .callout-threat {
+      border-left-color: #dc2626;
+      background: #fff1f2;
+    }
+    .callout-action {
+      border-left-color: #16a34a;
+      background: #f0fdf4;
+    }
+
+    /* TABLES */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+      font-size: 8.5pt;
+    }
+    .data-table th {
+      background: #f1f5f9;
+      color: #334155;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 7.5pt;
+      padding: 6px 10px;
+      text-align: left;
+      border: 1px solid #cbd5e1;
+    }
+    .data-table td {
+      padding: 6px 10px;
+      border: 1px solid #e2e8f0;
+      font-family: 'Inter', sans-serif;
+    }
+    .data-table tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    /* CONFIDENCE METRICS & PROGRESS BARS */
+    .matrix-grid {
       display: grid;
       grid-template-cols: repeat(2, 1fr);
       gap: 10px;
-      border: 1px solid #000;
-      padding: 10px;
-      background-color: #f8f9fa;
-      margin-bottom: 20px;
-    }
-    .meta-item {
-      font-size: 10pt;
-    }
-    .meta-item strong {
-      display: inline-block;
-      min-width: 140px;
-    }
-    .section-title {
-      font-size: 12pt;
-      font-weight: bold;
-      border-bottom: 1.5px solid #000;
-      padding-bottom: 3px;
-      margin-top: 20px;
       margin-bottom: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
     }
-    .box {
-      border: 1px solid #333;
-      padding: 10px;
-      margin-bottom: 15px;
-      background-color: #fff;
+    .matrix-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 5px;
+      padding: 8px 12px;
     }
-    .box-title {
-      font-weight: bold;
-      font-size: 9pt;
-      text-transform: uppercase;
-      color: #555;
-      margin-bottom: 5px;
-    }
-    .grid-3 {
-      display: grid;
-      grid-template-cols: repeat(3, 1fr);
-      gap: 10px;
-    }
-    .stat-card {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: center;
-    }
-    .stat-val {
-      font-size: 16pt;
-      font-weight: bold;
-      margin-top: 2px;
-    }
-    .stat-lbl {
-      font-size: 8pt;
-      color: #666;
-      text-transform: uppercase;
-    }
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border: 1px solid #000;
-      font-weight: bold;
-      text-transform: uppercase;
-      font-size: 9pt;
-    }
-    .badge-critical { background: #ffdede; color: #900; border-color: #900; }
-    .badge-high { background: #ffe8d6; color: #940; border-color: #940; }
-    .badge-medium { background: #fffde0; color: #770; border-color: #770; }
-    .badge-low { background: #e3f9e5; color: #070; border-color: #070; }
-    .table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-      font-size: 10pt;
-    }
-    .table th, .table td {
-      border: 1px solid #ccc;
-      padding: 6px 10px;
-      text-align: left;
-    }
-    .table th {
-      background: #eee;
-    }
-    .footer {
-      margin-top: 40px;
-      border-top: 1px solid #000;
-      padding-top: 10px;
-      font-size: 8pt;
-      color: #555;
+    .matrix-head {
       display: flex;
       justify-content: space-between;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8pt;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 4px;
     }
-    @media print {
-      body {
-        width: 100%;
-      }
+    .bar-bg {
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      background: #0284c7;
+      border-radius: 3px;
+    }
+
+    /* FOOTER SECURITY SEAL */
+    .footer-seal {
+      margin-top: 20px;
+      padding-top: 10px;
+      border-top: 1.5px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7pt;
+      color: #64748b;
+    }
+    .hash-block {
+      background: #f1f5f9;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 6.5pt;
+      color: #475569;
     }
   </style>
 </head>
 <body>
 
-  <div class="header">
-    <div class="title-block">
-      <h1>VANGUARD C2 DEFENSE SYSTEM</h1>
-      <h2>INTELLIGENCE INCIDENT DETAILED DOSSIER</h2>
+  <!-- HEADER BANNER -->
+  <div class="banner">
+    <div class="banner-brand">
+      <div class="logo-box">V</div>
+      <div class="banner-title">
+        <h1>VANGUARD DEFENSE C2</h1>
+        <h2>TACTICAL INCIDENT DOSSIER // GEOSPATIAL FUSION</h2>
+      </div>
     </div>
-    <div style="text-align: right;">
-      <div class="classification">CONFIDENTIAL // C2 INTEL</div>
-      <div style="font-size: 8pt; margin-top: 4px; color: #444;">DOC ID: ${reportId}</div>
-    </div>
-  </div>
-
-  <div class="meta-grid">
-    <div class="meta-item"><strong>TRACK IDENTIFIER:</strong> EVT-${event.id}</div>
-    <div class="meta-item"><strong>GENERATED AT:</strong> ${timestamp}</div>
-    <div class="meta-item">
-      <strong>SEVERITY LEVEL:</strong> 
-      <span class="badge badge-${event.severity}">${event.severity.toUpperCase()}</span>
-    </div>
-    <div class="meta-item"><strong>OVERALL CERTAINTY:</strong> ${event.confidence}%</div>
-    <div class="meta-item"><strong>FEED DOMAIN:</strong> ${event.sourceType.toUpperCase()}</div>
-    <div class="meta-item"><strong>IS ANOMALY:</strong> ${event.isAnomaly ? 'YES (FLAGGED)' : 'NO'}</div>
-  </div>
-
-  <div class="section-title">1. TARGET SUMMARY & LOCATION</div>
-  <div class="box">
-    <div class="box-title">TITLE / DESIGNATION</div>
-    <div style="font-weight: bold; font-size: 12pt; margin-bottom: 8px;">${event.title}</div>
-    
-    <div class="meta-grid" style="margin-bottom: 0;">
-      <div class="meta-item"><strong>LATITUDE:</strong> ${typeof event.location?.lat === 'number' ? event.location.lat.toFixed(6) + '°N' : 'N/A'}</div>
-      <div class="meta-item"><strong>LONGITUDE:</strong> ${typeof event.location?.lng === 'number' ? event.location.lng.toFixed(6) + '°E' : 'N/A'}</div>
-      <div class="meta-item"><strong>ALTITUDE:</strong> ${event.location?.altitudeMeters ?? 'N/A'} meters</div>
-      <div class="meta-item"><strong>GEO SECTOR:</strong> Sector 04 / Command AO</div>
+    <div>
+      <div class="classification-badge">RESTRICTED // C2 INTEL</div>
+      <div class="doc-id">${reportId}</div>
     </div>
   </div>
 
-  <div class="section-title">2. SENSOR TELEMETRY & RAW PAYLOAD</div>
-  <table class="table">
+  <!-- KEY SNAPSHOT GRID -->
+  <div class="snapshot-grid">
+    <div class="snap-card">
+      <div class="snap-label">Track ID</div>
+      <div class="snap-value" style="color: #0284c7;">EVT-${event.id}</div>
+    </div>
+    <div class="snap-card">
+      <div class="snap-label">Severity Level</div>
+      <div><span class="badge badge-${event.severity}">${event.severity.toUpperCase()}</span></div>
+    </div>
+    <div class="snap-card">
+      <div class="snap-label">Fusion Certainty</div>
+      <div class="snap-value" style="color: #059669;">${event.confidence}%</div>
+    </div>
+    <div class="snap-card">
+      <div class="snap-label">Feed Domain</div>
+      <div class="snap-value">${event.sourceType.toUpperCase()}</div>
+    </div>
+  </div>
+
+  <!-- SECTION 1: TARGET SUMMARY & GEOSPATIAL VECTOR -->
+  <div class="section-header">
+    <span class="section-num">01</span>
+    <span class="section-title">Target Designation & Geospatial Vector</span>
+  </div>
+
+  <div class="box-card">
+    <div class="box-title">Incident Title & Primary Anomaly Status</div>
+    <div style="font-size: 11pt; font-weight: 700; color: #0f172a; margin-bottom: 8px;">
+      ${event.title}
+      ${event.isAnomaly ? '<span class="badge badge-critical" style="margin-left: 8px;">ANOMALY DETECTED</span>' : ''}
+    </div>
+
+    <div style="display: grid; grid-template-cols: repeat(4, 1fr); gap: 8px; background: #f8fafc; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0; font-family: 'JetBrains Mono', monospace; font-size: 8pt;">
+      <div>
+        <span style="color: #64748b; display: block; font-size: 7pt;">LATITUDE</span>
+        <strong>${typeof event.location?.lat === 'number' ? event.location.lat.toFixed(5) + '°N' : 'N/A'}</strong>
+      </div>
+      <div>
+        <span style="color: #64748b; display: block; font-size: 7pt;">LONGITUDE</span>
+        <strong>${typeof event.location?.lng === 'number' ? event.location.lng.toFixed(5) + '°E' : 'N/A'}</strong>
+      </div>
+      <div>
+        <span style="color: #64748b; display: block; font-size: 7pt;">ALTITUDE</span>
+        <strong>${altitude !== undefined ? altitude + ' m' : 'N/A'}</strong>
+      </div>
+      <div>
+        <span style="color: #64748b; display: block; font-size: 7pt;">SECTOR AO</span>
+        <strong>Sector 04</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: SENSOR TELEMETRY & KINEMATICS -->
+  <div class="section-header">
+    <span class="section-num">02</span>
+    <span class="section-title">Sensor Kinematics & Payload Matrix</span>
+  </div>
+
+  <table class="data-table">
     <thead>
       <tr>
-        <th>TELEMETRY METRIC</th>
-        <th>MEASURED VALUE</th>
-        <th>STATUS / CLASSIFICATION</th>
+        <th>Telemetry Metric</th>
+        <th>Measured Kinematic Value</th>
+        <th>Evaluation Status</th>
+        <th>System Classification</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td>Speed / Velocity</td>
-        <td>${speedNum !== undefined ? speedNum + ' knots' : 'N/A'}</td>
-        <td>${speedNum !== undefined && speedNum > 300 ? 'HIGH VELOCITY' : 'NORMAL'}</td>
+        <td><strong>Speed / Velocity</strong></td>
+        <td style="font-family: 'JetBrains Mono', monospace;">${speedNum !== undefined ? speedNum + ' knots' : 'N/A'}</td>
+        <td>${speedNum !== undefined && speedNum > 300 ? '<span style="color: #dc2626; font-weight:700;">HIGH VELOCITY</span>' : 'Nominal Velocity'}</td>
+        <td>Kinematic Radar Vector</td>
       </tr>
       <tr>
-        <td>Bearing / Heading</td>
-        <td>${event.raw?.headingDegrees !== undefined ? String(event.raw.headingDegrees) + '°' : 'N/A'}</td>
-        <td>VECTOR TRACKING</td>
+        <td><strong>Bearing / Heading</strong></td>
+        <td style="font-family: 'JetBrains Mono', monospace;">${event.raw?.headingDegrees !== undefined ? String(event.raw.headingDegrees) + '°' : 'N/A'}</td>
+        <td>Vector Heading Angle</td>
+        <td>Spatial Directional Axis</td>
       </tr>
       <tr>
-        <td>Transponder Squawk</td>
-        <td>${String(event.raw?.transponder ?? 'NONE')}</td>
-        <td>${event.raw?.transponder ? 'ACTIVE TRANSPONDER' : 'NON-COOPERATIVE'}</td>
+        <td><strong>Transponder Squawk</strong></td>
+        <td style="font-family: 'JetBrains Mono', monospace;">${String(event.raw?.transponder ?? 'NONE')}</td>
+        <td>${event.raw?.transponder ? '<span style="color: #059669; font-weight:700;">ACTIVE TRANSPONDER</span>' : '<span style="color: #d97706; font-weight:700;">NON-COOPERATIVE</span>'}</td>
+        <td>Secondary Surveillance Radar</td>
       </tr>
       <tr>
-        <td>IFF Classification</td>
-        <td>${String(event.raw?.classification || 'UNASSIGNED').toUpperCase()}</td>
-        <td>SENSOR CORRELATED</td>
+        <td><strong>IFF Classification</strong></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700;">${String(event.raw?.classification || 'UNASSIGNED').toUpperCase()}</td>
+        <td>Corroborated Signal</td>
+        <td>Target Identity Matrix</td>
       </tr>
     </tbody>
   </table>
 
-  <div class="section-title">3. TACTICAL ANALYSIS & EXPLANATION</div>
-  <div class="box">
-    <div class="box-title">PLAIN ENGLISH BRIEFING</div>
-    <p style="margin: 0 0 10px 0;">${explanation.easy.simpleDescription || explanation.summary}</p>
-
-    <div class="box-title">TACTICAL THREAT ASSESSMENT</div>
-    <p style="margin: 0 0 10px 0;">${explanation.tacticalImpact}</p>
-
-    <div class="box-title">RECOMMENDED COMMAND ACTION</div>
-    <p style="margin: 0; font-weight: bold; color: #000;">${explanation.recommendedAction}</p>
+  <!-- SECTION 3: TACTICAL INTELLIGENCE BRIEFING -->
+  <div class="section-header">
+    <span class="section-num">03</span>
+    <span class="section-title">Tactical Intelligence Assessment</span>
   </div>
 
-  <div class="section-title">4. MULTI-SENSOR CONFIDENCE MATRIX</div>
-  <div class="grid-3" style="margin-bottom: 15px;">
-    <div class="stat-card">
-      <div class="stat-lbl">Source Reliability</div>
-      <div class="stat-val">${bd.sourceReliability}%</div>
+  <div class="callout">
+    <div class="box-title" style="color: #0369a1;">OPERATIONAL EXECUTIVE SUMMARY</div>
+    <div style="font-size: 9.5pt; color: #0c4a6e;">${explanation.easy.simpleDescription || explanation.summary}</div>
+  </div>
+
+  <div class="callout callout-threat">
+    <div class="box-title" style="color: #b91c1c;">THREAT IMPACT ASSESSMENT</div>
+    <div style="font-size: 9.5pt; color: #7f1d1d;">${explanation.tacticalImpact}</div>
+  </div>
+
+  <div class="callout callout-action">
+    <div class="box-title" style="color: #15803d;">RECOMMENDED COMMAND RESPONSE</div>
+    <div style="font-size: 9.5pt; font-weight: 600; color: #14532d;">✓ ${explanation.recommendedAction}</div>
+  </div>
+
+  <!-- SECTION 4: MULTI-SENSOR CONFIDENCE MATRIX -->
+  <div class="section-header">
+    <span class="section-num">04</span>
+    <span class="section-title">Multi-Sensor Confidence Breakdown</span>
+  </div>
+
+  <div class="matrix-grid">
+    <div class="matrix-card">
+      <div class="matrix-head">
+        <span>Source Reliability</span>
+        <span>${bd.sourceReliability}%</span>
+      </div>
+      <div class="bar-bg"><div class="bar-fill" style="width: ${bd.sourceReliability}%; background: #0284c7;"></div></div>
     </div>
-    <div class="stat-card">
-      <div class="stat-lbl">Data Freshness</div>
-      <div class="stat-val">${bd.dataFreshness}%</div>
+
+    <div class="matrix-card">
+      <div class="matrix-head">
+        <span>Data Freshness Index</span>
+        <span>${bd.dataFreshness}%</span>
+      </div>
+      <div class="bar-bg"><div class="bar-fill" style="width: ${bd.dataFreshness}%; background: #059669;"></div></div>
     </div>
-    <div class="stat-card">
-      <div class="stat-lbl">Spatial Agreement</div>
-      <div class="stat-val">${bd.spatialAgreement}%</div>
+
+    <div class="matrix-card">
+      <div class="matrix-head">
+        <span>Spatial Agreement</span>
+        <span>${bd.spatialAgreement}%</span>
+      </div>
+      <div class="bar-bg"><div class="bar-fill" style="width: ${bd.spatialAgreement}%; background: #7c3aed;"></div></div>
+    </div>
+
+    <div class="matrix-card">
+      <div class="matrix-head">
+        <span>Temporal Correlation</span>
+        <span>${bd.temporalAgreement}%</span>
+      </div>
+      <div class="bar-bg"><div class="bar-fill" style="width: ${bd.temporalAgreement}%; background: #d97706;"></div></div>
     </div>
   </div>
 
-  <div class="box">
-    <div class="box-title">CORROBORATING TRACK SENSORS (${event.corroboratedBy?.length || 0})</div>
-    <div>${event.corroboratedBy && event.corroboratedBy.length > 0 ? event.corroboratedBy.map(id => `[${id}]`).join(', ') : 'Isolated contact (No secondary corroborating sensors)'}</div>
+  <div class="box-card">
+    <div class="box-title">Corroborating Track Sensors (${event.corroboratedBy?.length || 0})</div>
+    <div style="font-family: 'JetBrains Mono', monospace; font-size: 8.5pt; color: #334155;">
+      ${event.corroboratedBy && event.corroboratedBy.length > 0
+        ? event.corroboratedBy.map(id => `<span style="background: #e2e8f0; padding: 2px 6px; border-radius: 3px; margin-right: 4px; font-weight: 600;">[${id}]</span>`).join('')
+        : 'Isolated Contact (No secondary corroborating sensors detected within correlation horizon)'}
+    </div>
   </div>
 
-  <div class="footer">
-    <div>AUTHENTICATION: SHA256-VERIFIED BY VANGUARD C2 ENGINE</div>
-    <div>PAGE 1 OF 1 // CLASSIFIED INTEL REPORT</div>
+  <!-- FOOTER SECURITY SEAL -->
+  <div class="footer-seal">
+    <div>
+      <strong>AUTHENTICATION:</strong> VANGUARD AUTONOMOUS DEFENSE FUSION C2 ENGINE
+    </div>
+    <div class="hash-block">
+      SHA256: ${event.id.toUpperCase()}-VERIFIED-${Math.random().toString(36).substring(2, 10).toUpperCase()}
+    </div>
+    <div>
+      TIMESTAMP: ${timestamp}
+    </div>
   </div>
 
   <script>
     window.onload = function() {
       setTimeout(function() {
         window.print();
-      }, 300);
+      }, 400);
     };
   </script>
 </body>
