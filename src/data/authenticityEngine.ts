@@ -6,11 +6,28 @@
  */
 
 import { UnifiedEvent, AuthenticityAudit } from '../types/schema';
+import { extractForensicMetadata } from './forensicMetadataExtractor';
+import { analyzeVisualFrames, analyzeTemporalConsistency } from './visualFrameAnalyzer';
+import { analyzeAcousticSpectrum, analyzeCameraCharacteristics } from './acousticSpectrumAnalyzer';
 
 export function evaluateMediaAuthenticity(event: UnifiedEvent): AuthenticityAudit {
-  // Return pre-existing audit if explicitly set on event
+  // Extract all rich multi-parameter forensic layers
+  const metadata = extractForensicMetadata(event);
+  const visualFrames = analyzeVisualFrames(event);
+  const temporalConsistency = analyzeTemporalConsistency(event);
+  const acousticSpectrum = analyzeAcousticSpectrum(event);
+  const cameraCharacteristics = analyzeCameraCharacteristics(event);
+
+  // Return pre-existing audit if explicitly set on event, but attach extracted sub-properties if missing
   if (event.authenticityAudit) {
-    return event.authenticityAudit;
+    return {
+      ...event.authenticityAudit,
+      metadata: event.authenticityAudit.metadata || metadata,
+      visualFrames: event.authenticityAudit.visualFrames || visualFrames,
+      temporalConsistency: event.authenticityAudit.temporalConsistency || temporalConsistency,
+      acousticSpectrum: event.authenticityAudit.acousticSpectrum || acousticSpectrum,
+      cameraCharacteristics: event.authenticityAudit.cameraCharacteristics || cameraCharacteristics,
+    };
   }
 
   const { sourceType, raw, corroboratedBy, confidence } = event;
@@ -31,10 +48,12 @@ export function evaluateMediaAuthenticity(event: UnifiedEvent): AuthenticityAudi
       aiSyntheticScore = 92;
       deepfakeArtifacts.push('Generative AI Video Artifact (Inter-frame warping detected at 30fps)');
       deepfakeArtifacts.push('Synthetic Facial Mask / Neural Render Boundary Unnatural Blur');
+      deepfakeArtifacts.push('Pupil Corneal Highlight Geometric Asymmetry & Illumination Inversion');
       provenanceScore = 20;
     } else if (isAiVoice || isClonedAudio) {
       aiSyntheticScore = 78;
       deepfakeArtifacts.push('Neural Text-to-Speech (TTS) Voice Model Harmonics (Constant Phase Envelope)');
+      deepfakeArtifacts.push('Zero Ambient Noise Floor (-94 dBFS Studio Synthetic Profile)');
       acousticSpectrumScore = 35;
       provenanceScore = 45;
     } else {
@@ -100,5 +119,10 @@ export function evaluateMediaAuthenticity(event: UnifiedEvent): AuthenticityAudi
     provenanceScore,
     crossSensorCorroborationScore,
     factualCoreExtracted,
+    metadata,
+    visualFrames,
+    temporalConsistency,
+    acousticSpectrum,
+    cameraCharacteristics,
   };
 }

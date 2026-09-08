@@ -1,7 +1,30 @@
 import React, { useState } from 'react';
 import { UnifiedEvent } from '../types/schema';
 import { evaluateMediaAuthenticity } from '../data/authenticityEngine';
-import { ShieldCheck, ShieldAlert, AlertTriangle, CheckCircle2, Cpu, Mic, FileCode, Satellite, Sparkles, Filter, ExternalLink, RefreshCw, Play } from 'lucide-react';
+import {
+  ShieldCheck,
+  ShieldAlert,
+  AlertTriangle,
+  CheckCircle2,
+  Cpu,
+  Mic,
+  FileCode,
+  Satellite,
+  Sparkles,
+  Filter,
+  ExternalLink,
+  RefreshCw,
+  Play,
+  Film,
+  Activity,
+  Layers,
+  Camera,
+  Binary,
+  Volume2,
+  Check,
+  Clock,
+  Radio,
+} from 'lucide-react';
 
 interface OsintAuthenticityVerifierProps {
   events: UnifiedEvent[];
@@ -11,6 +34,7 @@ interface OsintAuthenticityVerifierProps {
 export default function OsintAuthenticityVerifier({ events, onSelectEvent }: OsintAuthenticityVerifierProps) {
   const [selectedEventId, setSelectedEventId] = useState<string>(events[0]?.id || '');
   const [filterType, setFilterType] = useState<string>('ALL');
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'METADATA' | 'VISION_TEMPORAL' | 'ACOUSTIC' | 'SENSOR_PRNU' | 'ENSEMBLE'>('OVERVIEW');
 
   const osintEvents = events.filter((e) => {
     if (filterType === 'ALL') return true;
@@ -38,30 +62,30 @@ export default function OsintAuthenticityVerifier({ events, onSelectEvent }: Osi
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[10px] bg-cyan-950 border border-cyan-700 text-cyan-400 font-bold px-2.5 py-0.5 rounded tracking-widest uppercase flex items-center gap-1">
-                <Cpu className="w-3.5 h-3.5 text-cyan-400" /> VANGUARD OSINT & AI MEDIA VERIFIER ENGINE
+                <Cpu className="w-3.5 h-3.5 text-cyan-400" /> VANGUARD MULTI-PARAMETER FORENSIC & OSINT ENGINE
               </span>
-              <span className="text-xs text-slate-400 font-mono">Multi-Parameter Signal Corroboration</span>
+              <span className="text-xs text-slate-400 font-mono">Full Bitstream, Vision, Acoustic & Sensor Corroboration</span>
             </div>
             <h2 className="font-hud font-bold text-2xl text-slate-100">
-              Social Media OSINT, Acoustic Audio & AI Deepfake Audit Center
+              Multi-Source Media, Metadata & Deepfake Forensic Intelligence Center
             </h2>
             <p className="text-xs text-slate-300 font-sans mt-1 max-w-3xl">
-              Integrates multi-source feeds from Instagram, X, acoustic hydrophones, and drone feeds. Evaluates media for AI deepfakes while extracting authentic physical facts corroborated by orbital satellites and primary radar.
+              Extracts 8 forensic layers across incoming feeds: bitstream container metadata, frame-level boundary blur, temporal consistency, acoustic FFT spectrum, camera PRNU noise, and multi-model detector ensemble fused with orbital satellites.
             </p>
           </div>
         </div>
 
-        {/* FILTER BUTTONS */}
+        {/* FEED FILTER BUTTONS */}
         <div className="flex items-center gap-2 pt-2 border-t border-slate-800 overflow-x-auto text-xs">
           <span className="text-slate-400 font-bold mr-1 flex items-center gap-1">
-            <Filter className="w-3.5 h-3.5 text-amber-400" /> FEED FILTER:
+            <Filter className="w-3.5 h-3.5 text-amber-400" /> STREAM FILTER:
           </span>
           {[
-            { id: 'ALL', label: '🌍 ALL OSINT STREAMS' },
-            { id: 'SOCIAL', label: '📱 INSTAGRAM / SOCIAL MEDIA' },
-            { id: 'AUDIO', label: '🎙️ ACOUSTIC HYDROPHONE' },
+            { id: 'ALL', label: '🌍 ALL FEEDS' },
+            { id: 'SOCIAL', label: '📱 INSTAGRAM / SOCIAL' },
+            { id: 'AUDIO', label: '🎙️ HYDROPHONE / AUDIO' },
             { id: 'HYBRID', label: '🟡 HYBRID AI (FACT VERIFIED)' },
-            { id: 'DEEPFAKE', label: '🚨 DEEPFAKE WARNINGS' },
+            { id: 'DEEPFAKE', label: '🚨 DEEPFAKE DISINFO' },
           ].map((btn) => (
             <button
               key={btn.id}
@@ -80,13 +104,13 @@ export default function OsintAuthenticityVerifier({ events, onSelectEvent }: Osi
 
       {/* MAIN TWO-COLUMN INSPECTION LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* LEFT COLUMN: OSINT & MEDIA FEED LIST (5 Cols) */}
-        <div className="lg:col-span-5 space-y-3">
+        {/* LEFT COLUMN: OSINT & MEDIA FEED LIST (4 Cols) */}
+        <div className="lg:col-span-4 space-y-3">
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">
-            INGESTED OSINT & MULTI-MEDIA STREAMS ({osintEvents.length})
+            INGESTED MEDIA & SENSOR FEEDS ({osintEvents.length})
           </h3>
 
-          <div className="space-y-3 max-h-[680px] overflow-y-auto pr-1">
+          <div className="space-y-3 max-h-[750px] overflow-y-auto pr-1">
             {osintEvents.map((evt) => {
               const evtAudit = evaluateMediaAuthenticity(evt);
               const isSelected = evt.id === activeEvent?.id;
@@ -144,10 +168,10 @@ export default function OsintAuthenticityVerifier({ events, onSelectEvent }: Osi
           </div>
         </div>
 
-        {/* RIGHT COLUMN: DETAILED AUTHENTICITY AUDIT PANEL (7 Cols) */}
+        {/* RIGHT COLUMN: MULTI-TAB FORENSIC INSPECTION CONSOLE (8 Cols) */}
         {activeEvent && audit && (
-          <div className="lg:col-span-7 space-y-4">
-            <div className="hud-card p-6 rounded-2xl border border-cyan-500/40 bg-slate-900/95 shadow-2xl space-y-6">
+          <div className="lg:col-span-8 space-y-4">
+            <div className="hud-card p-6 rounded-2xl border border-cyan-500/40 bg-slate-900/95 shadow-2xl space-y-5">
               {/* ITEM TITLE & VERACITY BANNER */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
                 <div>
@@ -166,15 +190,15 @@ export default function OsintAuthenticityVerifier({ events, onSelectEvent }: Osi
                     ? 'bg-amber-950 border-amber-500 text-amber-300 shadow-md shadow-amber-950/50'
                     : 'bg-rose-950 border-rose-500 text-rose-300 shadow-md shadow-rose-950/50'
                 }`}>
-                  <div className="text-[10px] text-slate-400 uppercase tracking-widest">VERACITY STATUS</div>
+                  <div className="text-[10px] text-slate-400 uppercase tracking-widest">VERACITY CLASSIFICATION</div>
                   <div className="text-xs font-hud font-bold tracking-wider mt-0.5">
                     {audit.veracityClassification.replace(/_/g, ' ')}
                   </div>
                 </div>
               </div>
 
-              {/* EXTRACTED GROUND TRUTH SIGNAL PANEL */}
-              <div className={`p-4 rounded-xl border space-y-2 ${
+              {/* EXTRACTED GROUND TRUTH SIGNAL */}
+              <div className={`p-4 rounded-xl border space-y-1.5 ${
                 audit.veracityClassification === 'HYBRID_AI_AUTHENTIC_FACT'
                   ? 'bg-amber-950/60 border-amber-500/60 text-amber-200'
                   : audit.veracityClassification === 'VERIFIED_AUTHENTIC'
@@ -190,95 +214,397 @@ export default function OsintAuthenticityVerifier({ events, onSelectEvent }: Osi
                 </p>
               </div>
 
-              {/* 4-PARAMETER VERIFICATION GAUGES */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                  <Cpu className="w-4 h-4 text-cyan-400" /> MULTI-PARAMETER VERIFICATION SCORE BREAKDOWN
-                </h4>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Gauge 1: AI / Deepfake Score */}
-                  <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-300 flex items-center gap-1.5 font-bold">
-                        <Cpu className="w-3.5 h-3.5 text-amber-400" /> AI / Deepfake Detection
-                      </span>
-                      <span className={audit.aiSyntheticScore > 60 ? 'text-amber-400 font-bold' : 'text-emerald-400 font-bold'}>
-                        {audit.aiSyntheticScore}% AI Confidence
-                      </span>
-                    </div>
-                    <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
-                      <div
-                        className={`h-full transition-all duration-500 ${audit.aiSyntheticScore > 60 ? 'bg-gradient-to-r from-amber-500 to-rose-500' : 'bg-emerald-500'}`}
-                        style={{ width: `${audit.aiSyntheticScore}%` }}
-                      ></div>
-                    </div>
-                    <p className="text-[11px] text-slate-400 font-sans">
-                      {audit.aiSyntheticScore > 60 ? 'Synthetic voiceover / deepfake video artifacts detected.' : 'Human natural optical / vocal characteristics verified.'}
-                    </p>
-                  </div>
-
-                  {/* Gauge 2: Acoustic & Audio Spectrum */}
-                  <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-300 flex items-center gap-1.5 font-bold">
-                        <Mic className="w-3.5 h-3.5 text-cyan-400" /> Acoustic Spectrum Audit
-                      </span>
-                      <span className="text-cyan-300 font-bold">{audit.acousticSpectrumScore}% Match</span>
-                    </div>
-                    <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
-                      <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500" style={{ width: `${audit.acousticSpectrumScore}%` }}></div>
-                    </div>
-                    <p className="text-[11px] text-slate-400 font-sans">
-                      Hydrophone / microphone ambient noise floor & physical acoustics analysis.
-                    </p>
-                  </div>
-
-                  {/* Gauge 3: Provenance EXIF Audit */}
-                  <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-300 flex items-center gap-1.5 font-bold">
-                        <FileCode className="w-3.5 h-3.5 text-emerald-400" /> Metadata & C2PA EXIF
-                      </span>
-                      <span className="text-emerald-300 font-bold">{audit.provenanceScore}% Intact</span>
-                    </div>
-                    <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
-                      <div className="h-full bg-emerald-500" style={{ width: `${audit.provenanceScore}%` }}></div>
-                    </div>
-                    <p className="text-[11px] text-slate-400 font-sans">
-                      Device camera fingerprinting & cryptographic timestamp validation.
-                    </p>
-                  </div>
-
-                  {/* Gauge 4: Cross-Sensor Satellite/Radar Corroboration */}
-                  <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-300 flex items-center gap-1.5 font-bold">
-                        <Satellite className="w-3.5 h-3.5 text-purple-400" /> Satellite & Radar Correlation
-                      </span>
-                      <span className="text-purple-300 font-bold">{audit.crossSensorCorroborationScore}% Corroborated</span>
-                    </div>
-                    <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
-                      <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-500" style={{ width: `${audit.crossSensorCorroborationScore}%` }}></div>
-                    </div>
-                    <p className="text-[11px] text-slate-400 font-sans">
-                      Physical occurrence match with orbital ESRI satellites & primary radar.
-                    </p>
-                  </div>
-                </div>
+              {/* TAB NAVIGATION */}
+              <div className="flex items-center gap-1.5 border-b border-slate-800 pb-2 overflow-x-auto text-xs">
+                {[
+                  { id: 'OVERVIEW', label: '📊 SUMMARY GAUGES', icon: Activity },
+                  { id: 'METADATA', label: '📁 METADATA & CODEC', icon: FileCode },
+                  { id: 'VISION_TEMPORAL', label: '👁️ FRAME ARTIFACTS', icon: Film },
+                  { id: 'ACOUSTIC', label: '🎙️ ACOUSTIC SPECTRUM', icon: Mic },
+                  { id: 'SENSOR_PRNU', label: '📷 CAMERA SENSOR', icon: Camera },
+                  { id: 'ENSEMBLE', label: '🧠 MULTI-MODEL MATRIX', icon: Layers },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as any)}
+                      className={`px-3 py-2 rounded-lg font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
+                        activeTab === tab.id
+                          ? 'bg-cyan-950 border border-cyan-500 text-cyan-300 shadow-md'
+                          : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {tab.label}
+                    </button>
+                  );
+                })}
               </div>
 
-              {/* DEEPFAKE ARTIFACT LIST (IF DETECTED) */}
-              {audit.deepfakeArtifacts && audit.deepfakeArtifacts.length > 0 && (
-                <div className="p-4 bg-slate-950 rounded-xl border border-amber-800/60 space-y-2">
-                  <div className="flex items-center gap-2 text-xs text-amber-400 font-bold">
-                    <AlertTriangle className="w-4 h-4" /> AI SYNTHETIC ARTIFACT AUDIT TRAIL ({audit.deepfakeArtifacts.length})
+              {/* TAB 1: OVERVIEW GAUGES */}
+              {activeTab === 'OVERVIEW' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Gauge 1: AI / Deepfake Score */}
+                    <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-300 flex items-center gap-1.5 font-bold">
+                          <Cpu className="w-3.5 h-3.5 text-amber-400" /> AI / Deepfake Detection
+                        </span>
+                        <span className={audit.aiSyntheticScore > 60 ? 'text-amber-400 font-bold' : 'text-emerald-400 font-bold'}>
+                          {audit.aiSyntheticScore}% AI Confidence
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+                        <div
+                          className={`h-full transition-all duration-500 ${audit.aiSyntheticScore > 60 ? 'bg-gradient-to-r from-amber-500 to-rose-500' : 'bg-emerald-500'}`}
+                          style={{ width: `${audit.aiSyntheticScore}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-[11px] text-slate-400 font-sans">
+                        {audit.aiSyntheticScore > 60 ? 'Synthetic voiceover / deepfake video artifacts detected.' : 'Human natural optical / vocal characteristics verified.'}
+                      </p>
+                    </div>
+
+                    {/* Gauge 2: Acoustic & Audio Spectrum */}
+                    <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-300 flex items-center gap-1.5 font-bold">
+                          <Mic className="w-3.5 h-3.5 text-cyan-400" /> Acoustic Spectrum Audit
+                        </span>
+                        <span className="text-cyan-300 font-bold">{audit.acousticSpectrumScore}% Match</span>
+                      </div>
+                      <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+                        <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500" style={{ width: `${audit.acousticSpectrumScore}%` }}></div>
+                      </div>
+                      <p className="text-[11px] text-slate-400 font-sans">
+                        Hydrophone / microphone ambient noise floor & physical acoustics analysis.
+                      </p>
+                    </div>
+
+                    {/* Gauge 3: Provenance EXIF Audit */}
+                    <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-300 flex items-center gap-1.5 font-bold">
+                          <FileCode className="w-3.5 h-3.5 text-emerald-400" /> Metadata & C2PA Provenance
+                        </span>
+                        <span className="text-emerald-300 font-bold">{audit.provenanceScore}% Intact</span>
+                      </div>
+                      <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+                        <div className="h-full bg-emerald-500" style={{ width: `${audit.provenanceScore}%` }}></div>
+                      </div>
+                      <p className="text-[11px] text-slate-400 font-sans">
+                        Device camera fingerprinting & cryptographic timestamp validation.
+                      </p>
+                    </div>
+
+                    {/* Gauge 4: Cross-Sensor Satellite/Radar Corroboration */}
+                    <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-300 flex items-center gap-1.5 font-bold">
+                          <Satellite className="w-3.5 h-3.5 text-purple-400" /> Satellite & Radar Correlation
+                        </span>
+                        <span className="text-purple-300 font-bold">{audit.crossSensorCorroborationScore}% Corroborated</span>
+                      </div>
+                      <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+                        <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-500" style={{ width: `${audit.crossSensorCorroborationScore}%` }}></div>
+                      </div>
+                      <p className="text-[11px] text-slate-400 font-sans">
+                        Physical occurrence match with orbital ESRI satellites & primary radar.
+                      </p>
+                    </div>
                   </div>
-                  <ul className="space-y-1 text-xs text-slate-300 font-sans list-disc list-inside">
-                    {audit.deepfakeArtifacts.map((art, idx) => (
-                      <li key={idx} className="text-amber-200">{art}</li>
-                    ))}
-                  </ul>
+
+                  {/* DEEPFAKE ARTIFACT LIST */}
+                  {audit.deepfakeArtifacts && audit.deepfakeArtifacts.length > 0 && (
+                    <div className="p-4 bg-slate-950 rounded-xl border border-amber-800/60 space-y-2">
+                      <div className="flex items-center gap-2 text-xs text-amber-400 font-bold">
+                        <AlertTriangle className="w-4 h-4" /> EXTRACTED AI SYNTHETIC ARTIFACTS ({audit.deepfakeArtifacts.length})
+                      </div>
+                      <ul className="space-y-1 text-xs text-slate-300 font-sans list-disc list-inside">
+                        {audit.deepfakeArtifacts.map((art, idx) => (
+                          <li key={idx} className="text-amber-200">{art}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 2: METADATA & CODEC BITSTREAM */}
+              {activeTab === 'METADATA' && audit.metadata && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">CONTAINER & CODECS</span>
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex justify-between border-b border-slate-900 pb-1">
+                          <span className="text-slate-400">Container Format:</span>
+                          <span className="text-cyan-300 font-bold">{audit.metadata.container}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-slate-900 pb-1">
+                          <span className="text-slate-400">Video Codec:</span>
+                          <span className="text-emerald-300 font-bold">{audit.metadata.videoCodec}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-slate-900 pb-1">
+                          <span className="text-slate-400">Audio Codec:</span>
+                          <span className="text-cyan-300 font-bold">{audit.metadata.audioCodec}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Resolution & FPS:</span>
+                          <span className="text-slate-200 font-bold">{audit.metadata.resolution} @ {audit.metadata.frameRateFps} fps</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">STREAM TELEMETRY & C2PA</span>
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex justify-between border-b border-slate-900 pb-1">
+                          <span className="text-slate-400">Average Bitrate:</span>
+                          <span className="text-amber-300 font-bold">{audit.metadata.bitrateKbps} kbps</span>
+                        </div>
+                        <div className="flex justify-between border-b border-slate-900 pb-1">
+                          <span className="text-slate-400">C2PA Content Credentials:</span>
+                          <span className={audit.metadata.c2paManifestIntact ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+                            {audit.metadata.c2paManifestIntact ? '✓ CRYPTOGRAPHICALLY VALID' : '✗ STRIPPED / INTACT SIGNATURE MISSING'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between border-b border-slate-900 pb-1">
+                          <span className="text-slate-400">Software Muxer:</span>
+                          <span className="text-purple-300 font-bold">{audit.metadata.softwareMuxer}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Creation Timestamp:</span>
+                          <span className="text-slate-300 text-[11px]">{audit.metadata.creationTimestamp}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* RE-ENCODING & TRANSCODE HISTORY TIMELINE */}
+                  <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-2.5">
+                    <span className="text-xs text-slate-300 font-bold flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-cyan-400" /> DETECTED RE-ENCODING & TRANSCODE CHAIN ({audit.metadata.reEncodingHistory.length} STAGES)
+                    </span>
+                    <div className="space-y-2 border-l-2 border-cyan-800/60 ml-2 pl-3 py-1">
+                      {audit.metadata.reEncodingHistory.map((step, idx) => (
+                        <div key={idx} className="relative text-xs text-slate-300">
+                          <div className="absolute -left-[19px] top-1 w-2.5 h-2.5 rounded-full bg-cyan-400 border-2 border-slate-950"></div>
+                          <span className="font-bold text-cyan-300 mr-2">Stage {idx + 1}:</span>
+                          <span className="font-sans">{step}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: VISION & TEMPORAL CONSISTENCY */}
+              {activeTab === 'VISION_TEMPORAL' && audit.visualFrames && audit.temporalConsistency && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                    <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                      <span className="text-[10px] text-slate-500 block">FACE CONSISTENCY</span>
+                      <span className={`text-lg font-bold font-hud ${audit.visualFrames.faceConsistencyScore > 70 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {audit.visualFrames.faceConsistencyScore}%
+                      </span>
+                    </div>
+                    <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                      <span className="text-[10px] text-slate-500 block">EDGE BOUNDARY</span>
+                      <span className={`text-lg font-bold font-hud ${audit.visualFrames.edgeBoundaryBlurScore > 70 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {audit.visualFrames.edgeBoundaryBlurScore}%
+                      </span>
+                    </div>
+                    <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                      <span className="text-[10px] text-slate-500 block">LIGHTING VECTORS</span>
+                      <span className={`text-lg font-bold font-hud ${audit.visualFrames.lightingShadowScore > 70 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {audit.visualFrames.lightingShadowScore}%
+                      </span>
+                    </div>
+                    <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                      <span className="text-[10px] text-slate-500 block">INTER-FRAME WARP</span>
+                      <span className={`text-lg font-bold font-hud ${audit.temporalConsistency.interFrameWarpingScore < 30 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {audit.temporalConsistency.interFrameWarpingScore}%
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* KEYFRAME ANOMALY LOG */}
+                  <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+                    <span className="text-xs text-slate-300 font-bold flex items-center gap-2">
+                      <Film className="w-4 h-4 text-purple-400" /> KEYFRAME-LEVEL ARTIFACT EXTRACTION
+                    </span>
+                    {audit.visualFrames.keyframeArtifacts.length > 0 ? (
+                      <div className="space-y-2">
+                        {audit.visualFrames.keyframeArtifacts.map((kf, idx) => (
+                          <div key={idx} className="p-2.5 bg-slate-900 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
+                            <div className="space-y-0.5">
+                              <span className="text-rose-400 font-bold">Frame #{kf.frameIndex} (T+{kf.timestampSec}s): {kf.anomalyType}</span>
+                              <div className="text-[10px] text-slate-500">Region: {kf.boundingRegion}</div>
+                            </div>
+                            <span className="text-[10px] bg-rose-950 border border-rose-700 text-rose-300 font-bold px-2 py-0.5 rounded">
+                              {kf.confidence}% CONF
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-emerald-400 py-3 text-center bg-slate-900 rounded-lg border border-emerald-950">
+                        ✓ All sampled keyframes exhibit natural optical consistency across spatial coordinates.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: ACOUSTIC SPECTRUM & AV-SYNC */}
+              {activeTab === 'ACOUSTIC' && audit.acousticSpectrum && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+                      <span className="text-[10px] text-slate-500 block">AMBIENT NOISE FLOOR</span>
+                      <span className="text-lg font-bold font-hud text-cyan-300">{audit.acousticSpectrum.noiseFloorDbfs} dBFS</span>
+                      <p className="text-[10px] text-slate-400 font-sans">
+                        {audit.acousticSpectrum.noiseFloorDbfs < -80 ? '⚠️ Synthetic zero ambient noise floor' : '✓ Natural physical environment floor'}
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+                      <span className="text-[10px] text-slate-500 block">AUDIO / VIDEO SYNC OFFSET</span>
+                      <span className={`text-lg font-bold font-hud ${audit.acousticSpectrum.avSyncOffsetMs < 50 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        +{audit.acousticSpectrum.avSyncOffsetMs} ms
+                      </span>
+                      <p className="text-[10px] text-slate-400 font-sans">
+                        {audit.acousticSpectrum.avSyncOffsetMs < 50 ? '✓ Tight optical/acoustic sync' : '⚠️ Audio narration offset detected'}
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+                      <span className="text-[10px] text-slate-500 block">VOICE CLONING / TTS RISK</span>
+                      <span className={`text-lg font-bold font-hud ${audit.acousticSpectrum.voiceCloningProbability > 50 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                        {audit.acousticSpectrum.voiceCloningProbability}%
+                      </span>
+                      <p className="text-[10px] text-slate-400 font-sans">
+                        {audit.acousticSpectrum.voiceCloningProbability > 50 ? '⚠️ High neural vocoder confidence' : '✓ Organic vocal harmonics'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* FFT SPECTRUM VISUALIZER */}
+                  <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-300 font-bold flex items-center gap-1.5">
+                        <Activity className="w-4 h-4 text-cyan-400" /> 16-BAND ACOUSTIC FFT FREQUENCY SPECTRUM (60 Hz - 22 kHz)
+                      </span>
+                      <span className="text-slate-400 text-[10px]">High Cutoff: {audit.acousticSpectrum.highFrequencyCutoffKhz} kHz</span>
+                    </div>
+
+                    <div className="h-28 bg-slate-900/90 rounded-lg p-3 border border-slate-800 flex items-end justify-between gap-1.5">
+                      {(audit.acousticSpectrum.frequencySpectrumBins || []).map((val, idx) => (
+                        <div key={idx} className="flex-1 flex flex-col items-center gap-1">
+                          <div
+                            className="w-full rounded-t transition-all duration-500 bg-gradient-to-t from-cyan-600 to-emerald-400 hover:from-amber-500 hover:to-rose-500"
+                            style={{ height: `${val}%` }}
+                          ></div>
+                          <span className="text-[8px] text-slate-500">{idx + 1}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 5: CAMERA SENSOR & PRNU NOISE */}
+              {activeTab === 'SENSOR_PRNU' && audit.cameraCharacteristics && (
+                <div className="space-y-4">
+                  <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-3">
+                    <span className="text-xs text-slate-300 font-bold flex items-center gap-2">
+                      <Camera className="w-4 h-4 text-cyan-400" /> ESTIMATED CAMERA & SENSOR HARDWARE CHARACTERISTICS
+                    </span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                      <div className="p-3 bg-slate-900 rounded-lg border border-slate-800 space-y-1">
+                        <span className="text-slate-500 text-[10px]">SENSOR ARCHITECTURE</span>
+                        <div className="text-slate-200 font-bold">{audit.cameraCharacteristics.estimatedSensorType}</div>
+                      </div>
+                      <div className="p-3 bg-slate-900 rounded-lg border border-slate-800 space-y-1">
+                        <span className="text-slate-500 text-[10px]">PRNU SENSOR NOISE MATCH</span>
+                        <div className={`font-bold ${audit.cameraCharacteristics.prnuSensorFingerprintMatch > 70 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {audit.cameraCharacteristics.prnuSensorFingerprintMatch}% Hardware Correlation
+                        </div>
+                      </div>
+                      <div className="p-3 bg-slate-900 rounded-lg border border-slate-800 space-y-1">
+                        <span className="text-slate-500 text-[10px]">CHROMATIC ABERRATION</span>
+                        <div className="text-cyan-300 font-bold">{audit.cameraCharacteristics.chromaticAberrationConsistency}% Optical Consistency</div>
+                      </div>
+                      <div className="p-3 bg-slate-900 rounded-lg border border-slate-800 space-y-1">
+                        <span className="text-slate-500 text-[10px]">COMPRESSION QUANTIZATION</span>
+                        <div className="text-purple-300 font-bold text-[11px]">{audit.cameraCharacteristics.compressionPattern}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 6: MULTI-MODEL ENSEMBLE DECISION MATRIX */}
+              {activeTab === 'ENSEMBLE' && (
+                <div className="space-y-4">
+                  <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-300 font-bold flex items-center gap-2">
+                        <Layers className="w-4 h-4 text-cyan-400" /> INDEPENDENT MULTI-DETECTOR DECISION MATRIX
+                      </span>
+                      <span className="text-[10px] bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded border border-cyan-800">
+                        5 INDEPENDENT AGENTS
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 text-xs">
+                      {[
+                        {
+                          name: '1. Optical & Neural Facial Artifact Classifier',
+                          score: 100 - audit.aiSyntheticScore,
+                          status: audit.aiSyntheticScore > 60 ? 'ANOMALY DETECTED' : 'CLEAN',
+                          weight: '35% Fusion Weight',
+                        },
+                        {
+                          name: '2. Acoustic Spectrum & Voice Clone Detector',
+                          score: audit.acousticSpectrumScore,
+                          status: audit.acousticSpectrumScore > 70 ? 'AUTHENTIC' : 'SYNTHETIC VOICE',
+                          weight: '20% Fusion Weight',
+                        },
+                        {
+                          name: '3. Container Bitstream & C2PA Provenance Engine',
+                          score: audit.provenanceScore,
+                          status: audit.provenanceScore > 70 ? 'VERIFIED' : 'STRIPPED',
+                          weight: '25% Fusion Weight',
+                        },
+                        {
+                          name: '4. Temporal Consistency & Warping Model',
+                          score: 100 - (audit.temporalConsistency?.interFrameWarpingScore || 10),
+                          status: (audit.temporalConsistency?.interFrameWarpingScore || 0) > 50 ? 'WARPING WARN' : 'STABLE',
+                          weight: 'Cross-Verification',
+                        },
+                        {
+                          name: '5. Orbital Satellite & Primary Radar Corroborator',
+                          score: audit.crossSensorCorroborationScore,
+                          status: audit.crossSensorCorroborationScore > 70 ? 'PHYSICALLY CONFIRMED' : 'UNCONFIRMED',
+                          weight: '20% Ground Truth Weight',
+                        },
+                      ].map((det, idx) => (
+                        <div key={idx} className="p-3 bg-slate-900 rounded-lg border border-slate-800 flex items-center justify-between">
+                          <div>
+                            <div className="font-bold text-slate-200">{det.name}</div>
+                            <div className="text-[10px] text-slate-500">{det.weight} • Verdict: {det.status}</div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm font-hud font-bold text-cyan-300">{det.score}%</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
 
