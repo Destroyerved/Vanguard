@@ -216,11 +216,11 @@ export default function TacticalMap({
 
         let url = '';
         if (activeLayer === 'dark') {
-          url = `https://a.basemaps.cartocdn.com/rastertiles/dark_all/${zoom}/${wrappedX}/${ty}.png`;
+          url = `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/${zoom}/${ty}/${wrappedX}`;
         } else if (activeLayer === 'satellite') {
           url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${ty}/${wrappedX}`;
         } else if (activeLayer === 'dark_terrain') {
-          url = `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/${zoom}/${ty}/${wrappedX}`;
+          url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${zoom}/${ty}/${wrappedX}`;
         } else {
           url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${ty}/${wrappedX}`;
         }
@@ -332,7 +332,13 @@ export default function TacticalMap({
               height: '256px',
               imageRendering: 'auto'
             }}
-            className={activeLayer === 'dark' ? 'brightness-90 contrast-125' : 'brightness-95'}
+            className={
+              activeLayer === 'dark_terrain'
+                ? 'invert brightness-75 contrast-150 hue-rotate-180'
+                : activeLayer === 'dark'
+                ? 'brightness-90 contrast-125'
+                : 'brightness-95'
+            }
           />
         ))}
 
