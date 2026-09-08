@@ -43,3 +43,12 @@ Thumbs.db
 # Testing & Coverage
 coverage/
 .nyc_output/
+
+# Local AI Agent Rules & Device Configurations (Do Not Push)
+.agents/
+GEMINI.md
+AGENTS.md
+CLAUDE.md
+.cursorrules
+.windsurfrules
+.clinerules
