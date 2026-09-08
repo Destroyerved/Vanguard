@@ -24,6 +24,7 @@ import {
 import { explainEvent } from './data/eventExplainer';
 import { UnifiedEvent } from './types/schema';
 import TacticalMap from './components/TacticalMap';
+import EventReconMedia from './components/EventReconMedia';
 import { getScenarioDataset, DemoScenarioMode } from './data/scenarioEngine';
 
 const BACKEND_URL = 'http://localhost:3001/api/v1';
@@ -518,6 +519,9 @@ export default function App() {
 
               {/* MODAL BODY */}
               <div className="flex-1 overflow-y-auto my-4 space-y-4 pr-1">
+                {/* 0. Sensor Reconnaissance Media & Source Citation */}
+                <EventReconMedia event={evt} />
+
                 {/* 1. Executive Overview */}
                 <div className="p-3.5 bg-slate-950/80 rounded-xl border border-slate-800">
                   <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
