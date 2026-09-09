@@ -509,6 +509,13 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
           isDark ? 'bg-[#000000] text-white' : 'bg-[#f8fafc] text-slate-900'
         } overflow-hidden select-none font-sans flex flex-col justify-between pt-16 pb-3 sm:pb-4 px-4 sm:px-8 lg:px-12 z-10`}
       >
+        {/* Wireframe Hero Background: Tactical Operators with Boxed VANGUARD */}
+        <div 
+          className="absolute inset-0 z-0 pointer-events-none opacity-80 bg-cover bg-center bg-no-repeat filter contrast-125 brightness-85 transition-opacity duration-700"
+          style={{ backgroundImage: "url('/assets/vanguard_hero_tactical.png')" }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/60" />
+        </div>
 
         {/* HORIZONTAL TACTICAL HIGHLIGHT BAR & COBE 3D PULSE GLOBE BEHIND VANGUARD */}
         <div className="relative w-full flex items-center justify-center z-20 mb-2 mt-auto pt-24 sm:pt-28 md:pt-32">
@@ -718,8 +725,16 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
       </motion.section>
 
       {/* ─── 5. DUAL HARDWARE SHOWCASE: 3D GLOBE & KINEMATIC RADAR (SCROLL REVEAL) ──── */}
-      <section id="telemetry" className={`py-28 border-t ${sectionBorderClass} relative z-10`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <section id="telemetry" className={`py-28 border-t ${sectionBorderClass} relative z-10 overflow-hidden`}>
+        {/* Wireframe Section 2 Background: Tactical Operator Headset / NVG */}
+        <div 
+          className="absolute inset-0 z-0 pointer-events-none opacity-25 bg-no-repeat bg-right-top bg-cover filter contrast-125 brightness-75"
+          style={{ backgroundImage: "url('/assets/soldier_headset.png')" }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-transparent" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -845,8 +860,16 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
       </section>
 
       {/* ─── 5. THE MISSION STORY: SECTOR 04 INTERCEPT (SCROLL REVEAL) ────────────── */}
-      <section id="story" className={`py-24 border-y ${sectionBorderClass} relative z-10`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="story" className={`py-24 border-y ${sectionBorderClass} relative z-10 overflow-hidden`}>
+        {/* Wireframe Section 3 Background: Heavy Armored Battle Tank */}
+        <div 
+          className="absolute inset-0 z-0 pointer-events-none opacity-25 bg-no-repeat bg-right-center bg-cover filter contrast-125 brightness-75"
+          style={{ backgroundImage: "url('/assets/tank_sherman.png')" }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -947,8 +970,16 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
       </section>
 
       {/* ─── 6. WHAT VANGUARD DOES: CORE CAPABILITIES ─────────────────────────────── */}
-      <section id="what-it-does" className="py-24 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="what-it-does" className="py-24 relative z-10 overflow-hidden">
+        {/* Wireframe Section 4 Background: Field Patrol Team & Vehicle */}
+        <div 
+          className="absolute inset-0 z-0 pointer-events-none opacity-20 bg-no-repeat bg-center bg-cover filter contrast-125 brightness-70"
+          style={{ backgroundImage: "url('/assets/patrol_team.png')" }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/85 to-black/80" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -1092,8 +1123,16 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
       </section>
 
       {/* ─── 7. HOW IT WORKS: THE 3-STEP PIPELINE (SCROLL STAGGER) ────────────────── */}
-      <section id="how-it-works" className={`py-24 border-y ${sectionBorderClass} relative z-10`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="how-it-works" className={`py-24 border-y ${sectionBorderClass} relative z-10 overflow-hidden`}>
+        {/* Wireframe Section 5 Background: Tactical Camouflage Fabric */}
+        <div 
+          className="absolute inset-0 z-0 pointer-events-none opacity-20 bg-no-repeat bg-right-center bg-cover filter contrast-125 brightness-70"
+          style={{ backgroundImage: "url('/assets/camo_pattern.png')" }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-transparent" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -1201,8 +1240,16 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
       </section>
 
       {/* ─── 8. HANDS-ON CONFIDENCE CALCULATOR ────────────────────────────────────── */}
-      <section id="live-labs" className="py-24 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="live-labs" className="py-24 relative z-10 overflow-hidden">
+        {/* Wireframe Section 6 Background: Air Defense Missile Radar Vehicle */}
+        <div 
+          className="absolute inset-0 z-0 pointer-events-none opacity-25 bg-no-repeat bg-right-bottom bg-cover filter contrast-125 brightness-75"
+          style={{ backgroundImage: "url('/assets/missile_vehicle.png')" }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -1354,8 +1401,16 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
       </section>
 
       {/* ─── 9. ENTERPRISE DEPLOYMENTS ─────────────────────────────────────────────── */}
-      <section id="deployment" className={`py-24 border-y ${sectionBorderClass} relative z-10`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="deployment" className={`py-24 border-y ${sectionBorderClass} relative z-10 overflow-hidden`}>
+        {/* Tactical Defense Backdrop */}
+        <div 
+          className="absolute inset-0 z-0 pointer-events-none opacity-15 bg-no-repeat bg-center bg-cover filter contrast-125 brightness-70"
+          style={{ backgroundImage: "url('/assets/night_soldiers_bg.jpg')" }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/85 to-black/80" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -1521,8 +1576,16 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
       </section>
 
       {/* ─── 10. TACTICAL TASK FORCE: DESTROYER OF WORLDS ───────────────────────────── */}
-      <section id="team" className={`py-24 border-t ${sectionBorderClass} relative z-10 scroll-mt-6`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="team" className={`py-24 border-t ${sectionBorderClass} relative z-10 scroll-mt-6 overflow-hidden`}>
+        {/* Wireframe Section 7 Background: Night Silhouette Operators */}
+        <div 
+          className="absolute inset-0 z-0 pointer-events-none opacity-20 bg-no-repeat bg-bottom bg-cover filter contrast-125 brightness-80"
+          style={{ backgroundImage: "url('/assets/night_silhouette.png')" }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/90" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -1676,8 +1739,16 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
       </section>
 
       {/* ─── 11. BOTTOM CALL TO ACTION ─────────────────────────────────────────────── */}
-      <section className="py-24 relative z-10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <section className="py-24 relative z-10 overflow-hidden">
+        {/* Wireframe Section 8 Background: Marching Military Army */}
+        <div 
+          className="absolute inset-0 z-0 pointer-events-none opacity-25 bg-no-repeat bg-center bg-cover filter contrast-125 brightness-75"
+          style={{ backgroundImage: "url('/assets/marching_boots.png')" }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/90" />
+        </div>
+
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             whileInView={{ opacity: 1, scale: 1 }}

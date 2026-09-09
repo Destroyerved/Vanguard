@@ -11,6 +11,14 @@ export default function HeroLandingPage({ onEnterApp }: HeroLandingPageProps) {
       className="relative w-screen h-screen min-h-[640px] max-h-screen bg-[#000000] text-white overflow-hidden select-none font-sans cursor-pointer flex flex-col justify-between"
       title="Click anywhere to enter Vanguard Operations Center"
     >
+      {/* BACKGROUND: TACTICAL OPERATORS WITH OPACITY */}
+      <div 
+        className="absolute inset-0 z-0 pointer-events-none opacity-75 bg-cover bg-center bg-no-repeat filter contrast-125 brightness-85"
+        style={{ backgroundImage: "url('/assets/vanguard_hero_tactical.png')" }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-black/60" />
+      </div>
+
       {/* MINUTE TACTICAL & AEROSPACE BACKGROUND DOODLES */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
         <svg
