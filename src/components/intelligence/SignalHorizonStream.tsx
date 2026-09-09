@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { motion } from 'motion/react';
 import { UnifiedEvent } from '../../types/schema';
 import { explainEvent } from '../../data/eventExplainer';
 import { Radio, Search, ChevronRight, ShieldCheck, Lightbulb, SignalHigh } from 'lucide-react';
@@ -56,12 +55,11 @@ export default function SignalHorizonStream({
 
   return (
     <TacticalPanel
-      title={`Signal Horizon`}
+      title="Signal Horizon"
       subtitle="Live multi-source telemetry stream"
       icon={Radio}
-      glow
       className="h-full font-mono text-xs"
-      bodyClassName="flex flex-col gap-3 min-h-0"
+      bodyClassName="flex flex-col gap-4 min-h-0"
       actions={
         <>
           <Chip active>
@@ -71,22 +69,14 @@ export default function SignalHorizonStream({
         </>
       }
     >
-      {/* FILTER RAIL */}
-      <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-        <span className="vg-label mr-0.5">Feed</span>
+      {/* FILTERS + SEARCH on one rail */}
+      <div className="flex flex-wrap items-center gap-2 shrink-0">
         {SOURCE_FILTERS.map((src) => (
-          <ChipButton
-            key={src}
-            active={filterSource === src}
-            onClick={() => setFilterSource(src)}
-          >
+          <ChipButton key={src} active={filterSource === src} onClick={() => setFilterSource(src)}>
             {src === 'log' ? 'perim' : src.replace('_', ' ')}
           </ChipButton>
         ))}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-        <span className="vg-label mr-0.5">Sev</span>
+        <span className="w-px h-4 bg-white/10 mx-1" />
         {SEVERITY_FILTERS.map((sev) => (
           <ChipButton
             key={sev}
@@ -111,7 +101,7 @@ export default function SignalHorizonStream({
       </div>
 
       {/* EVENT STREAM LIST */}
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-1">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1">
         {filtered.length === 0 ? (
           <EmptyState
             icon={Radio}
@@ -119,25 +109,22 @@ export default function SignalHorizonStream({
             hint="Relax the feed or severity filter, or clear the search box to restore the full horizon."
           />
         ) : (
-          filtered.map((evt, i) => {
+          filtered.map((evt) => {
             const isSelected = selectedEventId === evt.id;
             const sev = severityStyle(evt.severity);
 
             return (
-              <motion.button
+              <button
                 key={evt.id}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: Math.min(i * 0.015, 0.3), duration: 0.3 }}
                 onClick={() => onSelectEvent(evt)}
-                className={`group w-full flex items-center justify-between gap-3 p-2.5 pl-3 text-left vg-glass-inset relative overflow-hidden ${
+                className={`group w-full flex items-center justify-between gap-3 p-3.5 pl-4 text-left vg-glass-inset relative overflow-hidden ${
                   isSelected ? 'vg-glass-inset-active' : ''
                 }`}
               >
                 {/* Severity spine */}
                 <span
                   className="absolute left-0 top-0 bottom-0 w-[3px]"
-                  style={{ background: sev.hex, boxShadow: `0 0 10px ${sev.hex}` }}
+                  style={{ background: sev.hex }}
                 />
 
                 <div className="flex flex-col min-w-0 gap-0.5 pl-1.5">
@@ -145,18 +132,21 @@ export default function SignalHorizonStream({
                     <span className="vg-readout font-bold text-slate-100 text-[11px]">
                       [{evt.id}]
                     </span>
-                    <Chip className="!py-0 !text-[9px]">{evt.sourceType.replace('_', ' ')}</Chip>
-                    <Chip tone={sev === severityStyle('low') ? 'olive' : 'neutral'} className={`!py-0 !text-[9px] ${sev.text}`}>
+                    <span className="vg-label" style={{ color: sev.hex }}>
                       {evt.severity}
-                    </Chip>
+                    </span>
+                    <span className="vg-label text-slate-500">
+                      {evt.sourceType.replace('_', ' ')}
+                    </span>
                     {evt.isAnomaly && (
-                      <Chip tone="danger" className="!py-0 !text-[9px] font-bold">
+                      <Chip tone="danger" className="!py-0 !text-[9px]">
                         anomaly
                       </Chip>
                     )}
                     {(evt.corroboratedBy?.length ?? 0) > 0 && (
                       <Chip tone="good" className="!py-0 !text-[9px]">
-                        <ShieldCheck className="w-2.5 h-2.5" />×{evt.corroboratedBy.length}
+                        <ShieldCheck className="w-2.5 h-2.5" />
+                        {evt.corroboratedBy.length}
                       </Chip>
                     )}
                   </div>
@@ -194,7 +184,7 @@ export default function SignalHorizonStream({
                   </div>
                   <ChevronRight className="w-4 h-4 text-[#526a27] group-hover:text-[#a4c639] group-hover:translate-x-0.5 transition-all" />
                 </div>
-              </motion.button>
+              </button>
             );
           })
         )}

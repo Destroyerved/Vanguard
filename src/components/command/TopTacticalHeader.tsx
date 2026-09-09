@@ -37,7 +37,6 @@ export type NavSection =
   | 'api_tester';
 
 interface TopTacticalHeaderProps {
-  currentTime: string;
   situation: any;
   serverOnline: boolean;
   wsLive?: boolean;
@@ -53,6 +52,8 @@ interface TopTacticalHeaderProps {
   anomalyCount?: number;
   onOpenAuthModal?: () => void;
   onNavigateToLanding?: () => void;
+  /** Running off the seeded dataset rather than a live fusion server. */
+  demoMode?: boolean;
 }
 
 /** Threat posture vocabulary, shared with the landing page's escalation ladder. */
@@ -82,8 +83,22 @@ const THREAT_POSTURE: Record<
   },
 };
 
+
+/**
+ * The UTC chronometer ticks once a second. Keeping its state here — rather
+ * than in App, which owns every screen's data — means that tick repaints a
+ * timestamp instead of the whole console.
+ */
+const Chronometer = React.memo(function Chronometer() {
+  const [now, setNow] = useState(() => new Date().toUTCString());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date().toUTCString()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return <span className="vg-readout text-[10px] font-semibold">{now}</span>;
+});
+
 export default function TopTacticalHeader({
-  currentTime,
   situation,
   serverOnline,
   wsLive = false,
@@ -99,6 +114,7 @@ export default function TopTacticalHeader({
   anomalyCount = 0,
   onOpenAuthModal,
   onNavigateToLanding,
+  demoMode = false,
 }: TopTacticalHeaderProps) {
   const { operatorProfile, logout } = useAuth();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -164,11 +180,19 @@ export default function TopTacticalHeader({
             </span>
           </button>
 
-          {/* Feed health readout */}
+          {/* Feed health readout. Says plainly which dataset is driving the
+              console — a demo that pretends to be live is worse than one that
+              is honest about it. */}
           <div className="hidden sm:flex items-center gap-2.5 px-2.5 py-1 rounded-lg bg-white/[0.04] backdrop-blur-md border border-[#526a27]/25 text-[10px]">
-            <StatusDot online={serverOnline} label={serverOnline ? 'CORE' : 'FALLBACK'} />
-            <span className="w-px h-3 bg-[#526a27]/40" />
-            <StatusDot online={wsLive} label={wsLive ? 'PUSH' : 'POLL'} />
+            {demoMode ? (
+              <StatusDot online label="SEEDED DATASET" />
+            ) : (
+              <>
+                <StatusDot online={serverOnline} label={serverOnline ? 'CORE' : 'FALLBACK'} />
+                <span className="w-px h-3 bg-[#526a27]/40" />
+                <StatusDot online={wsLive} label={wsLive ? 'PUSH' : 'POLL'} />
+              </>
+            )}
           </div>
 
           {activeScenario && (
@@ -294,7 +318,7 @@ export default function TopTacticalHeader({
           {/* CHRONOMETER */}
           <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.04] backdrop-blur-md border border-[#526a27]/25 text-slate-300">
             <Clock className="w-3 h-3 text-[#a4c639]" />
-            <span className="vg-readout text-[10px] font-semibold">{currentTime}</span>
+            <Chronometer />
           </div>
         </div>
       </div>

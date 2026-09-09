@@ -132,7 +132,7 @@ export default function SourceTopologyMatrix({
   };
 
   return (
-    <div className="space-y-4 select-none font-mono text-xs pb-2">
+    <div className="space-y-6 select-none font-mono text-xs">
       <ScreenHeading
         eyebrow="Ingestion Topology"
         title="Multi-Source Sensor Health"
@@ -150,7 +150,7 @@ export default function SourceTopologyMatrix({
       />
 
       {/* FLEET SUMMARY STRIP */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatTile label="Feeds Online" value={liveCount} icon={Activity} tone="emerald" hint="Reporting nominally" />
         <StatTile label="Degraded" value={degradedCount} icon={WifiOff} tone="amber" hint="Reduced reliability weight" />
         <StatTile label="Offline" value={downCount} icon={AlertTriangle} tone={downCount > 0 ? 'rose' : 'slate'} hint="Excluded from fusion" />
@@ -165,8 +165,8 @@ export default function SourceTopologyMatrix({
       </div>
 
       {/* LIVE FEED CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-        {feeds.map((feed, idx) => {
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {feeds.map((feed) => {
           const Icon = sourceIcons[feed.sourceType] || Radio;
           const isLive = feed.status === 'live';
           const isDegraded = feed.status === 'degraded' || feed.manuallyDegraded;
@@ -175,13 +175,7 @@ export default function SourceTopologyMatrix({
           const netReliability = Math.round(feed.reliabilityScore * 100);
 
           return (
-            <motion.div
-              key={feed.sourceType}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="vg-panel vg-panel-interactive p-4 space-y-3 flex flex-col justify-between"
-            >
+            <div className="vg-panel p-5 space-y-3 flex flex-col justify-between" key={feed.sourceType}>
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <span className="flex items-center gap-1.5 vg-label">
@@ -266,7 +260,7 @@ export default function SourceTopologyMatrix({
                   {feed.consecutiveFailures} consecutive failures
                 </div>
               )}
-            </motion.div>
+            </div>
           );
         })}
       </div>

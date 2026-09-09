@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { UnifiedEvent, AISummary, CorrelationCluster, BriefingLatestResponse, VisionSummary } from './types/schema';
 import { getScenarioDataset, DemoScenarioMode } from './data/scenarioEngine';
 import {
@@ -16,6 +16,23 @@ import { LiveStreamClient } from './data/wsClient';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import OperatorAuthModal from './components/auth/OperatorAuthModal';
+import { DEMO_DATASET } from './data/demoDataset';
+import { runLocalNlQuery } from './data/localNlQuery';
+
+/**
+ * Ceiling on the live working set. The fusion core keeps every event it has
+ * ever ingested (thousands within minutes); the console only renders a recent
+ * window, so holding more than this costs render time and buys nothing.
+ */
+const MAX_LIVE_EVENTS = 400;
+
+/**
+ * Demo mode: run the console entirely off the seeded Sector 04 dataset — no
+ * polling, no WebSocket, no backend required. This is the default so the app
+ * is presentable from a clean checkout; set VITE_LIVE_BACKEND=true to attach
+ * to a running fusion server instead.
+ */
+const DEMO_MODE = import.meta.env.VITE_LIVE_BACKEND !== 'true';
 
 // Components
 import TopTacticalHeader, { NavSection } from './components/command/TopTacticalHeader';
@@ -41,7 +58,6 @@ function AppContent() {
   const [loading, setLoading] = useState(true);
   const [serverOnline, setServerOnline] = useState(false);
   const [wsLive, setWsLive] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date().toUTCString());
   const [refreshing, setRefreshing] = useState(false);
 
   // Core Data States
@@ -68,13 +84,36 @@ function AppContent() {
   const [nlQuery, setNlQuery] = useState<string>('');
   const [nlResult, setNlResult] = useState<{ interpretation: string; parser: string; latencyMs: number; matchedEventIds: string[] } | null>(null);
 
+  // Live values the fetch/socket effects need to read without being torn down
+  // and rebuilt when they change. Reading these through refs is what keeps
+  // `fetchBackendData` referentially stable — see the note on the poll effect.
+  const activeScenarioRef = useRef<DemoScenarioMode | null>(null);
+  const hasEventsRef = useRef(false);
+  activeScenarioRef.current = activeScenario;
+  hasEventsRef.current = events.length > 0;
+
+  /** Load the seeded picture. Synchronous, so the console paints immediately. */
+  const loadDemoData = useCallback(() => {
+    setNlQuery('');
+    setNlResult(null);
+    setSituation(DEMO_DATASET.situation);
+    setSourcesHealth(DEMO_DATASET.sources);
+    setTimeline(DEMO_DATASET.timeline);
+    setEvents(DEMO_DATASET.events);
+    setClusters(DEMO_DATASET.clusters);
+    setBriefing(DEMO_DATASET.briefing);
+    setBriefingMeta({ ageMs: 10_000, generating: false, groundingVerified: true });
+    setLoading(false);
+  }, []);
+
   // Fetch live backend data from the fusion REST server
   const fetchBackendData = useCallback(async (isManualSync = false) => {
+    const activeScenario = activeScenarioRef.current;
     if (isManualSync) {
       setRefreshing(true);
       setActiveScenario(null);
     }
-    if (events.length === 0 || isManualSync) {
+    if (!hasEventsRef.current || isManualSync) {
       setLoading(true);
     }
     try {
@@ -91,7 +130,7 @@ function AppContent() {
       setTimeline(Array.isArray(timeRes) ? timeRes : timeRes.timeline || []);
 
       // 3. Events (active in-memory events, capped)
-      const evtRes = await getEvents();
+      const evtRes = await getEvents(MAX_LIVE_EVENTS);
       if (!activeScenario || isManualSync) {
         setEvents(evtRes.events || []);
       }
@@ -117,7 +156,12 @@ function AppContent() {
       setLoading(false);
       if (isManualSync) setRefreshing(false);
     }
-  }, [events.length, activeScenario]);
+    // Deliberately empty: every changing value this reads comes from a ref.
+    // Depending on `events.length` here used to give the callback a new
+    // identity on every incoming frame, which re-ran the poll and socket
+    // effects below — tearing down and reopening the WebSocket several times
+    // a second in a self-sustaining loop.
+  }, []);
 
   const refreshBriefing = useCallback(async () => {
     try {
@@ -140,74 +184,70 @@ function AppContent() {
     }
   }, []);
 
-  // Polling + clock
+  // Seed the console. In demo mode this is the whole data layer — one
+  // synchronous load, no timers. Against a live server the REST poll is a
+  // safety net under the WebSocket, so it runs on a slow interval.
   useEffect(() => {
+    if (DEMO_MODE) {
+      loadDemoData();
+      return;
+    }
     fetchBackendData();
-    const clockTimer = setInterval(() => setCurrentTime(new Date().toUTCString()), 1000);
-    const pollTimer = setInterval(() => fetchBackendData(false), 5000);
-    return () => {
-      clearInterval(clockTimer);
-      clearInterval(pollTimer);
-    };
-  }, [fetchBackendData]);
+    const pollTimer = setInterval(() => fetchBackendData(false), 15000);
+    return () => clearInterval(pollTimer);
+  }, [fetchBackendData, loadDemoData]);
 
-  // WebSocket live pump — restructure polling when frames drop.
+  // WebSocket live pump. Mounts exactly once: every value the handlers read
+  // comes from a ref, so the socket survives for the life of the console
+  // instead of being rebuilt on each incoming frame.
   useEffect(() => {
+    if (DEMO_MODE) return;
+
+    // Frames that arrive while a scripted scenario is driving the COP are
+    // dropped — the scenario owns the picture until the operator resets.
+    const liveOnly =
+      <T,>(apply: (frame: T) => void) =>
+      (frame: T) => {
+        if (activeScenarioRef.current) return;
+        apply(frame);
+      };
+
+    const mergeEvents = (incoming: UnifiedEvent[]) =>
+      setEvents((prev) => {
+        const byId = new Map(prev.map((e) => [e.id, e]));
+        for (const evt of incoming) byId.set(evt.id, evt);
+        // Keep the working set bounded. The fusion core accumulates events
+        // indefinitely; the console only ever shows the most recent window,
+        // and an unbounded array is what made the map and stream crawl.
+        const merged = [...byId.values()];
+        return merged.length > MAX_LIVE_EVENTS
+          ? merged
+              .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
+              .slice(0, MAX_LIVE_EVENTS)
+          : merged;
+      });
+
     const client = new LiveStreamClient(undefined, {
       state: (state) => setWsLive(state === 'open'),
-      situationUpdate: (frame) => {
-        if (activeScenario) return;
-        setSituation(frame.payload.situation);
-      },
-      healthStatus: (frame) => {
-        if (activeScenario) return;
-        setSourcesHealth(frame.payload.sources);
-      },
-      briefingUpdate: (frame) => {
-        if (activeScenario) return;
+      situationUpdate: liveOnly((frame) => setSituation(frame.payload.situation)),
+      healthStatus: liveOnly((frame) => setSourcesHealth(frame.payload.sources)),
+      briefingUpdate: liveOnly((frame) => {
         setBriefing(frame.payload.summary);
         setBriefingMeta((m) => ({ ...m, groundingVerified: true }));
-      },
-      eventStream: (frame) => {
-        if (activeScenario) return; // scenario mode overrides the live picture
-        setEvents((prev) => {
-          const byId = new Map(prev.map((e) => [e.id, e]));
-          for (const evt of frame.payload.events) byId.set(evt.id, evt);
-          return [...byId.values()];
-        });
-      },
-      clusterUpdate: (frame) => {
-        if (activeScenario) return;
-        setClusters(frame.payload.clusters);
-      },
-      escalation: (frame) => {
-        if (activeScenario) return;
-        setTimeline((prev) => [frame.payload.record, ...prev].slice(0, 200));
-      },
-      degradedMode: (frame) => {
-        if (activeScenario) return;
-        setIsDegradedComms(frame.payload.enabled);
-      },
-      visionUpdate: (frame) => {
-        if (activeScenario) return;
-        setVisionSummary(frame.payload.summary);
-      },
-      alertTrigger: (frame) => {
-        if (activeScenario) return;
-        const evt = frame.payload.event;
-        setEvents((prev) => {
-          const byId = new Map(prev.map((e) => [e.id, e]));
-          byId.set(evt.id, evt);
-          return [...byId.values()];
-        });
-      },
-      resync: () => {
-        fetchBackendData(false);
-      },
+}),
+      eventStream: liveOnly((frame) => mergeEvents(frame.payload.events)),
+      clusterUpdate: liveOnly((frame) => setClusters(frame.payload.clusters)),
+      escalation: liveOnly((frame) =>
+        setTimeline((prev) => [frame.payload.record, ...prev].slice(0, 200))
+      ),
+      degradedMode: liveOnly((frame) => setIsDegradedComms(frame.payload.enabled)),
+      visionUpdate: liveOnly((frame) => setVisionSummary(frame.payload.summary)),
+      alertTrigger: liveOnly((frame) => mergeEvents([frame.payload.event])),
+      resync: () => fetchBackendData(false),
     });
     client.connect();
     return () => client.close();
-  }, [fetchBackendData, activeScenario]);
+  }, [fetchBackendData]);
 
   // Global Keyboard Shortcuts
   useEffect(() => {
@@ -251,27 +291,60 @@ function AppContent() {
   // Handle Scenario Injections
   const handleInjectScenario = (mode: DemoScenarioMode) => {
     setActiveScenario(mode);
+    // The active NL filter was matched against the previous event set.
+    clearNlFilter();
     const scenario = getScenarioDataset(mode);
+
+    // Scenarios carry only their own handful of scripted contacts. Dropping the
+    // baseline picture to show them would leave a near-empty map, so the
+    // injected events are laid over the seeded background traffic — the
+    // scenario stands out against routine activity, which is how it would
+    // actually arrive on a watch floor.
+    const merged = [...scenario.events, ...DEMO_DATASET.events];
+    const criticalCount = merged.filter((e) => e.severity === 'critical').length;
+
     setSituation({
       threatLevel: scenario.threatLevel,
-      threatScore: scenario.events.reduce(
+      threatScore: merged.reduce(
         (acc, e) => acc + (e.severity === 'critical' ? 250 : e.severity === 'high' ? 100 : 25),
         0
       ),
       activeAlertsCount: scenario.events.length,
-      criticalCount: scenario.events.filter((e) => e.severity === 'critical').length,
-      totalEvents: scenario.events.length,
+      criticalCount,
+      highCount: merged.filter((e) => e.severity === 'high').length,
+      anomalyCount: merged.filter((e) => e.isAnomaly).length,
+      totalEvents: merged.length,
+      correlatedClusters: DEMO_DATASET.clusters.length,
       meanConfidence: Math.round(
-        scenario.events.reduce((acc, e) => acc + e.confidence, 0) / (scenario.events.length || 1)
+        merged.reduce((acc, e) => acc + e.confidence, 0) / (merged.length || 1)
       ),
       headline: `${scenario.name} — ${scenario.description}`,
     });
-    setEvents(scenario.events);
+    setEvents(merged);
     setSourcesHealth(scenario.sourcesHealth);
   };
 
   const handleClearScenario = () => {
     setActiveScenario(null);
+    if (DEMO_MODE) {
+      loadDemoData();
+      return;
+    }
+    fetchBackendData(true);
+  };
+
+  /** Manual resync: re-seed in demo mode, refetch against a live server. */
+  const handleManualRefresh = () => {
+    clearNlFilter();
+    if (DEMO_MODE) {
+      setRefreshing(true);
+      setActiveScenario(null);
+      loadDemoData();
+      // A brief spinner so the control visibly acknowledges the click; the
+      // seeded load itself is instantaneous.
+      setTimeout(() => setRefreshing(false), 350);
+      return;
+    }
     fetchBackendData(true);
   };
 
@@ -284,6 +357,23 @@ function AppContent() {
 
   const handleToggleDegradedComms = async (enabled: boolean) => {
     setIsDegradedComms(enabled);
+
+    // Degrading comms drops every feed's reliability weight, which is exactly
+    // what the confidence function consumes — so the effect is visible on the
+    // topology screen and in every track's confidence, backend or not.
+    setSourcesHealth((prev) =>
+      prev.map((feed) => ({
+        ...feed,
+        status: enabled ? 'degraded' : feed.nominalReliability >= 0.5 ? 'live' : feed.status,
+        reliabilityScore: enabled
+          ? Math.round(feed.nominalReliability * 0.55 * 100) / 100
+          : feed.nominalReliability,
+        manuallyDegraded: enabled,
+        note: enabled ? 'Manually degraded — reliability weight reduced across the feed.' : undefined,
+      }))
+    );
+
+    if (DEMO_MODE) return;
     try {
       await postDegraded(enabled);
       fetchBackendData(false);
@@ -292,10 +382,15 @@ function AppContent() {
     }
   };
 
-const handleRunNlQuery = async (query: string) => {
-  setNlQuery(query);
-  try {
-    const res = await postQuery(query);
+  const handleRunNlQuery = async (query: string) => {
+    setNlQuery(query);
+
+    if (DEMO_MODE) {
+      setNlResult(runLocalNlQuery(query, events));
+      return;
+    }
+    try {
+      const res = await postQuery(query);
       setNlResult({
         interpretation: res.interpretation,
         parser: res.parser,
@@ -303,8 +398,15 @@ const handleRunNlQuery = async (query: string) => {
         matchedEventIds: res.matchedEventIds,
       });
     } catch {
-      setNlResult(null);
+      // Server unreachable — fall back to the in-browser parser rather than
+      // silently doing nothing.
+      setNlResult(runLocalNlQuery(query, events));
     }
+  };
+
+  const clearNlFilter = () => {
+    setNlQuery('');
+    setNlResult(null);
   };
 
   const handleClearNlQuery = () => {
@@ -319,7 +421,7 @@ const handleRunNlQuery = async (query: string) => {
     return (
       <VanguardLandingPage
         onLaunchCop={() => setViewMode('console')}
-        serverOnline={serverOnline}
+        serverOnline={DEMO_MODE || serverOnline}
         eventCount={events.length}
         threatLevel={situation?.threatLevel}
       />
@@ -341,15 +443,15 @@ const handleRunNlQuery = async (query: string) => {
 
       {/* 1. TOP TACTICAL COMMAND HEADER */}
       <TopTacticalHeader
-        currentTime={currentTime}
         situation={situation}
-        serverOnline={serverOnline && wsLive}
-        wsLive={wsLive}
+        serverOnline={DEMO_MODE || (serverOnline && wsLive)}
+        wsLive={DEMO_MODE || wsLive}
+        demoMode={DEMO_MODE}
         easyMode={easyMode}
         onToggleEasyMode={() => setEasyMode(!easyMode)}
         activeScenario={activeScenario}
         onOpenCommandPalette={() => setCommandPaletteOpen(true)}
-        onManualRefresh={() => fetchBackendData(true)}
+        onManualRefresh={handleManualRefresh}
         refreshing={refreshing}
         activeTab={activeTab}
         onTabChange={(tab) => setActiveTab(tab)}
@@ -361,7 +463,7 @@ const handleRunNlQuery = async (query: string) => {
 
       {/* 2. PRIMARY FULL-WIDTH OPERATIONAL WORKSPACE */}
       <div className="relative flex-1 flex flex-col min-w-0 overflow-hidden">
-        <main className="flex-1 overflow-y-auto p-4 md:p-5 relative">
+        <main className="flex-1 overflow-y-auto relative">
           {/* DEGRADED COMMS AMBER SCANLINE OVERLAY */}
           {isDegradedComms && (
             <>
@@ -375,7 +477,7 @@ const handleRunNlQuery = async (query: string) => {
 
           {/* VIEW ROUTING — each screen fades in so tab switches read as a
               deliberate instrument change rather than a hard cut. */}
-          <div key={activeTab} className="vg-fade-up h-full">
+          <div key={activeTab} className="mx-auto w-full max-w-[1600px] px-5 py-6 md:px-8 md:py-8">
           {activeTab === 'overview' && (
             <OverviewCanvas
               situation={situation}

@@ -1,7 +1,6 @@
 import React from 'react';
-import { motion } from 'motion/react';
 import { Play, AlertTriangle, RefreshCw, WifiOff, Activity, CheckCircle2 } from 'lucide-react';
-import { DemoScenarioMode } from '../../data/scenarioEngine';
+import { DemoScenarioMode, getScenarioDataset } from '../../data/scenarioEngine';
 import { ScreenHeading, Chip, TacticalButton, TacticalPanel } from '../ui/tactical';
 
 interface ScenarioSimulationControllerProps {
@@ -17,7 +16,6 @@ const SCENARIOS: Array<{
   title: string;
   description: string;
   threatTarget: string;
-  eventsInjected: number;
   accent: string;
   badge: string;
 }> = [
@@ -27,7 +25,6 @@ const SCENARIOS: Array<{
     description:
       'Hostile supersonic air incursion combined with ground perimeter tripwire breaches and electronic warfare jamming.',
     threatTarget: 'Critical (280+ pts)',
-    eventsInjected: 6,
     accent: '#f43f5e',
     badge: 'border-rose-500/60 bg-rose-950/60 text-rose-300',
   },
@@ -37,7 +34,6 @@ const SCENARIOS: Array<{
     description:
       'Air defence radar tracking non-squawking fast jets near the border corridor; patrol squad visual intercept confirmation.',
     threatTarget: 'High severity',
-    eventsInjected: 5,
     accent: '#f97316',
     badge: 'border-orange-500/60 bg-orange-950/60 text-orange-300',
   },
@@ -47,7 +43,6 @@ const SCENARIOS: Array<{
     description:
       'Viral social posts run through AI forensics: PRNU noise floor, synthetic speech detection, and satellite cross-sensor verification.',
     threatTarget: 'Hybrid veracity',
-    eventsInjected: 4,
     accent: '#a4c639',
     badge: 'border-[#526a27]/70 bg-[#a4c639]/12 text-[#bcd94f]',
   },
@@ -57,7 +52,6 @@ const SCENARIOS: Array<{
     description:
       'Storm cell degrading radar returns; exercises deduplication and multi-sensor corroboration rejection.',
     threatTarget: 'Guarded routine',
-    eventsInjected: 4,
     accent: '#eab308',
     badge: 'border-yellow-500/60 bg-yellow-950/60 text-yellow-300',
   },
@@ -67,11 +61,21 @@ const SCENARIOS: Array<{
     description:
       'Nominal surveillance patrols, active squawking flights, and calibrated weather telemetry.',
     threatTarget: 'Routine stable',
-    eventsInjected: 8,
     accent: '#34d399',
     badge: 'border-emerald-500/60 bg-emerald-950/60 text-emerald-300',
   },
 ];
+
+/** Real contact counts, read from the scenario datasets themselves. */
+const contactCounts: Partial<Record<DemoScenarioMode, number>> = Object.fromEntries(
+  SCENARIOS.map((sc) => {
+    try {
+      return [sc.id, getScenarioDataset(sc.id).events.length];
+    } catch {
+      return [sc.id, 0];
+    }
+  })
+);
 
 export default function ScenarioSimulationController({
   activeScenario,
@@ -81,7 +85,7 @@ export default function ScenarioSimulationController({
   isDegradedComms,
 }: ScenarioSimulationControllerProps) {
   return (
-    <div className="space-y-4 select-none font-mono text-xs pb-2">
+    <div className="space-y-6 select-none font-mono text-xs">
       <ScreenHeading
         eyebrow="Stress Simulator"
         title="Operational Scenario Injection"
@@ -132,16 +136,13 @@ export default function ScenarioSimulationController({
       </div>
 
       {/* SCENARIO GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-        {SCENARIOS.map((sc, idx) => {
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {SCENARIOS.map((sc) => {
           const isActive = activeScenario === sc.id;
 
           return (
-            <motion.div
+            <div
               key={sc.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className={`vg-panel vg-panel-interactive p-4 pl-6 flex flex-col justify-between gap-3 relative ${
                 isActive ? 'vg-panel-glow' : ''
               }`}
@@ -164,7 +165,7 @@ export default function ScenarioSimulationController({
                   >
                     {sc.threatTarget}
                   </span>
-                  <span className="vg-label">{sc.eventsInjected} contacts</span>
+                  <span className="vg-label">{contactCounts[sc.id] ?? 0} contacts</span>
                 </div>
                 <div className="vg-title text-[13px] text-slate-100 leading-snug">{sc.title}</div>
                 <p className="text-slate-400 text-[11px] leading-relaxed font-sans">
@@ -180,7 +181,7 @@ export default function ScenarioSimulationController({
               >
                 {isActive ? 'Scenario Running' : 'Inject Scenario'}
               </TacticalButton>
-            </motion.div>
+            </div>
           );
         })}
       </div>
