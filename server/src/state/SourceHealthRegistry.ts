@@ -145,6 +145,7 @@ export class SourceHealthRegistry {
       'incident',
       'social_media',
       'audio_recording',
+      'video',
     ] as SourceType[]) {
       map[type] = this.effectiveReliability(type);
     }

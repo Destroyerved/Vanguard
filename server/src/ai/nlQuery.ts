@@ -42,6 +42,10 @@ const SOURCE_KEYWORDS: Record<SourceType, string[]> = {
   audio_recording: [
     'audio', 'hydrophone', 'acoustic', 'recording', 'sound', 'waveform', 'voice clip',
   ],
+  video: [
+    'video', 'cctv', 'camera', 'camera feed', 'camera footage', 'visual', 'surveillance',
+    'frame grab', 'sighting camera',
+  ],
 };
 
 const SEVERITY_KEYWORDS: Record<SeverityLevel, string[]> = {
@@ -175,6 +179,7 @@ const VALID_SOURCES: SourceType[] = [
   'incident',
   'social_media',
   'audio_recording',
+  'video',
 ];
 const VALID_SEVERITIES: SeverityLevel[] = ['low', 'medium', 'high', 'critical'];
 

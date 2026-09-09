@@ -16,10 +16,22 @@
 import { decodeWmo, type WeatherPayload } from '../ingestion/weather.openMeteo.js';
 import { evaluateMediaAuthenticity } from '../media/authenticity.js';
 import type { RawObservation } from '../ingestion/SourceAdapter.js';
-import type { GeoLocation, SeverityLevel, UnifiedEvent } from '../types/events.js';
+import type {
+  GeoLocation,
+  SeverityLevel,
+  UnifiedEvent,
+  VisualBoundingBox,
+  VisualClaim,
+  VisualEvidence,
+} from '../types/events.js';
 import { nextEventId, stableEventId } from '../util/ids.js';
 import { createLogger } from '../util/logger.js';
 import { nowIso } from '../util/time.js';
+import {
+  type ClaimSeed,
+  type DetectionFrame,
+  type VisionEngine,
+} from '../vision/engine.js';
 
 const log = createLogger('normalize');
 
@@ -465,11 +477,214 @@ export function normalizeAudioRecording(observation: RawObservation): UnifiedEve
 }
 
 /* ------------------------------------------------------------------ *
+ * VIDEO (CCTV)
+ * ------------------------------------------------------------------ */
+
+/**
+ * VIDEO -> FRAME EXTRACTION -> CV DETECTIONS/TRACKS -> VISUAL FORENSICS ->
+ * VISUAL EVIDENCE: a CCTV clip is run through the deterministic visual engine
+ * at the normalization boundary, so the `visualEvidence` bundle exists BEFORE
+ * the event ever enters fusion. The engine is stateful — its per-camera
+ * trackers carry object identities across clips — so the caller owns the one
+ * shared instance and passes it in.
+ *
+ * The generic media audit is attached too: the payload carries bitstream and
+ * provenance fields, so the clip must earn the same corroboration terms as any
+ * other media feed. The two reads are complementary — the visual engine reads
+ * the structured evidence, the media audit reads the container — and both are
+ * attached to the event, never used to discard it (§15).
+ */
+export function normalizeVideo(
+  observation: RawObservation,
+  engine: VisionEngine,
+): UnifiedEvent {
+  const p = observation.payload;
+
+  const cameraId = str(p, 'cameraId', 'CAM-UNKNOWN');
+  const cameraName = str(p, 'cameraName', 'Unidentified CCTV camera');
+  const clipId = str(p, 'clipId', `CLIP-${cameraId}`);
+  const location: GeoLocation = {
+    lat: num(p, 'cameraLat', num(p, 'lat', 0)),
+    lng: num(p, 'cameraLng', num(p, 'lng', 0)),
+  };
+
+  const result = engine.processClip({
+    camera: { cameraId, cameraName, location },
+    clipId,
+    durationSec: num(p, 'durationSec', 0),
+    framesAnalyzed: num(p, 'framesAnalyzed', 0),
+    startFrameIndex: num(p, 'startFrameIndex', 0),
+    frames: toDetectionFrames(p),
+    forensicsPayload: p,
+    claims: toClaimSeeds(p),
+  });
+
+  const forensics = result.evidence.forensics;
+
+  // Severity starts from what the clip claimed and never rises above it under
+  // its own influence: a synthetic/fabricated clip is capped at medium, exactly
+  // as with the social and audio normalizers. A restricted-zone entry is what
+  // the camera actually observed, so it reports itself at no less than medium.
+  const reported = severityOf(p['claimedSeverity'], 'low');
+  const synthetic =
+    p['contentProfile'] === 'fabricated' ||
+    p['deepfakeVideo'] === true ||
+    p['syntheticVideo'] === true;
+  let severity = reported;
+  if (synthetic && (severity === 'critical' || severity === 'high')) severity = 'medium';
+  if (result.alerts.length > 0 && severity === 'low') severity = 'medium';
+
+  const zoneNote = result.alerts
+    .map((a) => `${a.zoneName} entry by ${a.label} track ${a.trackId}`)
+    .join('; ');
+
+  let description =
+    `${cameraName} clip ${clipId}: ${objectSummary(result.evidence)}. ` +
+    `Visual read: ${forensics.classification}, authenticity ${forensics.authenticityScore}/100, ` +
+    `manipulation risk ${Math.round(forensics.signals.manipulationRisk * 100)}%. ` +
+    `${claimSummary(result.evidence.claims)}`;
+  if (zoneNote) description += ` Camera tracked ${zoneNote}.`;
+  if (result.evidence.manipulated) {
+    description +=
+      ' Footage is treated as fabrication until independently corroborated — surfaced, not discarded.';
+  }
+
+  const event = base(
+    observation,
+    location,
+    severity,
+    `${cameraName} — CCTV ${clipId}`,
+    description,
+  );
+
+  // Attach both evidence reads. The generic media audit mirrors the social and
+  // audio normalizers so the video feed earns the same confidence terms.
+  event.mediaAudit = evaluateMediaAuthenticity(event);
+  event.visualEvidence = result.evidence;
+
+  event.description =
+    `${event.description} Media audit: authenticity ${event.mediaAudit.authenticityScore}/100, ` +
+    `category ${event.mediaAudit.manipulationCategory}.`;
+
+  return event;
+}
+
+/** Translate a raw clip's frame payload into engine detection frames. */
+function toDetectionFrames(payload: Record<string, unknown>): DetectionFrame[] {
+  const raw = payload['frames'];
+  if (!Array.isArray(raw)) return [];
+
+  const frames: DetectionFrame[] = [];
+  for (const item of raw) {
+    if (typeof item !== 'object' || item === null) continue;
+    const frame = item as Record<string, unknown>;
+    const frameIndex = typeof frame['frameIndex'] === 'number' ? frame['frameIndex'] : 0;
+    const timestampSec = typeof frame['timestampSec'] === 'number' ? frame['timestampSec'] : 0;
+
+    const detections: DetectionFrame['detections'] = [];
+    const rawDets = frame['detections'];
+    if (Array.isArray(rawDets)) {
+      for (const det of rawDets) {
+        if (typeof det !== 'object' || det === null) continue;
+        const d = det as Record<string, unknown>;
+        detections.push({
+          detectionId: str(d, 'detectionId', `DET-${frameIndex}`),
+          classId: str(d, 'classId', 'object'),
+          label: str(d, 'label', 'object'),
+          confidence: num(d, 'confidence', 0),
+          bbox: bboxOf(d['bbox']),
+          world: { lat: num(d, 'lat', 0), lng: num(d, 'lng', 0) },
+          speedKnots: num(d, 'speedKnots', 0),
+          headingDegrees: num(d, 'headingDegrees', 0),
+        });
+      }
+    }
+    frames.push({ frameIndex, timestampSec, detections });
+  }
+
+  return frames.sort((a, b) => a.frameIndex - b.frameIndex);
+}
+
+/** Read a normalized bounding box from an untyped payload value. */
+function bboxOf(value: unknown): VisualBoundingBox {
+  if (typeof value !== 'object' || value === null) return { x: 0.5, y: 0.5, w: 0.1, h: 0.2 };
+  const b = value as Record<string, unknown>;
+  return {
+    x: num(b, 'x', 0.5),
+    y: num(b, 'y', 0.5),
+    w: num(b, 'w', 0.1),
+    h: num(b, 'h', 0.2),
+  };
+}
+
+/** Translate raw claim records into engine claim seeds. */
+function toClaimSeeds(payload: Record<string, unknown>): ClaimSeed[] {
+  const raw = payload['claims'];
+  if (!Array.isArray(raw)) return [];
+
+  const seeds: ClaimSeed[] = [];
+  for (const item of raw) {
+    if (typeof item !== 'object' || item === null) continue;
+    const c = item as Record<string, unknown>;
+
+    const requiresRaw = c['requires'];
+    const requires =
+      typeof requiresRaw === 'object' && requiresRaw !== null
+        ? (requiresRaw as Record<string, unknown>)
+        : undefined;
+
+    seeds.push({
+      id: str(c, 'id', `CL-VIDEO-${seeds.length + 1}`),
+      text: str(c, 'text', 'Unstated claim'),
+      claimConfidence: clamp01(num(c, 'claimConfidence', 0.6)),
+      ...(requires
+        ? {
+            requires: {
+              ...(typeof requires['label'] === 'string' ? { label: requires['label'] } : {}),
+              ...(typeof requires['minCount'] === 'number'
+                ? { minCount: requires['minCount'] }
+                : {}),
+              ...(typeof requires['behavior'] === 'string'
+                ? { behavior: requires['behavior'] }
+                : {}),
+            },
+          }
+        : {}),
+    });
+  }
+  return seeds;
+}
+
+/** One-line tally of what the camera kept on screen. */
+function objectSummary(evidence: VisualEvidence): string {
+  const entries = Object.entries(evidence.scene.objectCounts);
+  if (entries.length === 0) return 'no objects tracked';
+  return entries.map(([label, n]) => `${n} ${label}${n === 1 ? '' : 's'}`).join(', ');
+}
+
+/** One-line tally of how the engine ruled on the attached claims. */
+function claimSummary(claims: VisualClaim[]): string {
+  if (claims.length === 0) return 'No claims attached.';
+  const counts = new Map<string, number>();
+  for (const c of claims) counts.set(c.status, (counts.get(c.status) ?? 0) + 1);
+  const parts = [...counts.entries()].map(([s, n]) => `${n} ${s}`.toLowerCase());
+  return `Claims: ${parts.join(', ')}.`;
+}
+
+/** Clamp a probability-ish number into 0..1. */
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+/* ------------------------------------------------------------------ *
  * Dispatch
  * ------------------------------------------------------------------ */
 
 /** Route one raw observation to its source-specific normalizer. */
-export function normalizeObservation(observation: RawObservation): UnifiedEvent | null {
+export function normalizeObservation(
+  observation: RawObservation,
+  engine?: VisionEngine,
+): UnifiedEvent | null {
   try {
     switch (observation.sourceType) {
       case 'radar':
@@ -486,6 +701,16 @@ export function normalizeObservation(observation: RawObservation): UnifiedEvent 
         return normalizeSocialMedia(observation);
       case 'audio_recording':
         return normalizeAudioRecording(observation);
+      case 'video': {
+        if (!engine) {
+          // A `video` observation without the shared engine has no CV pipeline to
+          // read it. Rather than fabricate evidence, the clip is dropped with a
+          // clear warning — the orchestrator that owns the engine always passes it.
+          log.warn('Video observation dropped: no VisionEngine supplied to normalization.');
+          return null;
+        }
+        return normalizeVideo(observation, engine);
+      }
       default: {
         // Exhaustiveness guard: adding a SourceType without a normalizer
         // becomes a compile error here rather than a silent data loss.
@@ -505,10 +730,13 @@ export function normalizeObservation(observation: RawObservation): UnifiedEvent 
 }
 
 /** Normalize a batch, discarding anything that fails validation. */
-export function normalizeBatch(observations: RawObservation[]): UnifiedEvent[] {
+export function normalizeBatch(
+  observations: RawObservation[],
+  engine?: VisionEngine,
+): UnifiedEvent[] {
   const events: UnifiedEvent[] = [];
   for (const observation of observations) {
-    const event = normalizeObservation(observation);
+    const event = normalizeObservation(observation, engine);
     if (event) events.push(event);
   }
   return events;

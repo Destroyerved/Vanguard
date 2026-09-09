@@ -166,6 +166,24 @@ function buildExecutiveSummary(
     }
   }
 
+  const cctv = input.events.filter((e) => e.visualEvidence);
+  if (cctv.length > 0) {
+    const synthetic = cctv.filter(
+      (e) =>
+        e.visualEvidence!.forensics.classification === 'POTENTIAL_SYNTHETIC' ||
+        e.visualEvidence!.forensics.classification === 'SUSPICIOUS_MANIPULATION',
+    ).length;
+    const contradicted = cctv.reduce(
+      (sum, e) => sum + (e.visualEvidence!.contradictions?.length ?? 0),
+      0,
+    );
+    sentences.push(
+      `Visual evidence covers ${cctv.length} CCTV clip${cctv.length === 1 ? '' : 's'}: ` +
+        `${synthetic} classified synthetic/suspicious and ${contradicted} claimed statement${contradicted === 1 ? '' : 's'} ` +
+        'refuted and surfaced for review. Manipulated footage is never deleted; it stays visible with its forensic basis.',
+    );
+  }
+
   if (input.degradedMode) {
     sentences.push(
       'DEGRADED COMMS: the picture is being served from cached state and all confidence values are reduced accordingly.',
@@ -244,6 +262,15 @@ function buildKeyDevelopments(
   // evidence and its reasons reach the operator, not just the AI image model.
   const mediaFindings = buildMediaFindings(events);
   for (const finding of mediaFindings) {
+    developments.push(finding);
+    for (const id of finding.supportingEventIds) covered.add(id);
+  }
+
+  // Then the visual-forensics findings: synthetic clips, refuted claims and
+  // restricted-zone entries are operational developments in their own right,
+  // and the §28 rule keeps both sides of any contradiction in view.
+  const visionFindings = buildVisionFindings(events);
+  for (const finding of visionFindings) {
     developments.push(finding);
     for (const id of finding.supportingEventIds) covered.add(id);
   }
@@ -329,6 +356,70 @@ function buildMediaFindings(events: UnifiedEvent[]): GroundedClaim[] {
         `editing (cut, grade, stabilize, denoise, upscale) with no event-fabricating manipulation — usable as ` +
         `evidence with a reduced provenance weight.`,
       supportingEventIds: ids(enhanced),
+    });
+  }
+
+  return findings;
+}
+
+/**
+ * Structured findings from the visual-forensics engine, forwarded verbatim into
+ * the briefing. Three operational stories emerge from CCTV evidence the other
+ * feeds cannot tell: footage the forensics classify as synthetic (disinformation
+ * candidate), claims the tracking/claims layer refuted (both sides kept on
+ * record), and restricted-zone entries the tracker turned from a plain detection
+ * into an operational event.
+ */
+function buildVisionFindings(events: UnifiedEvent[]): GroundedClaim[] {
+  const cctv = events.filter((e) => e.visualEvidence);
+  if (cctv.length === 0) return [];
+
+  const findings: GroundedClaim[] = [];
+
+  const synthetic = cctv.filter(
+    (e) =>
+      e.visualEvidence!.forensics.classification === 'POTENTIAL_SYNTHETIC' ||
+      e.visualEvidence!.forensics.classification === 'SUSPICIOUS_MANIPULATION',
+  );
+  if (synthetic.length > 0) {
+    const meanRisk =
+      Math.round(
+        (synthetic.reduce((s, e) => s + e.visualEvidence!.forensics.signals.manipulationRisk, 0) /
+          synthetic.length) *
+          100,
+      );
+    findings.push({
+      point:
+        `Visual forensics: ${synthetic.length} CCTV clip${synthetic.length === 1 ? '' : 's'} classified ` +
+        `synthetic/suspicious with a mean manipulation risk of ${meanRisk}%. The footage cannot establish ` +
+        `the event it depicts until an independent feed corroborates it — surfaced for review, never suppressed.`,
+      supportingEventIds: synthetic.slice(0, 6).map((e) => e.id),
+    });
+  }
+
+  const refuted = cctv.filter((e) => (e.visualEvidence!.contradictions?.length ?? 0) > 0);
+  if (refuted.length > 0) {
+    const example = refuted[0]!;
+    const contradiction = example.visualEvidence!.contradictions![0]!;
+    findings.push({
+      point:
+        `Visual evidence refuted a claimed statement: "${contradiction.operatorStatement}". ` +
+        `Evidence ${contradiction.visualEvidenceId} contradicts it on ${contradiction.contradictionBasis.length} ` +
+        `grounds. Both sides are kept on record per policy — the claim is not deleted, it is surfaced with the refutation.`,
+      supportingEventIds: [example.id],
+    });
+  }
+
+  const restricted = cctv.filter((e) =>
+    e.visualEvidence!.behaviorFlags.includes('RESTRICTED_ZONE_ENTRY'),
+  );
+  if (restricted.length > 0) {
+    findings.push({
+      point:
+        `Restricted-zone entry detected: ${restricted.length} clip${restricted.length === 1 ? '' : 's'} show ` +
+        `a person crossing into a designated restricted zone. The tracker escalated the detection into an ` +
+        `operational event on the affected post.`,
+      supportingEventIds: restricted.slice(0, 6).map((e) => e.id),
     });
   }
 

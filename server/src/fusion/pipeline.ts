@@ -35,6 +35,7 @@
 
 import { SOURCE_RELIABILITY } from '../config/constants.js';
 import { refreshAuditCorroboration } from '../media/authenticity.js';
+import { refreshVisualCorroboration } from '../vision/engine.js';
 import type {
   CorrelationCluster,
   SourceType,
@@ -161,6 +162,17 @@ export function runFusionPipeline(input: FusionInput): FusionResult {
     // so this refresh cannot be gamed through scoring.
     if (event.mediaAudit && corroborators.length > 0) {
       refreshAuditCorroboration(event.mediaAudit, event, corroborators);
+    }
+
+    // Same principle for CCTV: the visual evidence bundle corroborates at 0
+    // when the clip is normalized, then its cross-source agreement numbers are
+    // refreshed here from the resolved corroborators — so the bundle served to
+    // Gemini and the operator always shows live corroboration, and an event
+    // that fell out of its cluster zeroes back out rather than resting on
+    // evidence that vanished. Runs unconditionally (an empty corroborator list
+    // clears stale state) unlike the media refresh, which the media flow guards.
+    if (event.visualEvidence) {
+      refreshVisualCorroboration(event.visualEvidence, event, corroborators);
     }
 
     const effectiveReliability =

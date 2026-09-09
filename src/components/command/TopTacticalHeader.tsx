@@ -19,6 +19,7 @@ import {
   LogOut,
   LogIn,
   ChevronDown,
+  Cctv,
 } from 'lucide-react';
 import { DemoScenarioMode } from '../../data/scenarioEngine';
 import { StatusDot } from '../ui/tactical';
@@ -29,6 +30,7 @@ export type NavSection =
   | 'news'
   | 'recon'
   | 'osint'
+  | 'vision'
   | 'timeline'
   | 'sources'
   | 'simulation'
@@ -50,6 +52,8 @@ interface TopTacticalHeaderProps {
   anomalyCount?: number;
   onOpenAuthModal?: () => void;
   onNavigateToLanding?: () => void;
+  /** Running off the seeded dataset rather than a live fusion server. */
+  demoMode?: boolean;
 }
 
 /** Threat posture vocabulary, shared with the landing page's escalation ladder. */
@@ -79,6 +83,21 @@ const THREAT_POSTURE: Record<
   },
 };
 
+
+/**
+ * The UTC chronometer ticks once a second. Keeping its state here — rather
+ * than in App, which owns every screen's data — means that tick repaints a
+ * timestamp instead of the whole console.
+ */
+const Chronometer = React.memo(function Chronometer() {
+  const [now, setNow] = useState(() => new Date().toUTCString());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date().toUTCString()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return <span className="vg-readout text-[10px] font-semibold">{now}</span>;
+});
+
 export default function TopTacticalHeader({
   situation,
   serverOnline,
@@ -95,18 +114,13 @@ export default function TopTacticalHeader({
   anomalyCount = 0,
   onOpenAuthModal,
   onNavigateToLanding,
+  demoMode = false,
 }: TopTacticalHeaderProps) {
   const { operatorProfile, logout } = useAuth();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Local chronometer — isolates the 1s tick here instead of re-rendering the
-  // whole App tree every second.
-  const [now, setNow] = useState<string>(() => new Date().toUTCString());
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date().toUTCString()), 1000);
-    return () => clearInterval(t);
-  }, []);
+
 
   // Dismiss the operator menu on any outside click — a stuck menu over a live
   // COP is worse than an extra click to reopen it.
@@ -138,6 +152,7 @@ export default function TopTacticalHeader({
     { id: 'news', label: 'Verified News', icon: Newspaper, key: 'N', tag: 'LIVE' },
     { id: 'recon', label: 'Satellite Recon', icon: Globe, key: 'R', tag: 'ESRI' },
     { id: 'osint', label: 'OSINT Veracity', icon: ShieldCheck, key: 'V', count: anomalyCount },
+    { id: 'vision', label: 'Visual Intel', icon: Cctv, key: 'W', tag: 'CCTV' },
     { id: 'timeline', label: 'Timeline', icon: Clock, key: 'T' },
     { id: 'sources', label: 'Topology', icon: Server, key: 'S' },
     { id: 'simulation', label: 'Scenario Injector', icon: Play, key: 'X' },
@@ -167,11 +182,19 @@ export default function TopTacticalHeader({
             </span>
           </button>
 
-          {/* Feed health readout */}
+          {/* Feed health readout. Says plainly which dataset is driving the
+              console — a demo that pretends to be live is worse than one that
+              is honest about it. */}
           <div className="hidden sm:flex items-center gap-2.5 px-2.5 py-1 rounded-lg bg-white/[0.04] backdrop-blur-md border border-[#526a27]/25 text-[10px]">
-            <StatusDot online={serverOnline} label={serverOnline ? 'CORE' : 'FALLBACK'} />
-            <span className="w-px h-3 bg-[#526a27]/40" />
-            <StatusDot online={wsLive} label={wsLive ? 'PUSH' : 'POLL'} />
+            {demoMode ? (
+              <StatusDot online label="SEEDED DATASET" />
+            ) : (
+              <>
+                <StatusDot online={serverOnline} label={serverOnline ? 'CORE' : 'FALLBACK'} />
+                <span className="w-px h-3 bg-[#526a27]/40" />
+                <StatusDot online={wsLive} label={wsLive ? 'PUSH' : 'POLL'} />
+              </>
+            )}
           </div>
 
           {activeScenario && (
@@ -297,7 +320,7 @@ export default function TopTacticalHeader({
           {/* CHRONOMETER */}
           <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.04] backdrop-blur-md border border-[#526a27]/25 text-slate-300">
             <Clock className="w-3 h-3 text-[#a4c639]" />
-            <span className="vg-readout text-[10px] font-semibold">{now}</span>
+            <Chronometer />
           </div>
         </div>
       </div>

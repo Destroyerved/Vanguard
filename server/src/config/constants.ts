@@ -54,10 +54,18 @@ export const AO_SECTORS = [
  *                          media-authenticity factor handles the manipulation
  *                          specifically; this weight is the baseline distrust of
  *                          the open channel itself.
+ *   video           0.86 — fixed CCTV/surveillance cameras: calibrated optics, a
+ *                          known static vantage point, and independent clip
+ *                          forensics. Outranks personnel and unverified logs but
+ *                          sits below radar because occlusions, blind spots and
+ *                          camera-side manipulation (splice, upscale) degrade
+ *                          the read; the visual-evidence forensics handle that
+ *                          specifically at the event level.
  */
 export const SOURCE_RELIABILITY: Record<SourceType, number> = {
   weather: 0.95,
   radar: 0.92,
+  video: 0.86,
   personnel: 0.88,
   log: 0.8,
   incident: 0.72,
@@ -325,3 +333,103 @@ export const MEDIA_AUTHENTICITY_TERM = {
  * any automated decision.
  */
 export const MEDIA_UNVERIFIED_SCORE = 60;
+
+/* ------------------------------------------------------------------ *
+ * Visual evidence engine (VANGUARD_VISUAL_EVIDENCE_ENGINE_COMPLETE.md)
+ * ------------------------------------------------------------------ */
+
+/** Detector confidence below which an object sighting is not emitted. */
+export const VISION_DETECTION_MIN_SCORE = 0.35;
+
+/**
+ * World-space association radius, metres. A new sighting without a known
+ * appearance key is linked to the nearest active track of the same class that
+ * lies within this radius; beyond it the tracker opens a new identity.
+ */
+export const VISION_ASSOCIATION_RADIUS_METERS = 120;
+
+/** Object sightings with no update for this many frames close the track. */
+export const VISION_TRACK_LOST_FRAMES = 6;
+
+/** Rolling clip window, seconds, over which per-camera forensics accumulate. */
+export const VISION_CLIP_WINDOW_SECONDS = 60;
+
+/** Frames of drift at roughly constant position that constitute loitering. */
+export const VISION_LOITERING_THRESHOLD_FRAMES = 10;
+
+/**
+ * Restricted zones the CCTV grid watches for unauthorized entry.
+ * A sighting whose world position lies inside one of these zones triggers the
+ * RESTRICTED_ZONE_ENTRY behavior alarm once per track — the point where pure
+ * detection becomes a discrete operational event that can corroborate an
+ * incident or a radar contact.
+ */
+export const VISION_RESTRICTED_ZONES: readonly {
+  id: string;
+  name: string;
+  center: { lat: number; lng: number };
+  radiusMeters: number;
+}[] = [
+  {
+    id: 'RZ-1',
+    name: 'North Gate Restricted Perimeter',
+    center: { lat: 23.154, lng: 72.588 },
+    radiusMeters: 600,
+  },
+  {
+    id: 'RZ-2',
+    name: 'Coastal Cordon Exclusion Zone',
+    center: { lat: 22.912, lng: 72.576 },
+    radiusMeters: 750,
+  },
+];
+
+/**
+ * §18 weighted authenticity components. Sums to 1.0.
+ *
+ * Technical integrity and temporal/frame forensics dominate because they are
+ * what actually distinguish an authentic recording from a spliced or synthetic
+ * one; detector consistency is where the tracker itself vouches for the clip;
+ * provenance and metadata are necessary but insufficient — a pristine MP4 atom
+ * is trivially forged.
+ */
+export const VISION_AUTHENTICITY_WEIGHTS = {
+  technicalIntegrity: 0.2,
+  frameForensics: 0.2,
+  temporalConsistency: 0.2,
+  detectorConsistency: 0.2,
+  provenance: 0.1,
+  metadata: 0.1,
+} as const;
+
+/** Multi-signal anomaly blend for the proto-forensics read. */
+export const VISION_FORENSIC_SIGNAL_WEIGHTS = {
+  compression: 0.15,
+  frame: 0.15,
+  lighting: 0.1,
+  temporal: 0.25,
+  metadata: 0.1,
+  synthetic: 0.25,
+} as const;
+
+/**
+ * §14 classification thresholds on `manipulationRisk` (0..1).
+ *
+ *   risk < 0.20                                   -> AUTHENTIC (or EDITED when a
+ *                                                    benign edit trace exists)
+ *   risk < 0.40 and uplift dominant               -> ENHANCED
+ *   risk < 0.55                                   -> SUSPICIOUS_MANIPULATION
+ *   risk >= 0.55                                  -> POTENTIAL_SYNTHETIC
+ *   insufficient signals                          -> UNKNOWN
+ */
+export const VISION_MANIPULATION_THRESHOLDS = {
+  authentic: 0.2,
+  enhanced: 0.4,
+  suspicious: 0.55,
+} as const;
+
+/**
+ * Never zero: an uncorroborated contradictory clip must still hold the
+ * operator's attention (surface + explain + confidence, never discard).
+ */
+export const VISION_EVIDENCE_CONFIDENCE_FLOOR = 0.55;

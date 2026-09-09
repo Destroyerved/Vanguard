@@ -17,6 +17,7 @@ import { mapRoutes } from './api/routes/map.js';
 import { mediaRoutes } from './api/routes/media.js';
 import { simulationRoutes } from './api/routes/simulation.js';
 import { situationRoutes } from './api/routes/situation.js';
+import { visionRoutes } from './api/routes/vision.js';
 import { errorHandler, notFoundHandler, requestLogger } from './api/middleware/errors.js';
 import { nowIso } from './util/time.js';
 
@@ -86,6 +87,13 @@ export function createApp(orchestrator: Orchestrator): Express {
           'GET /api/v1/media/categories',
           'GET /api/v1/media/:id',
         ],
+        vision: [
+          'GET /api/v1/vision?classification=&manipulated=&minAuthenticity=&camera=',
+          'GET /api/v1/vision/summary',
+          'GET /api/v1/vision/contradictions',
+          'GET /api/v1/vision/diagnostics',
+          'GET /api/v1/vision/:id',
+        ],
         map: [
           'GET /api/v1/map/assets',
           'GET /api/v1/map/alerts',
@@ -124,6 +132,7 @@ export function createApp(orchestrator: Orchestrator): Express {
   app.use('/api/v1/situation', situationRoutes(orchestrator));
   app.use('/api/v1/events', eventRoutes(orchestrator));
   app.use('/api/v1/media', mediaRoutes(orchestrator));
+  app.use('/api/v1/vision', visionRoutes(orchestrator));
   app.use('/api/v1/map', mapRoutes(orchestrator));
   app.use('/api/v1/ai', aiRoutes(orchestrator));
   app.use('/api/v1/intelligence', intelligenceRoutes(orchestrator));

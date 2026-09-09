@@ -261,6 +261,7 @@ export class EventStore {
       incident: 0,
       social_media: 0,
       audio_recording: 0,
+      video: 0,
     };
     for (const e of this.active()) counts[e.sourceType]++;
     return counts;

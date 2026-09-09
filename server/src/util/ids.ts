@@ -17,6 +17,7 @@ const SOURCE_PREFIX: Record<SourceType, string> = {
   incident: 'INC',
   social_media: 'SMS',
   audio_recording: 'AUD',
+  video: 'VID',
 };
 
 let eventCounter = 0;

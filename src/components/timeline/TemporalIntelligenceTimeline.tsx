@@ -1,5 +1,4 @@
-import React, { useMemo, useState } from 'react';
-import { motion } from 'motion/react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { UnifiedEvent } from '../../types/schema';
 import { Clock, Play, Pause, RotateCcw, Activity, ChevronRight } from 'lucide-react';
 import {
@@ -10,6 +9,27 @@ import {
   severityStyle,
   TacticalButton,
 } from '../ui/tactical';
+
+/** Normalised timeline row — an escalation record or a raw event. */
+interface TimelineRow {
+  timestamp: string;
+  eventId?: string;
+  event?: UnifiedEvent;
+  title: string;
+  severity: string;
+  confidence?: number;
+  threatScore: number;
+  from?: string;
+  to?: string;
+}
+
+/** Posture level a record escalated *to*, mapped onto the severity palette. */
+const THREAT_TO_SEVERITY: Record<string, string> = {
+  red: 'critical',
+  orange: 'high',
+  yellow: 'medium',
+  green: 'low',
+};
 
 interface TemporalIntelligenceTimelineProps {
   timeline: any[];
@@ -27,29 +47,70 @@ export default function TemporalIntelligenceTimeline({
   const [isPlaying, setIsPlaying] = useState(false);
   const [scrubIndex, setScrubIndex] = useState(0);
 
-  // Fall back to synthesising a track from live events when the escalation
-  // audit log is empty, so the scrubber is never a blank rail.
-  const activeTimeline = useMemo(
-    () =>
-      timeline && timeline.length > 0
-        ? timeline
-        : events.map((e) => ({
-            timestamp: e.timestamp,
-            eventId: e.id,
-            event: e,
-            title: e.title,
-            severity: e.severity,
-            confidence: e.confidence,
-            threatScore: e.severity === 'critical' ? 240 : e.severity === 'high' ? 120 : 40,
-          })),
-    [timeline, events]
-  );
+  // Escalation records and raw events have different shapes; normalise both
+  // into one row type so the histogram and the feed read the same fields.
+  // Records are stored newest-first, so reverse them into reading order.
+  const activeTimeline = useMemo<TimelineRow[]>(() => {
+    if (timeline && timeline.length > 0) {
+      return [...timeline]
+        .sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp))
+        .map((rec) => {
+          const triggerId: string | undefined = rec.triggerEventIds?.[0] ?? rec.eventId;
+          return {
+            timestamp: rec.timestamp,
+            eventId: triggerId,
+            event: triggerId ? events.find((e) => e.id === triggerId) : undefined,
+            title: rec.reason ?? rec.title ?? 'Posture record',
+            severity: THREAT_TO_SEVERITY[rec.to] ?? 'low',
+            confidence: rec.confidence,
+            threatScore: rec.score ?? rec.threatScore ?? 30,
+            from: rec.from,
+            to: rec.to,
+          };
+        });
+    }
+    return events
+      .slice()
+      .sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp))
+      .map((e) => ({
+        timestamp: e.timestamp,
+        eventId: e.id,
+        event: e,
+        title: e.title,
+        severity: e.severity,
+        confidence: e.confidence,
+        threatScore: e.severity === 'critical' ? 240 : e.severity === 'high' ? 120 : 40,
+      }));
+  }, [timeline, events]);
 
   const histogram = activeTimeline.slice(0, 40);
   const peak = Math.max(60, ...histogram.map((i) => i.threatScore || 30));
 
+  // Replay: step through the record once per second and select the event
+  // behind each step, so Play actually walks the incident.
+  useEffect(() => {
+    if (!isPlaying || activeTimeline.length === 0) return;
+    const id = setInterval(() => {
+      setScrubIndex((i) => {
+        const next = i + 1;
+        if (next >= activeTimeline.length) {
+          setIsPlaying(false);
+          return i;
+        }
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [isPlaying, activeTimeline.length]);
+
+  // Selecting follows the scrubber so the drawer tracks the replay.
+  useEffect(() => {
+    const row = activeTimeline[scrubIndex];
+    if (isPlaying && row?.event) onSelectEvent(row.event);
+  }, [scrubIndex, isPlaying, activeTimeline, onSelectEvent]);
+
   return (
-    <div className="space-y-4 select-none font-mono text-xs pb-2">
+    <div className="space-y-6 select-none font-mono text-xs">
       <ScreenHeading
         eyebrow="4D Audit Trail"
         title="Temporal Intelligence & Causal Progression"
@@ -71,14 +132,20 @@ export default function TemporalIntelligenceTimeline({
         actions={
           <div className="flex items-center gap-1.5">
             <TacticalButton
-              onClick={() => setIsPlaying(!isPlaying)}
+              onClick={() => {
+                if (!isPlaying && scrubIndex >= activeTimeline.length - 1) setScrubIndex(0);
+                setIsPlaying(!isPlaying);
+              }}
               className="!px-2 !py-1"
               title={isPlaying ? 'Pause replay' : 'Play timeline progression'}
             >
               {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
             </TacticalButton>
             <TacticalButton
-              onClick={() => setScrubIndex(0)}
+              onClick={() => {
+                setIsPlaying(false);
+                setScrubIndex(0);
+              }}
               className="!px-2 !py-1"
               title="Reset to earliest step"
             >
@@ -112,16 +179,13 @@ export default function TemporalIntelligenceTimeline({
                     className="flex-1 group relative flex items-end h-full min-w-[4px] max-w-[34px]"
                     title={`[${item.eventId || 'STEP'}] ${item.title || ''} — ${item.severity || 'nominal'}`}
                   >
-                    <motion.span
-                      initial={{ height: 0 }}
-                      animate={{ height: `${height}%` }}
-                      transition={{ delay: idx * 0.012, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                      className={`w-full rounded-t-sm transition-all ${
-                        isSelected ? 'opacity-100' : 'opacity-55 group-hover:opacity-95'
+                    <span
+                      className={`w-full rounded-t-sm transition-[height,opacity] duration-500 ${
+                        isSelected ? 'opacity-100' : 'opacity-60 group-hover:opacity-95'
                       }`}
                       style={{
-                        background: `linear-gradient(to top, ${sev.hex}, ${sev.hex}88)`,
-                        boxShadow: isSelected ? `0 0 14px ${sev.hex}` : 'none',
+                        height: `${height}%`,
+                        background: `linear-gradient(to top, ${sev.hex}, ${sev.hex}99)`,
                       }}
                     />
                     {/* Hover readout */}
@@ -183,7 +247,7 @@ export default function TemporalIntelligenceTimeline({
                         )}
                       </div>
                       <p className="text-slate-300 text-xs mt-1 font-sans leading-snug">
-                        {item.title || item.description || 'Routine telemetry contact update'}
+                        {item.title}
                       </p>
                     </div>
                   </div>

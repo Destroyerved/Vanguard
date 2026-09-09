@@ -25,8 +25,8 @@
   --vg-line-hot: rgba(164, 198, 57, 0.75);
 
   /* Depth */
-  --vg-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.9);
-  --vg-shadow-glow: 0 0 28px rgba(82, 106, 39, 0.3);
+  --vg-shadow: 0 10px 28px -14px rgba(0, 0, 0, 0.85);
+  --vg-shadow-glow: 0 0 18px rgba(82, 106, 39, 0.16);
 
   --vg-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -40,25 +40,12 @@
     rgba(8, 12, 7, 0.62) 45%,
     rgba(3, 5, 3, 0.68) 100%
   );
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 1rem;
   box-shadow: var(--vg-shadow), inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
     inset 0 -1px 0 0 rgba(0, 0, 0, 0.5);
-}
-
-/* Specular top highlight — the tell that a surface is glass, not paint.
-   Rounded to match the panel so no clipping (and no overflow:hidden, which
-   would eat dropdowns and tooltips anchored inside a panel). */
-.vg-panel::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 45%;
-  pointer-events: none;
-  border-radius: 1rem 1rem 0 0;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.055), transparent);
 }
 
 .vg-panel-glow {
@@ -73,10 +60,9 @@
 }
 
 .vg-panel-interactive:hover {
-  border-color: rgba(164, 198, 57, 0.6);
-  box-shadow: 0 24px 55px -12px rgba(0, 0, 0, 0.95), 0 0 42px rgba(82, 106, 39, 0.4),
-    inset 0 1px 0 0 rgba(164, 198, 57, 0.4), inset 0 -1px 0 0 rgba(0, 0, 0, 0.5);
-  transform: translateY(-2px);
+  border-color: rgba(164, 198, 57, 0.4);
+  box-shadow: 0 14px 32px -14px rgba(0, 0, 0, 0.9);
+  transform: translateY(-1px);
 }
 
 /* Nested glass — for cards sitting inside a panel, so depth still reads. */
@@ -92,32 +78,19 @@
 }
 
 .vg-glass-inset:hover {
-  background: rgba(164, 198, 57, 0.07);
-  border-color: rgba(82, 106, 39, 0.6);
-  box-shadow: inset 0 1px 0 0 rgba(164, 198, 57, 0.25), 0 0 24px rgba(82, 106, 39, 0.22);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(164, 198, 57, 0.35);
 }
 
 .vg-glass-inset-active {
-  background: rgba(164, 198, 57, 0.1);
-  border-color: rgba(164, 198, 57, 0.6);
-  box-shadow: inset 0 1px 0 0 rgba(164, 198, 57, 0.35), 0 0 28px rgba(82, 106, 39, 0.35);
+  background: rgba(164, 198, 57, 0.09);
+  border-color: rgba(164, 198, 57, 0.5);
 }
 
 /* Panel header rule with a lime ignition segment on the left */
 .vg-panel-head {
   position: relative;
   border-bottom: 1px solid var(--vg-line);
-}
-
-.vg-panel-head::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  bottom: -1px;
-  width: 56px;
-  height: 1px;
-  background: linear-gradient(to right, var(--vg-lime-bright), transparent);
-  box-shadow: 0 0 8px rgba(164, 198, 57, 0.8);
 }
 
 /* --- Chips / Pills ------------------------------------------------------- */
@@ -129,9 +102,6 @@
   border-radius: 9999px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
   color: #94a3b8;
   font-family: var(--font-mono);
   font-size: 10px;
@@ -141,10 +111,9 @@
 }
 
 .vg-chip-active {
-  border-color: rgba(164, 198, 57, 0.65);
-  background: rgba(164, 198, 57, 0.16);
+  border-color: rgba(164, 198, 57, 0.5);
+  background: rgba(164, 198, 57, 0.14);
   color: var(--vg-lime-bright);
-  box-shadow: 0 0 18px rgba(82, 106, 39, 0.6), inset 0 1px 0 0 rgba(164, 198, 57, 0.35);
 }
 
 .vg-chip-btn {
@@ -167,9 +136,6 @@
   border-radius: 0.625rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.045);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
   color: #cbd5e1;
   font-family: var(--font-mono);
   font-size: 11px;
@@ -181,10 +147,9 @@
 }
 
 .vg-btn:hover:not(:disabled) {
-  border-color: rgba(164, 198, 57, 0.65);
+  border-color: rgba(164, 198, 57, 0.5);
   color: #fff;
-  background: rgba(164, 198, 57, 0.12);
-  box-shadow: 0 0 22px rgba(82, 106, 39, 0.45), inset 0 1px 0 0 rgba(164, 198, 57, 0.3);
+  background: rgba(164, 198, 57, 0.1);
 }
 
 .vg-btn:disabled {
@@ -196,13 +161,13 @@
   background: var(--vg-lime);
   border-color: rgba(198, 255, 0, 0.5);
   color: #0a0f05;
-  box-shadow: 0 0 22px rgba(164, 198, 57, 0.5);
+  box-shadow: none;
 }
 
 .vg-btn-primary:hover:not(:disabled) {
   background: var(--vg-lime-bright);
   color: #0a0f05;
-  box-shadow: 0 0 30px rgba(198, 255, 0, 0.65);
+  box-shadow: 0 0 14px rgba(198, 255, 0, 0.3);
 }
 
 .vg-btn-danger {
@@ -253,12 +218,9 @@
     rgba(255, 255, 255, 0.07),
     rgba(255, 255, 255, 0.02)
   );
-  backdrop-filter: blur(18px) saturate(170%);
-  -webkit-backdrop-filter: blur(18px) saturate(170%);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 0.85rem;
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.13);
-  padding: 0.65rem 0.75rem;
+  padding: 0.85rem 1rem;
   transition: all 0.3s var(--vg-ease);
 }
 
@@ -268,24 +230,21 @@
   inset: 0 auto 0 0;
   width: 2px;
   background: linear-gradient(to bottom, var(--vg-lime), transparent);
-  opacity: 0.7;
+  opacity: 0.45;
 }
 
 .vg-stat:hover {
-  border-color: rgba(164, 198, 57, 0.5);
-  background: linear-gradient(155deg, rgba(164, 198, 57, 0.14), rgba(255, 255, 255, 0.03));
-  box-shadow: inset 0 1px 0 0 rgba(164, 198, 57, 0.3), 0 0 26px rgba(82, 106, 39, 0.28);
-  transform: translateY(-1px);
+  border-color: rgba(164, 198, 57, 0.35);
 }
 
 /* --- Console Backdrop: hairline grid + vignette -------------------------- */
 .vg-console-bg {
   background-color: var(--vg-bg);
   background-image:
-    linear-gradient(to right, rgba(82, 106, 39, 0.13) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(82, 106, 39, 0.13) 1px, transparent 1px),
-    linear-gradient(to right, rgba(82, 106, 39, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(82, 106, 39, 0.05) 1px, transparent 1px);
+    linear-gradient(to right, rgba(82, 106, 39, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(82, 106, 39, 0.08) 1px, transparent 1px),
+    linear-gradient(to right, rgba(82, 106, 39, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(82, 106, 39, 0.03) 1px, transparent 1px);
   background-size: 96px 96px, 96px 96px, 24px 24px, 24px 24px;
 }
 
@@ -298,25 +257,6 @@
 }
 
 /* --- Live Data Motion ---------------------------------------------------- */
-@keyframes vgSweepLine {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-.vg-sweep {
-  position: relative;
-  overflow: hidden;
-}
-
-.vg-sweep::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(164, 198, 57, 0.14), transparent);
-  animation: vgSweepLine 3.2s linear infinite;
-  pointer-events: none;
-}
-
 @keyframes vgPulseRing {
   0% { box-shadow: 0 0 0 0 rgba(164, 198, 57, 0.5); }
   70% { box-shadow: 0 0 0 7px rgba(164, 198, 57, 0); }
@@ -339,8 +279,8 @@
 /* --- Typography helpers -------------------------------------------------- */
 .vg-label {
   font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.16em;
+  font-size: 10px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #64748b;
 }
@@ -383,7 +323,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .vg-sweep::after,
   .vg-pulse-ring,
   .vg-fade-up,
   .animate-jet-3d,

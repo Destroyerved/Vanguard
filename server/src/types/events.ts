@@ -18,7 +18,8 @@ export type SourceType =
   | 'log'
   | 'incident'
   | 'social_media'
-  | 'audio_recording';
+  | 'audio_recording'
+  | 'video';
 
 /** Operational severity tiers, ascending. */
 export type SeverityLevel = 'low' | 'medium' | 'high' | 'critical';
@@ -54,6 +55,7 @@ export const SOURCE_TYPES: readonly SourceType[] = [
   'incident',
   'social_media',
   'audio_recording',
+  'video',
 ] as const;
 
 /**
@@ -264,6 +266,177 @@ export interface MediaAuthenticityAudit {
   cameraCharacteristics?: CameraSensorCharacteristics;
 }
 
+/* ------------------------------------------------------------------ *
+ * Visual evidence engine (VANGUARD_VISUAL_EVIDENCE_ENGINE_COMPLETE.md)
+ * ------------------------------------------------------------------ */
+
+/** Axis-aligned bounding box, normalized 0..1 relative to the frame. */
+export interface VisualBoundingBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** One object the CV engine detected and linked to a persistent track. */
+export interface VisualDetection {
+  id: string;
+  classId: string;
+  label: string;
+  /** Detector confidence, 0..1 — NOT the system's belief about the event. */
+  confidence: number;
+  bbox: VisualBoundingBox;
+  trackId?: string;
+}
+
+/** A persistent object identity produced by the tracker across frames. */
+export interface ObjectTrack {
+  trackId: string;
+  classId: string;
+  label: string;
+  cameraId: string;
+  framesObserved: number;
+  /** First frame this identity appeared, ISO ISO. */
+  firstSeen: string;
+  /** Last frame this identity was observed, ISO. */
+  lastSeen: string;
+  /** Mean detector confidence across frames, 0..1. */
+  avgConfidence: number;
+  /** Ordered bbox history (frame-ordered), for boundary-box animation. */
+  bboxHistory: VisualBoundingBox[];
+  /** Latest world-space position, for fusion correlation and the map. */
+  latestPosition: { lat: number; lng: number };
+  latestSpeedKnots: number;
+  latestHeadingDegrees: number;
+  status: 'active' | 'closed';
+  /** True when this identity was judged inside a restricted zone. */
+  restrictedEntry: boolean;
+}
+
+/**
+ * Visual manipulation classification — deliberately not binary.
+ * Mirrors the §14 taxonomy: enhancement, editing, and fabrication are
+ * different degrees of distrust, and none of them authorize an auto-delete.
+ */
+export type VisualManipulationClass =
+  | 'AUTHENTIC'
+  | 'EDITED'
+  | 'ENHANCED'
+  | 'SUSPICIOUS_MANIPULATION'
+  | 'POTENTIAL_SYNTHETIC'
+  | 'UNKNOWN';
+
+/** The multi-signal forensic read of a clip, each 0..1 (1 = anomaly present). */
+export interface VisualForensicSignals {
+  compressionAnomaly: number;
+  frameAnomaly: number;
+  lightingAnomaly: number;
+  temporalAnomaly: number;
+  metadataAnomaly: number;
+  syntheticMediaSignal: number;
+  /** Weighted aggregate, 0..1. */
+  manipulationRisk: number;
+}
+
+/** Clip-level forensic assessment produced by the deterministic engine. */
+export interface VisualForensicAnalysis {
+  signals: VisualForensicSignals;
+  classification: VisualManipulationClass;
+  /** §18 weighted authenticity score, 0..100. */
+  authenticityScore: number;
+  /** Human-readable artifact indicators, surfaced to the operator. */
+  indicators: string[];
+  /** Whether the manipulation reads as benign enhancement (stabilize/upscale). */
+  upliftConfidence: number;
+}
+
+/** Schema status of a claim checked against structured visual evidence. */
+export type VisualClaimStatus =
+  | 'SUPPORTED'
+  | 'PARTIALLY_SUPPORTED'
+  | 'CONTRADICTED'
+  | 'UNCERTAIN'
+  | 'UNVERIFIABLE';
+
+/** A grounded or refuted claim, with the evidence that decided it. */
+export interface VisualClaim {
+  id: string;
+  text: string;
+  /** Confidence of the CLAIM itself, 0..1 (what was claimed, not the system). */
+  claimConfidence: number;
+  status: VisualClaimStatus;
+  /** Evidence (track/object/behavior identifiers) the claim rests on. */
+  supportingEvidence: string[];
+  /** Evidence that points the other way. */
+  contradictingEvidence: string[];
+  /** Why the schema status was assigned. */
+  basis: string;
+}
+
+/**
+ * An operator/intelligence statement that conflicts with what the visual
+ * evidence shows. VANGUARD surfaces the conflict and keeps BOTH sides rather
+ * than silently discarding the weaker view.
+ */
+export interface VisualContradiction {
+  id: string;
+  operatorStatement: string;
+  claimId: string;
+  status: Extract<VisualClaimStatus, 'CONTRADICTED' | 'PARTIALLY_SUPPORTED' | 'SUPPORTED' | 'UNCERTAIN'>;
+  /** ID of the visual evidence that resolved the claim. */
+  visualEvidenceId: string;
+  contradictionBasis: string[];
+  /** Confidence of the evidence that contradicted the claim, 0..1. */
+  evidenceConfidence: number;
+  createdAt: string;
+}
+
+/**
+ * The structured visual evidence bundle the CV engine attaches to a video
+ * event: what was detected, how it was tracked, whether the footage is
+ * trustworthy, and which claims survive validation. This is exactly the
+ * payload the §24 rule demands be handed to Gemini — never raw video.
+ */
+export interface VisualEvidence {
+  evidenceId: string;
+  cameraId: string;
+  cameraName: string;
+  clipId: string;
+  framesAnalyzed: number;
+  scene: {
+    durationSec: number;
+    framesAnalyzed: number;
+    /** label -> running count across the analyzed frames. */
+    objectCounts: Record<string, number>;
+  };
+  objects: VisualDetection[];
+  tracks: ObjectTrack[];
+  /** Object persistence across frames, 0..1. */
+  trackingConsistency: number;
+  /** Inter-frame motion coherence, 0..1. */
+  temporalConfidence: number;
+  forensics: VisualForensicAnalysis;
+  claims: VisualClaim[];
+  /**
+   * Refuted claims, surfaced with their stable `VC-####` identifiers and the
+   * forensic basis. The schema demands BOTH sides stay visible (§15/§28), and
+   * the feed cannot auto-delete the weaker view.
+   */
+  contradictions?: VisualContradiction[];
+  corroboration: {
+    corroboratedBy: string[];
+    distinctSources: string[];
+    sourceAgreement: number;
+    spatialAgreement: number;
+    temporalAgreement: number;
+  };
+  behaviorFlags: string[];
+  /** True when any forensics signal is strong enough to distrust the clip. */
+  manipulated: boolean;
+  /** Structural guarantee: the item is presented, never auto-discarded. */
+  surfaced: boolean;
+}
+
 /**
  * The single normalized record type that flows through the entire system.
  */
@@ -314,6 +487,12 @@ export interface UnifiedEvent {
    * still carry the event.
    */
   mediaAudit?: MediaAuthenticityAudit;
+  /**
+   * Structured visual evidence bundle, present on every CCTV (`video`) event.
+   * Carries detections, tracks, temporal/forensic reads and validated claims so
+   * downstream AI (Gemini) and the operator consume evidence, never raw frames.
+   */
+  visualEvidence?: VisualEvidence;
   /** Untouched original source payload — the audit trail. */
   raw: Record<string, unknown>;
 }

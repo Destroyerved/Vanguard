@@ -59,9 +59,8 @@ export function explainEvent(evt: UnifiedEvent): EventExplanation {
       break;
     }
     case 'log': {
-      const service = (raw?.serviceName as string) || 'Core System';
-      const ip = (raw?.ipAddress as string) || 'Internal Subnet';
-      tacticalImpact = `Cyber audit alert on ${service} originating from ${ip}. ${description}. Potential unauthorized access or infrastructure anomaly detected in perimeter logs.`;
+      const segment = raw?.segment ?? raw?.sensorId ?? 'perimeter segment';
+      tacticalImpact = `Perimeter sensor activation on ${segment}. ${description}. Physical boundary integrity is the primary concern; corroborate against patrol telemetry and radar before committing a response force.`;
       break;
     }
     case 'personnel': {
@@ -170,9 +169,9 @@ export function explainEvent(evt: UnifiedEvent): EventExplanation {
 
     case 'log':
       if (severity === 'critical') {
-        recommendedAction = `[RED CYBER / EW PROTOCOL] Isolate infected server subnet, switch command communications to frequency-hopping ECCM channels, initiate emergency cryptokey rotation, and trigger SOC threat-hunting protocol.`;
+        recommendedAction = `[RED PERIMETER PROTOCOL] Treat the boundary as breached: vector the nearest patrol to the activated segment, seal adjacent gates, and hold the quick-reaction force at readiness.`;
       } else if (severity === 'high') {
-        recommendedAction = `[ORANGE CYBER PROTOCOL] Flag IP range on firewall perimeter, enable deep packet inspection, and alert cyber defence duty engineer.`;
+        recommendedAction = `[ORANGE PERIMETER PROTOCOL] Dispatch a patrol to walk the activated segment, raise adjacent sensor sampling, and correlate against radar tracks in the same window.`;
       } else if (severity === 'medium') {
         recommendedAction = `[YELLOW CYBER PROTOCOL] Audit system authentication logs and elevate SOC monitoring sensitivity.`;
       } else {
@@ -225,8 +224,8 @@ export function explainEvent(evt: UnifiedEvent): EventExplanation {
       simpleDescription = `Sensors detected strong winds or heavy rain in the area. This can make drone flying unsafe and disrupt clear visibility.`;
       break;
     case 'log':
-      simpleHeadline = `🔒 Security System Alert`;
-      simpleDescription = `The computer security system noticed suspicious login activity or a network glitch. The system is protecting against unauthorized access.`;
+      simpleHeadline = `🚧 Perimeter Sensor Triggered`;
+      simpleDescription = `A sensor on the base boundary fence was set off — something crossed or disturbed it. Guards check whether it was a person, a vehicle, or an animal.`;
       break;
     case 'personnel':
       simpleHeadline = `👮 Patrol Team Status Update`;
@@ -336,11 +335,11 @@ export function explainEvent(evt: UnifiedEvent): EventExplanation {
 
     case 'log':
       if (severity === 'critical') {
-        simpleActionStep = 'What to do: Severe cyber attack or radio jamming detected! Isolate compromised network servers immediately, change security keys, and switch radios to jamming-resistant channels.';
+        simpleActionStep = 'What to do: The boundary fence was broken through. Send the guard team to that exact spot now and close the nearby gates.';
       } else if (severity === 'high') {
-        simpleActionStep = 'What to do: Suspicious computer activity detected. Block the IP address and monitor network traffic closely.';
+        simpleActionStep = 'What to do: Something set off the fence sensor. Send a patrol to walk that section and report what they find.';
       } else {
-        simpleActionStep = 'What to do: Computer systems safe. Routine security check passed.';
+        simpleActionStep = 'What to do: Fence sensors are working normally. Routine self-test passed.';
       }
       break;
 

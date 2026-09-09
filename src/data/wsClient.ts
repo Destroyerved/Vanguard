@@ -1,7 +1,6 @@
-/**
- * VANGUARD — push-only WebSocket client for ws://HOST:PORT/stream.
+/* VANGUARD — push-only WebSocket client for ws://HOST:PORT/stream.
  *
- * The server sends 11 typed frames and a monotonic per-connection `seq`; a
+ * The server sends 12 typed frames and a monotonic per-connection `seq`; a
  * missing sequence number means a frame was dropped, so we tell the caller to
  * re-sync the whole picture over REST rather than render a stale-but-live COP.
  * The socket is deliberately one-directional (inbound client frames ignored).
@@ -9,7 +8,7 @@
 
 import { WS_URL } from './apiClient';
 
-/** The 11 server push frame types (server/src/types/ws.ts). */
+/** The 12 server push frame types (server/src/types/ws.ts). */
 export type LiveFrame =
   | { type: 'HELLO'; timestamp: string; seq: number; payload: { serverVersion: string; tickIntervalMs: number; degradedMode: boolean } }
   | { type: 'EVENT_STREAM'; timestamp: string; seq: number; payload: { events: import('../types/schema').UnifiedEvent[] } }
@@ -21,7 +20,8 @@ export type LiveFrame =
   | { type: 'CLUSTER_UPDATE'; timestamp: string; seq: number; payload: { clusters: import('../types/schema').CorrelationCluster[] } }
   | { type: 'ASSET_UPDATE'; timestamp: string; seq: number; payload: { assets: import('../types/schema').TacticalAsset[] } }
   | { type: 'METRICS'; timestamp: string; seq: number; payload: { metrics: import('../types/schema').SystemMetrics } }
-  | { type: 'DEGRADED_MODE'; timestamp: string; seq: number; payload: { enabled: boolean; reason: string } };
+  | { type: 'DEGRADED_MODE'; timestamp: string; seq: number; payload: { enabled: boolean; reason: string } }
+  | { type: 'VISION_UPDATE'; timestamp: string; seq: number; payload: { summary: import('../types/schema').VisionSummary } };
 
 export type FrameHandlers = {
   hello?: (payload: LiveFrame & { type: 'HELLO' }) => void;
@@ -35,6 +35,7 @@ export type FrameHandlers = {
   assetUpdate?: (payload: ImportedFrame<'ASSET_UPDATE'>) => void;
   metrics?: (payload: ImportedFrame<'METRICS'>) => void;
   degradedMode?: (payload: ImportedFrame<'DEGRADED_MODE'>) => void;
+  visionUpdate?: (payload: ImportedFrame<'VISION_UPDATE'>) => void;
   /** Invoked when frames were dropped (seq gap) or the socket transitions state. */
   resync?: (reason: string) => void;
   state?: (state: 'connecting' | 'open' | 'closed' | 'reconnecting') => void;
@@ -125,6 +126,9 @@ export class LiveStreamClient {
           break;
         case 'DEGRADED_MODE':
           this.handlers.degradedMode?.(frame as ImportedFrame<'DEGRADED_MODE'>);
+          break;
+        case 'VISION_UPDATE':
+          this.handlers.visionUpdate?.(frame as ImportedFrame<'VISION_UPDATE'>);
           break;
       }
     };

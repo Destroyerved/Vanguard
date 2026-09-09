@@ -1,14 +1,11 @@
 import React from 'react';
-import { motion } from 'motion/react';
 import {
   Activity,
   AlertTriangle,
   Crosshair,
   Gauge,
-  Layers,
   Map as MapIcon,
   Radio,
-  Satellite,
 } from 'lucide-react';
 import { UnifiedEvent, AISummary, CorrelationCluster } from '../../types/schema';
 import TacticalMap from '../TacticalMap';
@@ -55,16 +52,14 @@ export default function OverviewCanvas({
   const activeFeeds = new Set(events.map((e) => e.sourceType)).size;
 
   const kpis = [
-    { label: 'Active Tracks', value: events.length, icon: Radio, tone: 'lime' as const, hint: 'Signals in the live window' },
-    { label: 'Critical', value: criticalEvents.length, icon: AlertTriangle, tone: 'rose' as const, hint: 'Severity: critical' },
-    { label: 'Anomalies', value: anomalyEvents.length, icon: Crosshair, tone: 'amber' as const, hint: 'Kinematic outliers flagged' },
-    { label: 'Corroborated', value: corroborated.length, icon: Layers, tone: 'emerald' as const, hint: 'Confirmed by ≥2 feeds' },
-    { label: 'Mean Confidence', value: meanConfidence, unit: '%', icon: Gauge, tone: 'lime' as const, hint: 'Rs × Dt × Bc' },
-    { label: 'Fused Clusters', value: clusters.length, icon: Satellite, tone: 'slate' as const, hint: 'Spatiotemporal groups' },
+    { label: 'Active tracks', value: events.length, icon: Radio, tone: 'lime' as const },
+    { label: 'Critical', value: criticalEvents.length, icon: AlertTriangle, tone: 'rose' as const },
+    { label: 'Anomalies', value: anomalyEvents.length, icon: Crosshair, tone: 'amber' as const },
+    { label: 'Mean confidence', value: meanConfidence, unit: '%', icon: Gauge, tone: 'lime' as const },
   ];
 
   return (
-<div className="space-y-4 select-none font-mono pb-2">
+    <div className="space-y-4 select-none font-mono pb-2">
       <ScreenHeading
         eyebrow="Common Operating Picture"
         title="Sector Situational Overview"
@@ -78,27 +73,15 @@ export default function OverviewCanvas({
         }
       />
 
-      {/* 1. KPI INSTRUMENT STRIP — the fusion picture in six numbers */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-        {kpis.map((kpi, i) => (
-          <motion.div
-            key={kpi.label}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.04, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <StatTile {...kpi} />
-          </motion.div>
+      {/* 1. KPI INSTRUMENT STRIP — the fusion picture in four numbers */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {kpis.map((kpi) => (
+          <StatTile key={kpi.label} {...kpi} />
         ))}
       </div>
 
       {/* 2. FULL-WIDTH GEOSPATIAL COMMON OPERATING PICTURE */}
-      <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="vg-panel vg-panel-glow p-1.5 w-full h-[480px]"
-      >
+      <div className="vg-panel p-1.5 w-full h-[520px]">
         <div className="w-full h-full rounded-xl overflow-hidden relative">
           <TacticalMap
             events={events}
@@ -108,30 +91,20 @@ export default function OverviewCanvas({
             selectedEventId={selectedEventId}
           />
         </div>
-      </motion.div>
+      </div>
 
       {/* 3. THREAT POSTURE & GROUNDED SITUATION BRIEFING */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.16, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="h-full"
-        >
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <div className="h-full">
           <ThreatPostureInstrument
             situation={situation}
             eventsCount={events.length}
             criticalCount={criticalEvents.length}
             anomalyCount={anomalyEvents.length}
           />
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.22, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="h-full"
-        >
+        <div className="h-full">
           <SituationBriefingCard
             situation={situation}
             briefing={briefing}
@@ -139,7 +112,7 @@ export default function OverviewCanvas({
             onSelectEventId={onSelectEventId}
             easyMode={easyMode}
           />
-        </motion.div>
+        </div>
       </div>
 
       {/* Footer readout — quiet provenance line, same idiom as the landing page */}
@@ -149,6 +122,9 @@ export default function OverviewCanvas({
           Projection: Leaflet / WGS-84
         </span>
         <span>Fusion window: ΔR ≤ 2.1 km · ΔT ≤ 18 s</span>
+        <span>
+          {corroborated.length} corroborated · {clusters.length} fused clusters
+        </span>
         <span>
           Grounding:{' '}
           <span className={briefingMeta?.groundingVerified ? 'text-emerald-400' : 'text-amber-400'}>
