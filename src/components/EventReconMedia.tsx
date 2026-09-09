@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UnifiedEvent } from '../types/schema';
 import { Radio, ShieldCheck, Camera, ExternalLink, Activity, Server, RefreshCw, Loader2, ZoomIn, Maximize2 } from 'lucide-react';
+import { BACKEND_URL } from '../data/apiClient';
 
 interface EventReconMediaProps {
   event: UnifiedEvent;
@@ -90,8 +91,8 @@ export default function EventReconMedia({ event }: EventReconMediaProps) {
       default:
         return {
           name: 'Vanguard Real-Time REST & WebSocket Ingestion Gateway',
-          apiUrl: 'http://localhost:3001/api/v1/situation/current',
-          docsUrl: 'http://localhost:3001/api/v1',
+          apiUrl: `${BACKEND_URL}/situation/current`,
+          docsUrl: BACKEND_URL,
           provider: 'Vanguard Multi-Source Fusion Engine',
           type: 'Unified Event Stream',
           status: 'LIVE LOCAL BACKEND',

@@ -6,8 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "vercel-build": "npm run build",
     "preview": "vite preview",
     "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "@types/d3": "^7.4.3",

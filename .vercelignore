@@ -1,0 +1,11 @@
+# Vercel Deployment Ignore
+.git
+.github
+backend/
+server/
+reports/
+docs/
+coverage/
+.vanguard-scratch/
+*.local
+*.log

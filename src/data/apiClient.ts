@@ -25,8 +25,12 @@ import type {
   VisionSummary,
 } from '../types/schema';
 
-export const BACKEND_URL = 'http://localhost:3001/api/v1';
-export const WS_URL = 'ws://localhost:3001/stream';
+const rawBackendUrl = (import.meta.env.VITE_BACKEND_URL || '').trim();
+export const BACKEND_URL = rawBackendUrl
+  ? (rawBackendUrl.endsWith('/api/v1') ? rawBackendUrl : `${rawBackendUrl.replace(/\/+$/, '')}/api/v1`)
+  : 'http://localhost:3001/api/v1';
+
+export const WS_URL = (import.meta.env.VITE_WS_URL || '').trim() || 'ws://localhost:3001/stream';
 
 const DEFAULT_TIMEOUT_MS = 4000;
 

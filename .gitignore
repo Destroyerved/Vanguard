@@ -57,3 +57,4 @@ CLAUDE.md
 # Scratch / local
 *.local
 .vanguard-scratch/
+.vercel/

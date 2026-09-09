@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Terminal, Play, Copy, Check, Server, Gauge, AlertTriangle } from 'lucide-react';
 import { TacticalPanel, ScreenHeading, Chip, TacticalButton, StatTile } from '../ui/tactical';
-
-const BACKEND_URL = 'http://localhost:3001/api/v1';
+import { BACKEND_URL } from '../../data/apiClient';
 
 const ENDPOINTS = [
   { method: 'GET', path: '/situation/current', desc: 'Active COP & threat level' },
