@@ -296,7 +296,10 @@ export default function VisualIntelligenceDashboard({
       {cameras.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
           {cameras.map((cam) => {
-            const risk = Math.round(cam.meanManipulationRisk * 100);
+            // The rollup already scales manipulationRisk to 0..100
+            // (Orchestrator: signals.manipulationRisk * 100); scaling again here
+            // rendered a 6% risk as 600%.
+            const risk = Math.round(cam.meanManipulationRisk);
             return (
               <div key={cam.cameraId} className="vg-panel p-3 flex items-start justify-between gap-2">
                 <div className="min-w-0">

@@ -17,6 +17,9 @@
 
 import {
   AISummary,
+  VisionSummary,
+  VisualManipulationClass,
+  VisualClaimStatus,
   CorrelationCluster,
   EscalationRecord,
   SituationSnapshot,
@@ -354,7 +357,244 @@ const ROUTINE: UnifiedEvent[] = [
   raw: { routine: true },
 }));
 
-export const DEMO_EVENTS: UnifiedEvent[] = [...INTERCEPT, ...COASTAL, ...OSINT, ...ROUTINE];
+// ─── Visual evidence: CCTV clips for the Visual Intelligence screen ─────────
+// Three clips covering the range the engine is built to separate: an authentic
+// capture that corroborates the intercept, a benignly enhanced clip (stabilised
+// and upscaled — distrusted but not discarded), and a synthetic clip whose
+// claim is refuted while the item itself stays surfaced (§15/§28).
+
+const box = (x: number, y: number, w: number, h: number) => ({ x, y, w, h });
+
+const CCTV: UnifiedEvent[] = [
+  {
+    id: 'EV-VID-9101',
+    sourceType: 'video',
+    sourceName: 'CCTV-NE-GATE',
+    timestamp: at(34),
+    location: near(0.03, 0.05),
+    severity: 'high',
+    title: 'CCTV NE gate — vehicle and two persons at the fence line',
+    description:
+      'Perimeter camera at the north-east gate captured a light utility vehicle stopping at the fence line and two persons dismounting during the tripwire alert window.',
+    confidence: 90,
+    corroboratedBy: ['EV-LOG-8820', 'EV-INC-5514'],
+    clusterId: 'CL-SECTOR04-01',
+    isAnomaly: false,
+    raw: { camera: 'CCTV-NE-GATE', clip: 'CLIP-9101' },
+    visualEvidence: {
+      evidenceId: 'VE-9101',
+      cameraId: 'CAM-NE-01',
+      cameraName: 'NE Gate — fence line',
+      clipId: 'CLIP-9101',
+      framesAnalyzed: 412,
+      scene: { durationSec: 17, framesAnalyzed: 412, objectCounts: { person: 2, vehicle: 1 } },
+      objects: [
+        { id: 'D-9101-1', classId: 'person', label: 'Person', confidence: 0.94, bbox: box(0.41, 0.52, 0.07, 0.22), trackId: 'TRK-9101-A' },
+        { id: 'D-9101-2', classId: 'person', label: 'Person', confidence: 0.89, bbox: box(0.5, 0.54, 0.06, 0.21), trackId: 'TRK-9101-B' },
+        { id: 'D-9101-3', classId: 'vehicle', label: 'Light utility vehicle', confidence: 0.91, bbox: box(0.22, 0.48, 0.24, 0.3), trackId: 'TRK-9101-C' },
+      ],
+      tracks: [
+        {
+          trackId: 'TRK-9101-A', classId: 'person', label: 'Person', cameraId: 'CAM-NE-01',
+          framesObserved: 388, firstSeen: at(34), lastSeen: at(19), avgConfidence: 0.92,
+          bboxHistory: [box(0.39, 0.52, 0.07, 0.22), box(0.41, 0.52, 0.07, 0.22)],
+          latestPosition: near(0.0305, 0.0502), latestSpeedKnots: 2.4, latestHeadingDegrees: 214,
+          status: 'closed', restrictedEntry: true,
+        },
+        {
+          trackId: 'TRK-9101-C', classId: 'vehicle', label: 'Light utility vehicle', cameraId: 'CAM-NE-01',
+          framesObserved: 402, firstSeen: at(34), lastSeen: at(18), avgConfidence: 0.9,
+          bboxHistory: [box(0.2, 0.48, 0.24, 0.3), box(0.22, 0.48, 0.24, 0.3)],
+          latestPosition: near(0.0298, 0.0495), latestSpeedKnots: 6.1, latestHeadingDegrees: 208,
+          status: 'active', restrictedEntry: true,
+        },
+      ],
+      trackingConsistency: 0.94,
+      temporalConfidence: 0.96,
+      forensics: {
+        signals: {
+          compressionAnomaly: 0.06, frameAnomaly: 0.04, lightingAnomaly: 0.08,
+          temporalAnomaly: 0.03, metadataAnomaly: 0.05, syntheticMediaSignal: 0.04,
+          manipulationRisk: 0.06,
+        },
+        classification: 'AUTHENTIC',
+        authenticityScore: 94,
+        indicators: ['Continuous timecode', 'Camera PRNU consistent with registered sensor'],
+        upliftConfidence: 0.02,
+      },
+      claims: [
+        {
+          id: 'CLM-9101-1',
+          text: 'A vehicle stopped at the north-east fence line during the alert window.',
+          claimConfidence: 93, status: 'SUPPORTED',
+          supportingEvidence: ['TRK-9101-C', 'EV-LOG-8820'], contradictingEvidence: [],
+          basis: 'Persistent vehicle track at the fence line, timestamps inside the tripwire window.',
+        },
+        {
+          id: 'CLM-9101-2',
+          text: 'Two persons dismounted and approached the perimeter.',
+          claimConfidence: 88, status: 'SUPPORTED',
+          supportingEvidence: ['TRK-9101-A', 'TRK-9101-B'], contradictingEvidence: [],
+          basis: 'Two person tracks originate at the vehicle and move toward the fence.',
+        },
+      ],
+      corroboration: {
+        corroboratedBy: ['EV-LOG-8820', 'EV-INC-5514'],
+        distinctSources: ['log', 'incident'],
+        sourceAgreement: 93, spatialAgreement: 91, temporalAgreement: 96,
+      },
+      behaviorFlags: ['RESTRICTED_AREA_ENTRY', 'LOITERING'],
+      manipulated: false,
+      surfaced: true,
+    },
+  },
+  {
+    id: 'EV-VID-9114',
+    sourceType: 'video',
+    sourceName: 'CCTV-APRON-02',
+    timestamp: at(88),
+    location: near(0.012, 0.021),
+    severity: 'medium',
+    title: 'CCTV apron — stabilised night clip, low-light uplift applied',
+    description:
+      'Apron camera clip that has been stabilised and upscaled before reaching the console. Editing is benign processing, not fabrication, so the clip is downweighted but retained.',
+    confidence: 71,
+    corroboratedBy: ['EV-PER-2195'],
+    isAnomaly: false,
+    raw: { camera: 'CCTV-APRON-02', clip: 'CLIP-9114', pipeline: 'stabilize+upscale' },
+    visualEvidence: {
+      evidenceId: 'VE-9114',
+      cameraId: 'CAM-APRON-02',
+      cameraName: 'Apron — south stand',
+      clipId: 'CLIP-9114',
+      framesAnalyzed: 260,
+      scene: { durationSec: 11, framesAnalyzed: 260, objectCounts: { person: 1 } },
+      objects: [
+        { id: 'D-9114-1', classId: 'person', label: 'Person', confidence: 0.72, bbox: box(0.55, 0.6, 0.05, 0.18), trackId: 'TRK-9114-A' },
+      ],
+      tracks: [
+        {
+          trackId: 'TRK-9114-A', classId: 'person', label: 'Person', cameraId: 'CAM-APRON-02',
+          framesObserved: 214, firstSeen: at(88), lastSeen: at(78), avgConfidence: 0.7,
+          bboxHistory: [box(0.53, 0.6, 0.05, 0.18), box(0.55, 0.6, 0.05, 0.18)],
+          latestPosition: near(0.0122, 0.0214), latestSpeedKnots: 1.8, latestHeadingDegrees: 96,
+          status: 'closed', restrictedEntry: false,
+        },
+      ],
+      trackingConsistency: 0.77,
+      temporalConfidence: 0.82,
+      forensics: {
+        signals: {
+          compressionAnomaly: 0.42, frameAnomaly: 0.31, lightingAnomaly: 0.55,
+          temporalAnomaly: 0.12, metadataAnomaly: 0.38, syntheticMediaSignal: 0.09,
+          manipulationRisk: 0.34,
+        },
+        classification: 'ENHANCED',
+        authenticityScore: 68,
+        indicators: ['Re-encoded twice', 'Super-resolution upscaling signature', 'Stabilisation warp at frame edges'],
+        upliftConfidence: 0.81,
+      },
+      claims: [
+        {
+          id: 'CLM-9114-1',
+          text: 'A person was present on the south apron at 02:13 local.',
+          claimConfidence: 66, status: 'PARTIALLY_SUPPORTED',
+          supportingEvidence: ['TRK-9114-A'], contradictingEvidence: [],
+          basis: 'Track is real but short and low-confidence; enhancement reduces the weight of the visual read.',
+        },
+      ],
+      corroboration: {
+        corroboratedBy: ['EV-PER-2195'],
+        distinctSources: ['personnel'],
+        sourceAgreement: 64, spatialAgreement: 70, temporalAgreement: 74,
+      },
+      behaviorFlags: [],
+      manipulated: true,
+      surfaced: true,
+    },
+  },
+  {
+    id: 'EV-VID-9130',
+    sourceType: 'video',
+    sourceName: 'OSINT-VIDEO-INGEST',
+    timestamp: at(64),
+    location: near(-0.058, 0.084),
+    severity: 'medium',
+    title: 'Circulated clip claiming an armed breach — synthetic frames detected',
+    description:
+      'Clip circulating alongside the fabricated breach image. Frame analysis finds generative artefacts and no camera provenance. The claim is refuted, and the item is kept on screen rather than deleted.',
+    confidence: 24,
+    corroboratedBy: [],
+    isAnomaly: true,
+    anomalyReason: 'Synthetic media signal 0.88 with zero cross-sensor corroboration.',
+    raw: { camera: null, clip: 'CLIP-9130', ingest: 'osint' },
+    visualEvidence: {
+      evidenceId: 'VE-9130',
+      cameraId: 'CAM-UNKNOWN',
+      cameraName: 'Unattributed OSINT ingest',
+      clipId: 'CLIP-9130',
+      framesAnalyzed: 180,
+      scene: { durationSec: 8, framesAnalyzed: 180, objectCounts: { person: 3 } },
+      objects: [
+        { id: 'D-9130-1', classId: 'person', label: 'Person (low reliability)', confidence: 0.44, bbox: box(0.3, 0.45, 0.08, 0.25) },
+      ],
+      tracks: [],
+      trackingConsistency: 0.21,
+      temporalConfidence: 0.28,
+      forensics: {
+        signals: {
+          compressionAnomaly: 0.71, frameAnomaly: 0.83, lightingAnomaly: 0.79,
+          temporalAnomaly: 0.68, metadataAnomaly: 0.95, syntheticMediaSignal: 0.88,
+          manipulationRisk: 0.86,
+        },
+        classification: 'POTENTIAL_SYNTHETIC',
+        authenticityScore: 18,
+        indicators: [
+          'Generative frame artefacts around limb boundaries',
+          'No camera provenance or PRNU match',
+          'Lighting direction inconsistent between frames',
+        ],
+        upliftConfidence: 0.03,
+      },
+      claims: [
+        {
+          id: 'CLM-9130-1',
+          text: 'Armed personnel breached the Sector 04 perimeter on foot.',
+          claimConfidence: 19, status: 'CONTRADICTED',
+          supportingEvidence: [],
+          contradictingEvidence: ['EV-VID-9101', 'EV-LOG-8820', 'EV-PER-2210'],
+          basis: 'No corresponding track on any perimeter camera or sensor in the same window; frames read as synthetic.',
+        },
+      ],
+      contradictions: [
+        {
+          id: 'CTR-9130-1',
+          operatorStatement: 'Reports circulating that armed personnel breached the perimeter on foot.',
+          claimId: 'CLM-9130-1',
+          status: 'CONTRADICTED',
+          visualEvidenceId: 'VE-9130',
+          contradictionBasis: [
+            'NE gate camera shows a vehicle and two unarmed persons, not an armed foot breach',
+            'Perimeter tripwire logged two beam breaks, consistent with the vehicle stop',
+            'No weapon detection on any clip in the window',
+          ],
+          evidenceConfidence: 91,
+          createdAt: at(58),
+        },
+      ],
+      corroboration: {
+        corroboratedBy: [],
+        distinctSources: [],
+        sourceAgreement: 0, spatialAgreement: 8, temporalAgreement: 12,
+      },
+      behaviorFlags: [],
+      manipulated: true,
+      surfaced: true,
+    },
+  },
+];
+
+export const DEMO_EVENTS: UnifiedEvent[] = [...INTERCEPT, ...COASTAL, ...OSINT, ...CCTV, ...ROUTINE];
 
 // ─── Clusters ────────────────────────────────────────────────────────────────
 
@@ -665,6 +905,71 @@ export const DEMO_BRIEFING: AISummary = {
   },
 };
 
+
+// ─── Vision rollup ───────────────────────────────────────────────────────────
+// Derived from the CCTV bundles above rather than written out by hand, so the
+// §33 panel can never disagree with the clips it is summarising.
+
+const visionClips = CCTV.map((e) => e.visualEvidence!);
+
+const emptyClassTally = (): Record<VisualManipulationClass, number> => ({
+  AUTHENTIC: 0,
+  EDITED: 0,
+  ENHANCED: 0,
+  SUSPICIOUS_MANIPULATION: 0,
+  POTENTIAL_SYNTHETIC: 0,
+  UNKNOWN: 0,
+});
+
+const emptyClaimTally = (): Record<VisualClaimStatus, number> => ({
+  SUPPORTED: 0,
+  PARTIALLY_SUPPORTED: 0,
+  CONTRADICTED: 0,
+  UNCERTAIN: 0,
+  UNVERIFIABLE: 0,
+});
+
+const classTally = emptyClassTally();
+const claimTally = emptyClaimTally();
+for (const clip of visionClips) {
+  classTally[clip.forensics.classification] += 1;
+  for (const claim of clip.claims) claimTally[claim.status] += 1;
+}
+
+const mean = (nums: number[]) =>
+  nums.length ? Math.round(nums.reduce((a, n) => a + n, 0) / nums.length) : 0;
+
+/** Fractional (0..1) means keep their precision — rounding them would zero them. */
+const meanRaw = (nums: number[]) =>
+  nums.length ? +(nums.reduce((a, n) => a + n, 0) / nums.length).toFixed(3) : 0;
+
+export const DEMO_VISION_SUMMARY: VisionSummary = {
+  generatedAt: at(8),
+  counts: {
+    clips: visionClips.length,
+    cameras: new Set(visionClips.map((c) => c.cameraId)).size,
+    activeTracks: visionClips.flatMap((c) => c.tracks).filter((t) => t.status === 'active').length,
+    contradictions: visionClips.flatMap((c) => c.contradictions ?? []).length,
+  },
+  means: {
+    authenticityScore: mean(visionClips.map((c) => c.forensics.authenticityScore)),
+    manipulationRisk: mean(visionClips.map((c) => Math.round(c.forensics.signals.manipulationRisk * 100))),
+    trackingConsistency: meanRaw(visionClips.map((c) => c.trackingConsistency)),
+    temporalConfidence: meanRaw(visionClips.map((c) => c.temporalConfidence)),
+  },
+  claims: claimTally,
+  classification: classTally,
+  byCamera: visionClips.map((c) => ({
+    cameraId: c.cameraId,
+    cameraName: c.cameraName,
+    clips: 1,
+    restrictedEntries: c.tracks.filter((t) => t.restrictedEntry).length,
+    meanAuthenticity: c.forensics.authenticityScore,
+    meanManipulationRisk: Math.round(c.forensics.signals.manipulationRisk * 100),
+    meanTrackingConsistency: c.trackingConsistency,
+  })),
+};
+
 /** Everything a console screen needs, with no network involved. */
 export const DEMO_DATASET = {
   events: DEMO_EVENTS,
@@ -673,4 +978,5 @@ export const DEMO_DATASET = {
   timeline: DEMO_TIMELINE,
   sources: DEMO_SOURCES,
   briefing: DEMO_BRIEFING,
+  visionSummary: DEMO_VISION_SUMMARY,
 };

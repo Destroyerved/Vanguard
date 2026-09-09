@@ -103,6 +103,7 @@ function AppContent() {
     setClusters(DEMO_DATASET.clusters);
     setBriefing(DEMO_DATASET.briefing);
     setBriefingMeta({ ageMs: 10_000, generating: false, groundingVerified: true });
+    setVisionSummary(DEMO_DATASET.visionSummary);
     setLoading(false);
   }, []);
 
