@@ -35,7 +35,6 @@ export type NavSection =
   | 'api_tester';
 
 interface TopTacticalHeaderProps {
-  currentTime: string;
   situation: any;
   serverOnline: boolean;
   wsLive?: boolean;
@@ -81,7 +80,6 @@ const THREAT_POSTURE: Record<
 };
 
 export default function TopTacticalHeader({
-  currentTime,
   situation,
   serverOnline,
   wsLive = false,
@@ -101,6 +99,14 @@ export default function TopTacticalHeader({
   const { operatorProfile, logout } = useAuth();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Local chronometer — isolates the 1s tick here instead of re-rendering the
+  // whole App tree every second.
+  const [now, setNow] = useState<string>(() => new Date().toUTCString());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date().toUTCString()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   // Dismiss the operator menu on any outside click — a stuck menu over a live
   // COP is worse than an extra click to reopen it.
@@ -291,7 +297,7 @@ export default function TopTacticalHeader({
           {/* CHRONOMETER */}
           <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.04] backdrop-blur-md border border-[#526a27]/25 text-slate-300">
             <Clock className="w-3 h-3 text-[#a4c639]" />
-            <span className="vg-readout text-[10px] font-semibold">{currentTime}</span>
+            <span className="vg-readout text-[10px] font-semibold">{now}</span>
           </div>
         </div>
       </div>

@@ -25,6 +25,21 @@ const SOURCE_FILTERS = [
 
 const SEVERITY_FILTERS = ['ALL', 'critical', 'high', 'medium', 'low'];
 
+// Persistent explanation cache: explainEvent() does heavy text generation, so
+// only recompute for events whose content actually changed across 3s ticks.
+const explanationCache = new Map<string, ReturnType<typeof explainEvent>>();
+
+function getExplanation(evt: UnifiedEvent) {
+  const key = `${evt.id}:${evt.timestamp}:${evt.confidence}`;
+  let exp = explanationCache.get(key);
+  if (!exp) {
+    exp = explainEvent(evt);
+    explanationCache.set(key, exp);
+    if (explanationCache.size > 800) explanationCache.clear();
+  }
+  return exp;
+}
+
 export default function SignalHorizonStream({
   events,
   selectedEventId,
@@ -181,7 +196,7 @@ export default function SignalHorizonStream({
                   {easyMode && (
                     <span className="flex items-start gap-1 text-[11px] text-amber-300/85 font-sans leading-snug line-clamp-1">
                       <Lightbulb className="w-3 h-3 mt-px shrink-0" />
-                      {explainEvent(evt).easy.simpleDescription}
+                      {getExplanation(evt).easy.simpleDescription}
                     </span>
                   )}
                 </div>

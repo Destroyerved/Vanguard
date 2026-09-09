@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { UnifiedEvent, AISummary, CorrelationCluster, BriefingLatestResponse } from './types/schema';
 import { getScenarioDataset, DemoScenarioMode } from './data/scenarioEngine';
 import {
@@ -39,7 +39,6 @@ function AppContent() {
   const [loading, setLoading] = useState(true);
   const [serverOnline, setServerOnline] = useState(false);
   const [wsLive, setWsLive] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date().toUTCString());
   const [refreshing, setRefreshing] = useState(false);
 
   // Core Data States
@@ -57,9 +56,14 @@ function AppContent() {
   const [selectedEvent, setSelectedEvent] = useState<UnifiedEvent | null>(null);
   const [easyMode, setEasyMode] = useState<boolean>(true);
   const [activeScenario, setActiveScenario] = useState<DemoScenarioMode | null>(null);
+  const [scenarioNonce, setScenarioNonce] = useState(0);
   const [isDegradedComms, setIsDegradedComms] = useState<boolean>(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // Signature cache: avoids redundant setState → whole-tree re-renders when the
+  // WS/REST picture is byte-identical across 3s ticks / 5s polls.
+  const liveFrameSig = useRef<Record<string, string>>({});
 
   // Natural-language omnibar filter (POST /ai/query)
   const [nlQuery, setNlQuery] = useState<string>('');
@@ -79,23 +83,49 @@ function AppContent() {
       const sitRes = await getSituation();
       setServerOnline(true);
       if (!activeScenario || isManualSync) {
-        setSituation(sitRes.situation);
-        setSourcesHealth(sitRes.sources);
+        const sitSig = JSON.stringify(sitRes.situation);
+        if (sitSig !== liveFrameSig.current.situation) {
+          liveFrameSig.current.situation = sitSig;
+          setSituation(sitRes.situation);
+        }
+        const srcSig = JSON.stringify(sitRes.sources);
+        if (srcSig !== liveFrameSig.current.sources) {
+          liveFrameSig.current.sources = srcSig;
+          setSourcesHealth(sitRes.sources);
+        }
       }
 
       // 2. Timeline (escalation audit log)
       const timeRes = await getTimeline();
-      setTimeline(Array.isArray(timeRes) ? timeRes : timeRes.timeline || []);
+      const timelineData = Array.isArray(timeRes) ? timeRes : timeRes.timeline || [];
+      const timeSig = JSON.stringify(timelineData);
+      if (timeSig !== liveFrameSig.current.timeline) {
+        liveFrameSig.current.timeline = timeSig;
+        setTimeline(timelineData);
+      }
 
       // 3. Events (active in-memory events, capped)
       const evtRes = await getEvents();
       if (!activeScenario || isManualSync) {
-        setEvents(evtRes.events || []);
+        let sig = '';
+        for (const evt of evtRes.events) {
+          sig += evt.id === undefined ? '' : evt.id;
+          sig += ':' + (evt.timestamp ?? '') + ':' + (evt.confidence ?? '') + '|';
+        }
+        if (sig !== liveFrameSig.current.events) {
+          liveFrameSig.current.events = sig;
+          setEvents(evtRes.events || []);
+        }
       }
 
       // 4. Correlation clusters (map clustering + topology)
       const cluRes = await getClusters();
-      setClusters((cluRes.clusters ?? []).map(({ events: _e, ...cluster }) => cluster));
+      const clustersData = (cluRes.clusters ?? []).map(({ events: _e, ...cluster }) => cluster);
+      const cluSig = JSON.stringify(clustersData);
+      if (cluSig !== liveFrameSig.current.clusters) {
+        liveFrameSig.current.clusters = cluSig;
+        setClusters(clustersData);
+      }
 
       // 5. Cached AI briefing (never blocks).
       await refreshBriefing();
@@ -129,13 +159,12 @@ function AppContent() {
     }
   }, []);
 
-  // Polling + clock
+  // Polling — the clock now lives inside TopTacticalHeader so the 1s tick no
+  // longer re-renders the entire App tree.
   useEffect(() => {
     fetchBackendData();
-    const clockTimer = setInterval(() => setCurrentTime(new Date().toUTCString()), 1000);
     const pollTimer = setInterval(() => fetchBackendData(false), 5000);
     return () => {
-      clearInterval(clockTimer);
       clearInterval(pollTimer);
     };
   }, [fetchBackendData]);
@@ -146,19 +175,37 @@ function AppContent() {
       state: (state) => setWsLive(state === 'open'),
       situationUpdate: (frame) => {
         if (activeScenario) return;
+        const sig = JSON.stringify(frame.payload.situation);
+        if (sig === liveFrameSig.current.situation) return;
+        liveFrameSig.current.situation = sig;
         setSituation(frame.payload.situation);
       },
       healthStatus: (frame) => {
         if (activeScenario) return;
+        const sig = JSON.stringify(frame.payload.sources);
+        if (sig === liveFrameSig.current.sources) return;
+        liveFrameSig.current.sources = sig;
         setSourcesHealth(frame.payload.sources);
       },
       briefingUpdate: (frame) => {
         if (activeScenario) return;
+        const sig = frame.payload.summary ? JSON.stringify(frame.payload.summary) : '';
+        if (sig === liveFrameSig.current.briefing) return;
+        liveFrameSig.current.briefing = sig;
         setBriefing(frame.payload.summary);
         setBriefingMeta((m) => ({ ...m, groundingVerified: true }));
       },
       eventStream: (frame) => {
         if (activeScenario) return; // scenario mode overrides the live picture
+        // Build a cheap signature of the incoming picture; skip the state update
+        // entirely when nothing changed so the COP does not re-render every tick.
+        let sig = '';
+        for (const evt of frame.payload.events) {
+          sig += evt.id === undefined ? '' : evt.id;
+          sig += ':' + (evt.timestamp ?? '') + ':' + (evt.confidence ?? '') + '|';
+        }
+        if (sig === liveFrameSig.current.events) return;
+        liveFrameSig.current.events = sig;
         setEvents((prev) => {
           const byId = new Map(prev.map((e) => [e.id, e]));
           for (const evt of frame.payload.events) byId.set(evt.id, evt);
@@ -167,10 +214,16 @@ function AppContent() {
       },
       clusterUpdate: (frame) => {
         if (activeScenario) return;
+        const sig = JSON.stringify(frame.payload.clusters);
+        if (sig === liveFrameSig.current.clusters) return;
+        liveFrameSig.current.clusters = sig;
         setClusters(frame.payload.clusters);
       },
       escalation: (frame) => {
         if (activeScenario) return;
+        const sig = JSON.stringify(frame.payload.record);
+        if (sig === liveFrameSig.current.escalation) return;
+        liveFrameSig.current.escalation = sig;
         setTimeline((prev) => [frame.payload.record, ...prev].slice(0, 200));
       },
       degradedMode: (frame) => {
@@ -234,6 +287,7 @@ function AppContent() {
   // Handle Scenario Injections
   const handleInjectScenario = (mode: DemoScenarioMode) => {
     setActiveScenario(mode);
+    setScenarioNonce((n) => n + 1);
     const scenario = getScenarioDataset(mode);
     setSituation({
       threatLevel: scenario.threatLevel,
@@ -324,7 +378,6 @@ const handleRunNlQuery = async (query: string) => {
 
       {/* 1. TOP TACTICAL COMMAND HEADER */}
       <TopTacticalHeader
-        currentTime={currentTime}
         situation={situation}
         serverOnline={serverOnline && wsLive}
         wsLive={wsLive}
@@ -363,6 +416,7 @@ const handleRunNlQuery = async (query: string) => {
             <OverviewCanvas
               situation={situation}
               events={viewEvents}
+              recenterNonce={scenarioNonce}
               briefing={briefing}
               briefingMeta={briefingMeta}
               clusters={clusters}
