@@ -35,6 +35,7 @@ interface TacticalPanelProps {
   glow?: boolean;
   /** Adds hover lift. Only for panels that are themselves clickable regions. */
   interactive?: boolean;
+  /** Hardware corner marks. Off by default — reserve for a hero panel. */
   brackets?: boolean;
   className?: string;
   bodyClassName?: string;
@@ -48,7 +49,7 @@ export function TacticalPanel({
   actions,
   glow = false,
   interactive = false,
-  brackets = true,
+  brackets = false,
   className,
   bodyClassName,
   children,
@@ -72,12 +73,12 @@ export function TacticalPanel({
       )}
 
       {(title || actions) && (
-        <div className="vg-panel-head flex items-center justify-between gap-3 px-4 py-2.5 shrink-0">
+        <div className="vg-panel-head flex items-center justify-between gap-3 px-5 py-3.5 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
             {Icon && <Icon className="w-4 h-4 shrink-0 text-[#a4c639]" />}
             <div className="min-w-0">
               {title && (
-                <h3 className="vg-title text-[13px] text-slate-100 truncate leading-tight">
+                <h3 className="vg-title text-[13px] text-slate-100 truncate leading-tight tracking-wide">
                   {title}
                 </h3>
               )}
@@ -87,7 +88,7 @@ export function TacticalPanel({
           {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
         </div>
       )}
-      <div className={cx('flex-1 min-h-0 p-4', bodyClassName)}>{children}</div>
+      <div className={cx('flex-1 min-h-0 p-5', bodyClassName)}>{children}</div>
     </div>
   );
 }
@@ -233,7 +234,7 @@ export function ScreenHeading({
   actions,
 }: ScreenHeadingProps) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
+    <div className="flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           {Icon && <Icon className="w-3.5 h-3.5 text-[#a4c639]" />}

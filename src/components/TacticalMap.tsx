@@ -358,7 +358,7 @@ export default function TacticalMap({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onWheel={handleWheel}
-      className={`relative w-full h-full min-h-[440px] bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-xl overflow-hidden select-none font-mono shadow-2xl  ${
+      className={`relative w-full h-full min-h-[440px] bg-white/[0.04] border border-white/10 rounded-xl overflow-hidden select-none font-mono shadow-2xl  ${
         isDragging ? 'cursor-grabbing' : 'cursor-grab'
       }`}
     >
@@ -395,12 +395,12 @@ export default function TacticalMap({
 
       {/* 2. TOP TACTICAL CONTROL BAR */}
       <div className="absolute top-3 left-3 right-3 z-30 flex flex-wrap items-center justify-between gap-2 pointer-events-auto">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.035] backdrop-blur-md border border-white/10 backdrop-blur text-xs">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.035] border border-white/10 backdrop-blur text-xs">
           <Compass className="w-4 h-4 text-[#a4c639]" />
           <span className="font-heading font-bold text-sm tracking-wider text-slate-100 uppercase">
             GEOSPATIAL COMMON OPERATING PICTURE
           </span>
-          <span className="text-[10px] text-[#a4c639] font-bold px-1.5 py-[1px] rounded-lg bg-[#a4c639]/10 backdrop-blur-md border border-[#526a27]/40">
+          <span className="text-[10px] text-[#a4c639] font-bold px-1.5 py-[1px] rounded-lg bg-[#a4c639]/10 border border-[#526a27]/40">
             {filteredEvents.length} TRACKS LIVE
           </span>
           {clusters.length > 0 && (
@@ -411,7 +411,7 @@ export default function TacticalMap({
         </div>
 
         {/* CONTROLS: LAYER SELECTOR, FILTERS, ZOOM */}
-        <div className="flex items-center gap-1.5 bg-white/[0.035] backdrop-blur-md border border-white/10 rounded-lg p-1 backdrop-blur text-xs">
+        <div className="flex items-center gap-1.5 bg-white/[0.035] border border-white/10 rounded-lg p-1 backdrop-blur text-xs">
           {/* Layer Selector */}
           <div className="flex items-center gap-1 pr-1.5 border-r border-white/10">
             {[
@@ -424,7 +424,7 @@ export default function TacticalMap({
                 onClick={() => setActiveLayer(lyr.id as MapLayerType)}
                 className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
                   activeLayer === lyr.id
-                    ? 'bg-[#a4c639]/10 backdrop-blur-md border border-[#526a27]/60 text-[#bcd94f] shadow-hud-glow'
+                    ? 'bg-[#a4c639]/10 border border-[#526a27]/60 text-[#bcd94f] shadow-hud-glow'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -437,7 +437,7 @@ export default function TacticalMap({
           <select
             value={selectedSource}
             onChange={(e) => setSelectedSource(e.target.value)}
-            className="bg-white/[0.04] backdrop-blur-md border border-white/10 text-[#bcd94f] px-2 py-0.5 rounded-lg text-[11px] outline-none focus:border-[#526a27]/40"
+            className="bg-white/[0.04] border border-white/10 text-[#bcd94f] px-2 py-0.5 rounded-lg text-[11px] outline-none focus:border-[#526a27]/40"
           >
             <option value="all">All Feeds</option>
             <option value="radar">Radar Tracks</option>
@@ -452,8 +452,8 @@ export default function TacticalMap({
             onClick={() => setShowCorrelationArcs(!showCorrelationArcs)}
             className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all ${
               showCorrelationArcs
-                ? 'bg-[#a4c639]/10 backdrop-blur-md border-[#526a27]/50 text-[#bcd94f] shadow-hud-glow'
-                : 'bg-white/[0.04] backdrop-blur-md border-white/10 text-slate-400'
+                ? 'bg-[#a4c639]/10 border-[#526a27]/50 text-[#bcd94f] shadow-hud-glow'
+                : 'bg-white/[0.04] border-white/10 text-slate-400'
             }`}
             title="Toggle Correlation Arcs"
           >
@@ -466,7 +466,7 @@ export default function TacticalMap({
             className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all ${
               showAnomaliesOnly
                 ? 'bg-rose-950/80 border-rose-500/60 text-rose-300 font-bold'
-                : 'bg-white/[0.04] backdrop-blur-md border-white/10 text-slate-400 hover:text-slate-200'
+                : 'bg-white/[0.04] border-white/10 text-slate-400 hover:text-slate-200'
             }`}
             title="Filter Anomalies Only"
           >
@@ -655,7 +655,7 @@ export default function TacticalMap({
               />
               {/* Badge */}
               <div
-                className={`w-10 h-10 rounded-full border-2 ${clusterColor} bg-white/[0.035] backdrop-blur-md flex flex-col items-center justify-center shadow-xl transition-all group-hover:scale-110`}
+                className={`w-10 h-10 rounded-full border-2 ${clusterColor} bg-white/[0.035] flex flex-col items-center justify-center shadow-xl transition-all group-hover:scale-110`}
               >
                 <span className="text-[9px] font-bold leading-none">{cluster.eventIds.length}</span>
                 <span className="text-[6px] uppercase leading-none opacity-80 mt-0.5">Linked</span>
@@ -722,7 +722,7 @@ export default function TacticalMap({
               {/* Entity Node with Rotation */}
               <div
                 style={{ transform: `rotate(${heading}deg)` }}
-                className={`w-6 h-6 rounded-full border-2 ${beaconColor} flex items-center justify-center bg-white/[0.035] backdrop-blur-md shadow-md transition-all group-hover:scale-125`}
+                className={`w-6 h-6 rounded-full border-2 ${beaconColor} flex items-center justify-center bg-white/[0.035] shadow-md transition-all group-hover:scale-125`}
               >
                 <Icon className="w-3.5 h-3.5" />
               </div>
@@ -734,7 +734,7 @@ export default function TacticalMap({
               </div>
 
               {/* INTERACTIVE HOVER TELEMETRY CARD */}
-              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block z-50 p-3 rounded-md bg-white/[0.035] backdrop-blur-md border border-[#526a27]/50 shadow-2xl text-[10px] whitespace-nowrap pointer-events-none space-y-1.5">
+              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block z-50 p-3 rounded-md bg-white/[0.035] border border-[#526a27]/50 shadow-2xl text-[10px] whitespace-nowrap pointer-events-none space-y-1.5">
                 <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-1">
                   <span className="font-bold text-[#bcd94f] text-xs flex items-center gap-1">
                     <Target className="w-3.5 h-3.5" /> {evt.id}
@@ -765,7 +765,7 @@ export default function TacticalMap({
       </div>
 
       {/* 5. BOTTOM TELEMETRY HUD BAR */}
-      <div className="absolute bottom-2 left-2 right-2 z-30 flex items-center justify-between text-[10px] text-slate-400 bg-white/[0.035] backdrop-blur-md border border-white/10 rounded-lg px-3 py-1.5 backdrop-blur pointer-events-none">
+      <div className="absolute bottom-2 left-2 right-2 z-30 flex items-center justify-between text-[10px] text-slate-400 bg-white/[0.035] border border-white/10 rounded-lg px-3 py-1.5 backdrop-blur pointer-events-none">
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-hud-glow animate-pulse" />
