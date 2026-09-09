@@ -79,6 +79,11 @@ function AppContent() {
   const [isDegradedComms, setIsDegradedComms] = useState<boolean>(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authInitialTab, setAuthInitialTab] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
+  const openAuthModal = useCallback((tab: 'LOGIN' | 'REGISTER' = 'LOGIN') => {
+    setAuthInitialTab(tab);
+    setIsAuthModalOpen(true);
+  }, []);
 
   // Natural-language omnibar filter (POST /ai/query)
   const [nlQuery, setNlQuery] = useState<string>('');
@@ -420,12 +425,21 @@ function AppContent() {
 
   if (viewMode === 'landing') {
     return (
-      <VanguardLandingPage
-        onLaunchCop={() => setViewMode('console')}
-        serverOnline={DEMO_MODE || serverOnline}
-        eventCount={events.length}
-        threatLevel={situation?.threatLevel}
-      />
+      <>
+        <VanguardLandingPage
+          onLaunchCop={() => setViewMode('console')}
+          serverOnline={DEMO_MODE || serverOnline}
+          eventCount={events.length}
+          threatLevel={situation?.threatLevel}
+          onOpenAuthModal={() => openAuthModal('LOGIN')}
+          onOpenSignup={() => openAuthModal('REGISTER')}
+        />
+        <OperatorAuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          initialTab={authInitialTab}
+        />
+      </>
     );
   }
 
@@ -628,6 +642,7 @@ function AppContent() {
       <OperatorAuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
+        initialTab={authInitialTab}
       />
     </div>
   );

@@ -32,6 +32,8 @@ import {
   Workflow,
   Users,
   Crown,
+  UserPlus,
+  LogIn,
 } from 'lucide-react';
 import LoadingRadar, { RadarContact } from './LoadingRadar';
 import WireframeDottedGlobe, { DEFENSE_SECTORS } from './WireframeDottedGlobe';
@@ -44,6 +46,8 @@ interface VanguardLandingPageProps {
   serverOnline?: boolean;
   eventCount?: number;
   threatLevel?: string;
+  onOpenAuthModal?: () => void;
+  onOpenSignup?: () => void;
 }
 
 const COBE_HERO_MARKERS = [
@@ -193,6 +197,8 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
   serverOnline = false,
   eventCount = 118,
   threatLevel = 'green',
+  onOpenAuthModal,
+  onOpenSignup,
 }) => {
   // Global Theme State: Dark Mode Only
   const { theme, isDark } = useTheme();
@@ -313,6 +319,29 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
 
         {/* Right: Tactical Launch COP */}
         <div className="flex items-center gap-3 pointer-events-auto">
+          {/* Sign Up / Create Operator Account */}
+          {onOpenSignup ? (
+            <motion.button
+              type="button"
+              onClick={onOpenSignup}
+              whileHover={{ scale: 1.04, y: -1 }}
+              whileTap={{ scale: 0.97 }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white/[0.05] hover:bg-[#33401c]/60 text-[#a4c639] font-mono text-xs font-bold tracking-wider uppercase border border-[#526a27]/70 shadow-[0_0_14px_rgba(51,64,28,0.5)] cursor-pointer"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Sign Up</span>
+            </motion.button>
+          ) : onOpenAuthModal ? (
+            <button
+              type="button"
+              onClick={onOpenAuthModal}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white/[0.05] hover:bg-[#33401c]/60 text-[#a4c639] font-mono text-xs font-bold tracking-wider uppercase border border-[#526a27]/70 cursor-pointer"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Sign In</span>
+            </button>
+          ) : null}
+
           {/* Quick Launch COP Button (Tactical Olive / Lime) */}
           <motion.button
             type="button"
@@ -675,6 +704,23 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
                     <span>Launch COP</span>
                     <ArrowRight className="w-3 h-3" />
                   </motion.button>
+
+                  {(onOpenSignup || onOpenAuthModal) && (
+                    <motion.button
+                      type="button"
+                      onClick={() => (onOpenSignup ?? onOpenAuthModal)?.()}
+                      whileHover={{ scale: 1.03, y: -1 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border font-mono text-xs uppercase tracking-wider transition-all ${
+                        isDark
+                          ? 'bg-black/60 hover:bg-[#33401c]/40 border-[#526a27]/60 text-[#a4c639] hover:text-white'
+                          : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800'
+                      }`}
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span>{onOpenSignup ? 'Sign Up' : 'Sign In'}</span>
+                    </motion.button>
+                  )}
 
                   <a
                     href="#telemetry"

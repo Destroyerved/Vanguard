@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -17,9 +17,10 @@ import {
 interface OperatorAuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: 'LOGIN' | 'REGISTER';
 }
 
-export default function OperatorAuthModal({ isOpen, onClose }: OperatorAuthModalProps) {
+export default function OperatorAuthModal({ isOpen, onClose, initialTab = 'LOGIN' }: OperatorAuthModalProps) {
   const {
     loginWithEmail,
     signupWithEmail,
@@ -34,6 +35,15 @@ export default function OperatorAuthModal({ isOpen, onClose }: OperatorAuthModal
   const [displayName, setDisplayName] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Land on the requested tab (Sign In vs Sign Up) and reset form on every open.
+  useEffect(() => {
+    if (isOpen) {
+      setAuthTab(initialTab);
+      setErrorMessage('');
+      setIsSubmitting(false);
+    }
+  }, [isOpen, initialTab]);
 
   if (!isOpen) return null;
 
