@@ -1,23 +1,27 @@
 import React, { useState } from 'react';
-import { Terminal, Play, Copy, Check, ExternalLink, RefreshCw, Zap, Server } from 'lucide-react';
+import { Terminal, Play, Copy, Check, Server, Gauge, AlertTriangle } from 'lucide-react';
+import { TacticalPanel, ScreenHeading, Chip, TacticalButton, StatTile } from '../ui/tactical';
 
 const BACKEND_URL = 'http://localhost:3001/api/v1';
 
+const ENDPOINTS = [
+  { method: 'GET', path: '/situation/current', desc: 'Active COP & threat level' },
+  { method: 'GET', path: '/situation/timeline', desc: 'Rolling 1-hour threat progression' },
+  { method: 'GET', path: '/events', desc: 'Deduplicated & correlated events' },
+  { method: 'GET', path: '/intelligence/config', desc: 'Fusion weights & decay half-life' },
+  { method: 'GET', path: '/sources/health', desc: 'Sensor health & reliability multipliers' },
+  { method: 'POST', path: '/ai/verify', desc: 'Grounding-gate citation auditor' },
+] as const;
+
 export default function ApiConsoleDiagnostics() {
-  const [selectedEndpoint, setSelectedEndpoint] = useState('/situation/current');
+  const [selectedEndpoint, setSelectedEndpoint] = useState<string>('/situation/current');
   const [response, setResponse] = useState<any>(null);
+  const [status, setStatus] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [latency, setLatency] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const endpoints = [
-    { method: 'GET', path: '/situation/current', desc: 'Active Common Operating Picture & Threat Level' },
-    { method: 'GET', path: '/situation/timeline', desc: 'Rolling 1-Hour Threat Progression Timeline' },
-    { method: 'GET', path: '/events', desc: 'All Deduplicated & Correlated Tactical Events' },
-    { method: 'GET', path: '/intelligence/config', desc: 'Live Fusion Engine Weights & Decay Half-Life' },
-    { method: 'GET', path: '/sources/health', desc: '5-Stream Sensor Health & Reliability Multipliers' },
-    { method: 'POST', path: '/ai/verify', desc: 'Anti-Hallucination Grounding Gate Citation Auditor' },
-  ];
+  const active = ENDPOINTS.find((e) => e.path === selectedEndpoint);
 
   const handleExecute = async () => {
     setLoading(true);
@@ -29,13 +33,15 @@ export default function ApiConsoleDiagnostics() {
         headers: { 'Content-Type': 'application/json' },
       });
       const data = await res.json();
+      setStatus(res.status);
       setLatency(Math.round(performance.now() - start));
       setResponse(data);
     } catch (err: any) {
+      setStatus(null);
       setLatency(Math.round(performance.now() - start));
       setResponse({
         error: err.message,
-        hint: 'Ensure backend server is running on http://localhost:3001 (npm run dev inside /server)',
+        hint: 'Ensure the fusion server is running on http://localhost:3001 (npm run dev inside /server)',
         syntheticFallback: true,
       });
     } finally {
@@ -49,77 +55,126 @@ export default function ApiConsoleDiagnostics() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const payloadSize = response ? JSON.stringify(response).length : 0;
+  const failed = Boolean(response?.error);
+
   return (
-    <div className="instrument-panel rounded-sm p-5 border border-white/10 corner-brackets space-y-4 select-none font-mono text-xs">
-      {/* HEADER */}
-      <div className="flex items-center justify-between border-b border-white/10 pb-3">
-        <div className="flex items-center gap-2">
-          <Terminal className="w-4 h-4 text-cyan-400" />
-          <span className="font-heading font-bold text-sm tracking-wider text-slate-100 uppercase">
-            REST API CONSOLE & DIAGNOSTICS WORKSPACE
-          </span>
-        </div>
-        <span className="text-[10px] text-slate-400">BASE URL: {BACKEND_URL}</span>
-      </div>
+    <div className="space-y-4 select-none font-mono text-xs pb-2">
+      <ScreenHeading
+        eyebrow="Diagnostics"
+        title="REST API Console"
+        icon={Terminal}
+        description="Hit the fusion core directly and read the raw payload — the same responses that drive every screen in this console."
+        actions={<Chip>{BACKEND_URL}</Chip>}
+      />
 
-      {/* ENDPOINT SELECTOR & RUN BAR */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="md:col-span-2 flex items-center gap-2">
-          <select
-            value={selectedEndpoint}
-            onChange={(e) => setSelectedEndpoint(e.target.value)}
-            className="flex-1 bg-[#05070a] border border-white/10 rounded px-3 py-2 text-slate-200 outline-none focus:border-cyan-500/40 text-xs font-mono"
-          >
-            {endpoints.map((ep) => (
-              <option key={ep.path} value={ep.path}>
-                {ep.method} {ep.path} — {ep.desc}
-              </option>
+      {/* REQUEST BUILDER */}
+      <TacticalPanel title="Request" subtitle="Select an endpoint and execute" icon={Server} glow>
+        <div className="space-y-3">
+          {/* Endpoint chips — faster than a select for six routes */}
+          <div className="flex flex-wrap gap-1.5">
+            {ENDPOINTS.map((ep) => (
+              <button
+                key={ep.path}
+                onClick={() => setSelectedEndpoint(ep.path)}
+                className={`vg-chip vg-chip-btn normal-case ${
+                  selectedEndpoint === ep.path ? 'vg-chip-active' : ''
+                }`}
+              >
+                <span
+                  className={`font-bold ${
+                    ep.method === 'POST' ? 'text-amber-400' : 'text-[#a4c639]'
+                  }`}
+                >
+                  {ep.method}
+                </span>
+                {ep.path}
+              </button>
             ))}
-          </select>
+          </div>
 
-          <button
-            onClick={handleExecute}
-            disabled={loading}
-            className="flex items-center gap-1.5 px-4 py-2 rounded bg-cyan-950/80 border border-cyan-500/50 hover:bg-cyan-900/90 text-cyan-300 font-bold transition-all disabled:opacity-50 shrink-0"
-          >
-            <Play className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>EXECUTE</span>
-          </button>
-        </div>
-
-        {/* METRICS */}
-        <div className="flex items-center justify-end gap-3 text-slate-400 text-xs">
-          {latency !== null && (
-            <span>
-              Latency: <strong className="text-cyan-400">{latency} ms</strong>
-            </span>
-          )}
-          {response && (
-            <button
-              onClick={handleCopy}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded bg-[#05070a] border border-white/10 hover:border-white/30 text-slate-300"
+          <div className="flex items-center gap-2">
+            <div className="vg-input flex-1 flex items-center gap-2 !py-2.5 truncate">
+              <span
+                className={`font-bold shrink-0 ${
+                  active?.method === 'POST' ? 'text-amber-400' : 'text-[#a4c639]'
+                }`}
+              >
+                {active?.method}
+              </span>
+              <span className="text-slate-300 truncate">
+                {BACKEND_URL}
+                <span className="text-white">{selectedEndpoint}</span>
+              </span>
+            </div>
+            <TacticalButton
+              variant="primary"
+              onClick={handleExecute}
+              disabled={loading}
+              className="!py-2.5"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>Copy Response</span>
-            </button>
-          )}
+              <Play className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              Execute
+            </TacticalButton>
+          </div>
+
+          {active && <p className="vg-label">{active.desc}</p>}
         </div>
-      </div>
+      </TacticalPanel>
+
+      {/* RESPONSE METRICS */}
+      {response && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <StatTile
+            label="Status"
+            value={status ?? 'ERR'}
+            icon={failed ? AlertTriangle : Check}
+            tone={failed ? 'rose' : 'emerald'}
+            hint={failed ? 'Request failed' : 'Response received'}
+          />
+          <StatTile label="Latency" value={latency ?? '—'} unit="ms" icon={Gauge} tone="lime" hint="Round trip" />
+          <StatTile label="Payload" value={payloadSize} unit="B" icon={Server} tone="slate" hint="Serialized size" />
+          <StatTile
+            label="Engine"
+            value={response?.provenance?.engine?.toUpperCase() ?? '—'}
+            icon={Terminal}
+            tone="slate"
+            hint="Synthesis provenance"
+          />
+        </div>
+      )}
 
       {/* RESPONSE VIEWER */}
-      <div className="space-y-1.5">
-        <div className="text-[10px] text-slate-500 uppercase flex items-center justify-between">
-          <span>JSON RESPONSE PAYLOAD</span>
-          {response?.provenance && (
-            <span className="text-cyan-400 font-semibold">
-              ENGINE: {response.provenance.engine.toUpperCase()}
-            </span>
-          )}
-        </div>
-        <pre className="p-4 rounded bg-[#05070a] border border-white/10 text-cyan-300/90 text-[11px] font-mono max-h-[420px] overflow-y-auto overflow-x-auto">
-          {response ? JSON.stringify(response, null, 2) : '// Select an endpoint above and click EXECUTE to inspect live response'}
+      <TacticalPanel
+        title="JSON Response Payload"
+        subtitle={failed ? 'Backend unreachable — fallback notice' : 'Raw fusion core output'}
+        icon={Terminal}
+        actions={
+          response && (
+            <TacticalButton onClick={handleCopy} className="!px-2.5 !py-1">
+              {copied ? (
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+              ) : (
+                <Copy className="w-3.5 h-3.5" />
+              )}
+              {copied ? 'Copied' : 'Copy'}
+            </TacticalButton>
+          )
+        }
+        bodyClassName="p-0"
+      >
+        <pre
+          className={`m-4 mt-0 p-4 rounded-xl bg-black/45 backdrop-blur-md border text-[11px] max-h-[440px] overflow-auto leading-relaxed ${
+            failed
+              ? 'border-rose-500/35 text-rose-200'
+              : 'border-[#526a27]/30 text-[#bcd94f]'
+          }`}
+        >
+          {response
+            ? JSON.stringify(response, null, 2)
+            : '// Pick an endpoint above and hit EXECUTE to inspect the live response.'}
         </pre>
-      </div>
+      </TacticalPanel>
     </div>
   );
 }

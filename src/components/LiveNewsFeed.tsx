@@ -205,12 +205,12 @@ export default function LiveNewsFeed({ event }: LiveNewsFeedProps) {
   };
 
   return (
-    <div className="p-4 bg-slate-950/90 rounded-xl border border-amber-500/40 space-y-3 font-mono shadow-2xl">
+    <div className="p-4 bg-white/[0.035] backdrop-blur-md rounded-xl border border-amber-500/40 space-y-3 font-mono shadow-2xl">
       {/* HEADER BANNER */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-white/10 pb-2.5">
         <div className="flex items-center gap-2">
           <Newspaper className="w-4 h-4 text-amber-400" />
-          <h4 className="font-hud font-bold text-sm text-slate-100 uppercase tracking-wider">
+          <h4 className="font-heading font-bold text-sm text-slate-100 uppercase tracking-wider">
             OFFICIAL AGENCY NEWS & NEWS BULLETIN AUDIT
           </h4>
         </div>
@@ -219,7 +219,7 @@ export default function LiveNewsFeed({ event }: LiveNewsFeedProps) {
           <button
             onClick={handleFetchLiveNews}
             disabled={loading}
-            className="px-3 py-1 bg-amber-950/80 border border-amber-700 hover:bg-amber-900 text-amber-300 rounded text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+            className="px-3 py-1 bg-amber-950/80 border border-amber-700 hover:bg-amber-900 text-amber-300 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             {loading ? 'CHECKING NEWS WIRES...' : 'FETCH LIVE AGENCY NEWS'}
@@ -230,14 +230,14 @@ export default function LiveNewsFeed({ event }: LiveNewsFeedProps) {
       {/* CONDITIONAL RENDERING BASED ON EVENT IMPACT */}
       {isHighImpact && news.length > 0 ? (
         <div className="space-y-2.5">
-          <div className="text-[10px] text-amber-300 font-bold bg-amber-950/60 p-2 rounded border border-amber-800 flex items-center gap-1.5">
+          <div className="text-[10px] text-amber-300 font-bold bg-amber-950/60 p-2 rounded-lg border border-amber-800 flex items-center gap-1.5">
             <ShieldAlert className="w-4 h-4 text-amber-400" /> HIGH THREAT / ANOMALY DETECTED — ATTACHED OFFICIAL GOVERNMENT & AGENCY ADVISORIES:
           </div>
 
           {news.map((item, idx) => (
-            <div key={idx} className="p-3 bg-slate-900/90 rounded-lg border border-amber-900/60 flex flex-col sm:flex-row gap-3 hover:border-amber-500 transition-colors">
+            <div key={idx} className="p-3 bg-white/[0.05] backdrop-blur-md rounded-lg border border-amber-900/60 flex flex-col sm:flex-row gap-3 hover:border-amber-500 transition-colors">
               {item.imageUrl && (
-                <div className="w-full sm:w-28 h-20 rounded-md overflow-hidden bg-slate-950 flex-shrink-0">
+                <div className="w-full sm:w-28 h-20 rounded-md overflow-hidden bg-white/[0.035] backdrop-blur-md flex-shrink-0">
                   <img
                     src={item.imageUrl}
                     alt={item.title}
@@ -265,7 +265,7 @@ export default function LiveNewsFeed({ event }: LiveNewsFeedProps) {
                     href={item.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold hover:underline flex items-center gap-1"
+                    className="text-[10px] text-[#a4c639] hover:text-[#bcd94f] font-bold hover:underline flex items-center gap-1"
                   >
                     Read Official Source Advisory <ExternalLink className="w-3 h-3" />
                   </a>
@@ -275,8 +275,8 @@ export default function LiveNewsFeed({ event }: LiveNewsFeedProps) {
           ))}
         </div>
       ) : (
-        <div className="p-3.5 bg-slate-900/60 rounded-lg border border-slate-800 text-xs text-slate-400 space-y-1.5">
-          <div className="flex items-center gap-2 text-cyan-400 font-bold">
+        <div className="p-3.5 bg-white/[0.05] backdrop-blur-md rounded-lg border border-white/10 text-xs text-slate-400 space-y-1.5">
+          <div className="flex items-center gap-2 text-[#a4c639] font-bold">
             <Info className="w-4 h-4" /> ROUTINE TELEMETRY STREAM — NO MAJOR CRISIS NEWS ADVISORY FILED
           </div>
           <p className="text-[11px] text-slate-300 font-sans leading-relaxed">

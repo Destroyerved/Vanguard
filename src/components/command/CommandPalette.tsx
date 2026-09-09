@@ -1,23 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   Search,
-  Map as MapIcon,
   Radio,
   Clock,
   Newspaper,
   ShieldCheck,
   Server,
   Play,
-  Terminal,
   X,
-  ChevronRight,
-  AlertTriangle,
   Zap,
-  Globe
+  Globe,
+  CornerDownLeft,
 } from 'lucide-react';
 import { NavSection } from './TopTacticalHeader';
 import { UnifiedEvent } from '../../types/schema';
 import { DemoScenarioMode } from '../../data/scenarioEngine';
+import { Chip } from '../ui/tactical';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -28,179 +27,302 @@ interface CommandPaletteProps {
   onInjectScenario: (scenario: DemoScenarioMode) => void;
 }
 
+const QUICK_NAVS: Array<{ id: NavSection; label: string; icon: any; hint: string }> = [
+  { id: 'overview', label: 'Command Overview', icon: Zap, hint: 'O' },
+  { id: 'events', label: 'Signal Stream', icon: Radio, hint: 'E' },
+  { id: 'news', label: 'Verified Signals & News', icon: Newspaper, hint: 'N' },
+  { id: 'recon', label: 'Satellite Recon Media', icon: Globe, hint: 'R' },
+  { id: 'osint', label: 'OSINT Veracity Forensics', icon: ShieldCheck, hint: 'V' },
+  { id: 'timeline', label: 'Threat Timeline', icon: Clock, hint: 'T' },
+  { id: 'sources', label: 'Source Topology', icon: Server, hint: 'S' },
+  { id: 'simulation', label: 'Scenario Injector', icon: Play, hint: 'X' },
+];
+
+const SCENARIOS: Array<{ id: DemoScenarioMode; label: string; desc: string }> = [
+  {
+    id: 'COORDINATED_ATTACK',
+    label: 'Inject: Coordinated Multi-Axis Attack',
+    desc: 'Critical radar + perimeter tripwire surge',
+  },
+  {
+    id: 'AIR_COMBAT_INTERCEPT',
+    label: 'Inject: Air Combat Intercept',
+    desc: 'Covert infiltration with comms dropouts',
+  },
+  {
+    id: 'OSINT_AI_VERIFICATION',
+    label: 'Inject: OSINT AI Deepfake Surge',
+    desc: 'PRNU & acoustic spectral analysis test',
+  },
+  {
+    id: 'SEVERE_WEATHER',
+    label: 'Inject: Severe Meteorological Storm',
+    desc: 'Weather degradation & sensor clutter test',
+  },
+];
+
+/** One flat, ordered list of everything selectable — arrow keys walk this. */
+type Row =
+  | { kind: 'event'; key: string; event: UnifiedEvent }
+  | { kind: 'nav'; key: string; nav: (typeof QUICK_NAVS)[number] }
+  | { kind: 'scenario'; key: string; scenario: (typeof SCENARIOS)[number] };
+
 export default function CommandPalette({
   isOpen,
   onClose,
   onNavigate,
   events,
   onSelectEvent,
-  onInjectScenario
+  onInjectScenario,
 }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
+  const [cursor, setCursor] = useState(0);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  const q = query.trim().toLowerCase();
+
+  const filteredEvents = useMemo(
+    () =>
+      q
+        ? events
+            .filter(
+              (e) =>
+                e.id.toLowerCase().includes(q) ||
+                e.title.toLowerCase().includes(q) ||
+                e.sourceType.toLowerCase().includes(q)
+            )
+            .slice(0, 6)
+        : [],
+    [events, q]
+  );
+
+  const filteredNavs = useMemo(
+    () => (q ? QUICK_NAVS.filter((n) => n.label.toLowerCase().includes(q)) : QUICK_NAVS),
+    [q]
+  );
+
+  const filteredScenarios = useMemo(
+    () =>
+      q
+        ? SCENARIOS.filter(
+            (s) => s.label.toLowerCase().includes(q) || s.desc.toLowerCase().includes(q)
+          )
+        : SCENARIOS,
+    [q]
+  );
+
+  const rows: Row[] = useMemo(
+    () => [
+      ...filteredEvents.map((e) => ({ kind: 'event' as const, key: `e:${e.id}`, event: e })),
+      ...filteredNavs.map((n) => ({ kind: 'nav' as const, key: `n:${n.id}`, nav: n })),
+      ...filteredScenarios.map((s) => ({
+        kind: 'scenario' as const,
+        key: `s:${s.id}`,
+        scenario: s,
+      })),
+    ],
+    [filteredEvents, filteredNavs, filteredScenarios]
+  );
+
+  // Reset the highlight whenever the result set changes under the operator.
+  useEffect(() => setCursor(0), [q]);
 
   useEffect(() => {
+    if (!isOpen) {
+      setQuery('');
+      setCursor(0);
+    }
+  }, [isOpen]);
+
+  const run = (row: Row | undefined) => {
+    if (!row) return;
+    if (row.kind === 'event') onSelectEvent(row.event);
+    if (row.kind === 'nav') onNavigate(row.nav.id);
+    if (row.kind === 'scenario') onInjectScenario(row.scenario.id);
+    onClose();
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      if (e.key === 'Escape') {
         e.preventDefault();
-        isOpen ? onClose() : null;
-      }
-      if (e.key === 'Escape' && isOpen) {
         onClose();
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setCursor((c) => (rows.length ? (c + 1) % rows.length : 0));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setCursor((c) => (rows.length ? (c - 1 + rows.length) % rows.length : 0));
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        run(rows[cursor]);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, rows, cursor, onClose]);
 
-  if (!isOpen) return null;
+  // Keep the highlighted row in view as the cursor walks past the fold.
+  useEffect(() => {
+    listRef.current
+      ?.querySelector<HTMLElement>('[data-active="true"]')
+      ?.scrollIntoView({ block: 'nearest' });
+  }, [cursor]);
 
-  const filteredEvents = events
-    .filter(
-      (e) =>
-        e.id.toLowerCase().includes(query.toLowerCase()) ||
-        e.title.toLowerCase().includes(query.toLowerCase()) ||
-        e.sourceType.toLowerCase().includes(query.toLowerCase())
-    )
-    .slice(0, 6);
+  const rowClass = (i: number) =>
+    `w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg border text-left transition-colors ${
+      cursor === i
+        ? 'bg-[#a4c639]/12 border-[#a4c639]/50'
+        : 'border-transparent hover:bg-white/5'
+    }`;
 
-  const quickNavs: Array<{ id: NavSection; label: string; icon: any }> = [
-    { id: 'overview', label: 'Command Overview (O)', icon: Zap },
-    { id: 'news', label: 'Verified Signals & News (N)', icon: Newspaper },
-    { id: 'recon', label: 'Satellite Recon Media (R)', icon: Globe },
-    { id: 'events', label: 'Signal Stream (E)', icon: Radio },
-    { id: 'osint', label: 'OSINT Veracity Forensics (V)', icon: ShieldCheck },
-    { id: 'timeline', label: 'Threat Timeline (T)', icon: Clock },
-    { id: 'sources', label: 'Source Topology (S)', icon: Server },
-    { id: 'simulation', label: 'Scenario Injector (X)', icon: Play },
-  ];
-
-  const scenarios: Array<{ id: DemoScenarioMode; label: string; desc: string }> = [
-    { id: 'COORDINATED_ATTACK', label: 'Inject: Coordinated Multi-Axis Attack', desc: 'Critical radar + perimeter tripwire surge' },
-    { id: 'AIR_COMBAT_INTERCEPT', label: 'Inject: Air Combat Intercept', desc: 'Covert infiltration with communication dropouts' },
-    { id: 'OSINT_AI_VERIFICATION', label: 'Inject: OSINT AI Deepfake Surge', desc: 'PRNU & acoustic spectral analysis test' },
-    { id: 'SEVERE_WEATHER', label: 'Inject: Severe Meteorological Storm', desc: 'Weather degradation & sensor clutter test' },
-  ];
+  let rowIndex = -1;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
-      <div
-        className="w-full max-w-2xl bg-[#070b10] border border-cyan-500/40 rounded-sm shadow-2xl overflow-hidden font-mono text-xs flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* INPUT HEADER */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/10 bg-[#0a0f15]">
-          <Search className="w-4 h-4 text-cyan-400" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search operational commands, events, scenarios, coordinates..."
-            className="flex-1 bg-transparent text-slate-100 placeholder-slate-500 outline-none font-mono text-sm"
-            autoFocus
-          />
-          <button
-            onClick={onClose}
-            className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-slate-200"
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          onClick={onClose}
+          className="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4 bg-black/75 backdrop-blur-md"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: -12, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full max-w-2xl vg-panel vg-panel-glow font-mono text-xs flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
           >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+            {/* INPUT HEADER */}
+            <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/10 relative">
+              <Search className="w-4 h-4 text-[#a4c639]" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search commands, events, scenarios…"
+                className="flex-1 bg-transparent text-slate-100 placeholder-slate-500 outline-none font-mono text-sm"
+                autoFocus
+              />
+              <button
+                onClick={onClose}
+                className="p-1 rounded-lg hover:bg-white/10 text-slate-500 hover:text-slate-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <span className="absolute left-0 bottom-0 h-px w-16 bg-gradient-to-r from-[#c6ff00] to-transparent shadow-[0_0_8px_rgba(164,198,57,0.8)]" />
+            </div>
 
-        {/* RESULTS BODY */}
-        <div className="max-h-[60vh] overflow-y-auto p-3 space-y-4">
-          {/* 1. MATCHING EVENTS */}
-          {query.trim() && (
-            <div className="space-y-1">
-              <div className="text-[10px] text-slate-500 uppercase font-semibold px-2">
-                Matching Events ({filteredEvents.length})
-              </div>
-              {filteredEvents.length === 0 ? (
-                <div className="px-3 py-2 text-slate-500 text-xs italic">
-                  No active events matching "{query}"
+            {/* RESULTS BODY */}
+            <div ref={listRef} className="max-h-[58vh] overflow-y-auto p-3 space-y-4">
+              {rows.length === 0 && (
+                <div className="px-3 py-8 text-center text-slate-500">
+                  Nothing matches “{query}”.
                 </div>
-              ) : (
-                filteredEvents.map((evt) => (
-                  <button
-                    key={evt.id}
-                    onClick={() => {
-                      onSelectEvent(evt);
-                      onClose();
-                    }}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-cyan-950/40 hover:border-cyan-500/40 border border-transparent text-left group"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span className="font-bold text-cyan-300 group-hover:text-cyan-200">
-                        [{evt.id}]
-                      </span>
-                      <span className="text-slate-200 truncate max-w-sm">{evt.title}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-slate-400">
-                        {evt.sourceType}
-                      </span>
-                    </div>
-                    <span className="text-[10px] text-cyan-400 font-semibold">
-                      CONF: {evt.confidence}%
-                    </span>
-                  </button>
-                ))
+              )}
+
+              {filteredEvents.length > 0 && (
+                <div className="space-y-1">
+                  <div className="vg-label px-2">Matching events ({filteredEvents.length})</div>
+                  {filteredEvents.map((evt) => {
+                    rowIndex += 1;
+                    const i = rowIndex;
+                    return (
+                      <button
+                        key={evt.id}
+                        data-active={cursor === i}
+                        onMouseEnter={() => setCursor(i)}
+                        onClick={() => run(rows[i])}
+                        className={rowClass(i)}
+                      >
+                        <span className="flex items-center gap-2.5 min-w-0">
+                          <span className="vg-readout font-bold text-[#bcd94f]">[{evt.id}]</span>
+                          <span className="text-slate-200 truncate">{evt.title}</span>
+                          <Chip className="!py-0 !text-[9px] shrink-0">{evt.sourceType}</Chip>
+                        </span>
+                        <span className="vg-readout text-[10px] text-[#a4c639] font-bold shrink-0">
+                          {evt.confidence}%
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {filteredNavs.length > 0 && (
+                <div className="space-y-1">
+                  <div className="vg-label px-2">Operational views</div>
+                  {filteredNavs.map((nav) => {
+                    rowIndex += 1;
+                    const i = rowIndex;
+                    const Icon = nav.icon;
+                    return (
+                      <button
+                        key={nav.id}
+                        data-active={cursor === i}
+                        onMouseEnter={() => setCursor(i)}
+                        onClick={() => run(rows[i])}
+                        className={rowClass(i)}
+                      >
+                        <span className="flex items-center gap-2.5">
+                          <Icon className="w-3.5 h-3.5 text-[#a4c639]" />
+                          <span className="text-slate-200">{nav.label}</span>
+                        </span>
+                        <kbd className="px-1.5 rounded bg-white/5 border border-white/10 text-[9px] text-slate-400">
+                          {nav.hint}
+                        </kbd>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {filteredScenarios.length > 0 && (
+                <div className="space-y-1">
+                  <div className="vg-label px-2">Scenario injections</div>
+                  {filteredScenarios.map((sc) => {
+                    rowIndex += 1;
+                    const i = rowIndex;
+                    return (
+                      <button
+                        key={sc.id}
+                        data-active={cursor === i}
+                        onMouseEnter={() => setCursor(i)}
+                        onClick={() => run(rows[i])}
+                        className={rowClass(i)}
+                      >
+                        <span className="flex items-center gap-2.5 min-w-0">
+                          <Play className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span className="text-amber-300 font-medium truncate">{sc.label}</span>
+                        </span>
+                        <span className="text-[10px] text-slate-500 truncate hidden sm:block">
+                          {sc.desc}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               )}
             </div>
-          )}
 
-          {/* 2. QUICK NAVIGATION */}
-          <div className="space-y-1">
-            <div className="text-[10px] text-slate-500 uppercase font-semibold px-2">
-              Operational Views
+            {/* PALETTE FOOTER */}
+            <div className="px-4 py-2 border-t border-white/10 flex items-center justify-between vg-label">
+              <span className="flex items-center gap-3">
+                <span>↑ ↓ navigate</span>
+                <span className="flex items-center gap-1">
+                  <CornerDownLeft className="w-3 h-3" /> select
+                </span>
+              </span>
+              <span>ESC to dismiss</span>
             </div>
-            <div className="grid grid-cols-2 gap-1">
-              {quickNavs.map((nav) => {
-                const Icon = nav.icon;
-                return (
-                  <button
-                    key={nav.id}
-                    onClick={() => {
-                      onNavigate(nav.id);
-                      onClose();
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 rounded hover:bg-white/5 border border-transparent text-left text-slate-300 hover:text-white"
-                  >
-                    <Icon className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>{nav.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 3. SIMULATION PRESETS */}
-          <div className="space-y-1">
-            <div className="text-[10px] text-slate-500 uppercase font-semibold px-2">
-              Scenario Injections
-            </div>
-            {scenarios.map((sc) => (
-              <button
-                key={sc.id}
-                onClick={() => {
-                  onInjectScenario(sc.id);
-                  onClose();
-                }}
-                className="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-amber-950/40 hover:border-amber-500/40 border border-transparent text-left group"
-              >
-                <div className="flex items-center gap-2">
-                  <Play className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="text-amber-300 font-medium">{sc.label}</span>
-                </div>
-                <span className="text-[10px] text-slate-500 truncate">{sc.desc}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* PALETTE FOOTER */}
-        <div className="px-4 py-2 border-t border-white/10 bg-[#05070a] flex items-center justify-between text-[10px] text-slate-500">
-          <span>Navigate with mouse or arrow keys</span>
-          <span>Press ESC to dismiss</span>
-        </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

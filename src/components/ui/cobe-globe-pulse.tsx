@@ -9,8 +9,14 @@ export interface PulseMarker {
   delay?: number
 }
 
+export interface GlobeArc {
+  from: [number, number]
+  to: [number, number]
+}
+
 export interface GlobePulseProps {
   markers?: PulseMarker[]
+  arcs?: GlobeArc[]
   className?: string
   speed?: number
   baseColor?: [number, number, number]
@@ -33,6 +39,7 @@ const DEFAULT_MARKERS: PulseMarker[] = [
 
 export function GlobePulse({
   markers = DEFAULT_MARKERS,
+  arcs = [],
   className = "",
   speed = 0.003,
   baseColor = [0.5, 0.5, 0.5],
@@ -58,6 +65,7 @@ export function GlobePulse({
   // Keep latest configuration in ref to avoid destroying & recreating WebGL context
   const configRef = useRef({
     markers,
+    arcs,
     speed,
     baseColor,
     markerColor,
@@ -68,33 +76,6 @@ export function GlobePulse({
     arcColor,
   })
 
-  // Update configRef and trigger smooth globe.update when props change
-  useEffect(() => {
-    configRef.current = {
-      markers,
-      speed,
-      baseColor,
-      markerColor,
-      glowColor,
-      dark,
-      diffuse,
-      mapBrightness,
-      arcColor,
-    }
-
-    if (globeRef.current) {
-      globeRef.current.update({
-        dark,
-        diffuse,
-        mapBrightness,
-        baseColor,
-        markerColor,
-        glowColor,
-        arcColor,
-        markers: markers.map((m) => ({ location: m.location, size: 0.035, id: m.id })),
-      })
-    }
-  }, [markers, speed, baseColor, markerColor, glowColor, dark, diffuse, mapBrightness, arcColor])
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     pointerInteracting.current = { x: e.clientX, y: e.clientY }
@@ -130,6 +111,36 @@ export function GlobePulse({
     }
   }, [handlePointerUp])
 
+  // Update configRef and trigger smooth globe.update when props change
+  useEffect(() => {
+    configRef.current = {
+      markers,
+      arcs,
+      speed,
+      baseColor,
+      markerColor,
+      glowColor,
+      dark,
+      diffuse,
+      mapBrightness,
+      arcColor,
+    }
+
+    if (globeRef.current) {
+      globeRef.current.update({
+        dark,
+        diffuse,
+        mapBrightness,
+        baseColor,
+        markerColor,
+        glowColor,
+        arcColor,
+        markers: markers.map((m) => ({ location: m.location, size: 0.035, id: m.id })),
+        arcs: arcs,
+      })
+    }
+  }, [markers, arcs, speed, baseColor, markerColor, glowColor, dark, diffuse, mapBrightness, arcColor])
+
   // Single WebGL initialization on mount
   useEffect(() => {
     const canvas = canvasRef.current
@@ -159,7 +170,7 @@ export function GlobePulse({
         glowColor: cfg.glowColor,
         markerElevation: 0,
         markers: cfg.markers.map((m) => ({ location: m.location, size: 0.035, id: m.id })),
-        arcs: [],
+        arcs: cfg.arcs || [],
         arcColor: cfg.arcColor,
         arcWidth: 0.5,
         arcHeight: 0.25,

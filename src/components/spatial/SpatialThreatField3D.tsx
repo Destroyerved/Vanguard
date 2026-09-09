@@ -248,27 +248,27 @@ export default function SpatialThreatField3D({
   };
 
   return (
-    <div className="relative w-full h-[640px] bg-[#05070a] border border-white/10 rounded-sm overflow-hidden corner-brackets select-none flex flex-col">
+    <div className="relative w-full h-[640px] bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-xl overflow-hidden select-none flex flex-col">
       {/* 3D FIELD CONTROLS BAR */}
       <div className="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-auto">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded bg-[#070b10]/90 border border-white/10 backdrop-blur font-mono text-xs">
-          <Globe className="w-4 h-4 text-cyan-400" />
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.035] backdrop-blur-md border border-white/10 backdrop-blur font-mono text-xs">
+          <Globe className="w-4 h-4 text-[#a4c639]" />
           <span className="text-slate-200 font-semibold uppercase tracking-wider">
             3D SPATIAL THREAT & CORRELATION TOPOLOGY
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 bg-[#070b10]/90 border border-white/10 rounded p-1 backdrop-blur">
+        <div className="flex items-center gap-1.5 bg-white/[0.035] backdrop-blur-md border border-white/10 rounded-lg p-1 backdrop-blur">
           <button
             onClick={() => setZoom((z) => Math.min(1.6, z + 0.15))}
-            className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-cyan-300"
+            className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-[#bcd94f]"
             title="Zoom In"
           >
             <ZoomIn className="w-4 h-4" />
           </button>
           <button
             onClick={() => setZoom((z) => Math.max(0.7, z - 0.15))}
-            className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-cyan-300"
+            className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-[#bcd94f]"
             title="Zoom Out"
           >
             <ZoomOut className="w-4 h-4" />
@@ -277,7 +277,7 @@ export default function SpatialThreatField3D({
             onClick={() => {
               setZoom(1);
             }}
-            className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-cyan-300"
+            className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-[#bcd94f]"
             title="Reset Perspective"
           >
             <RefreshCw className="w-4 h-4" />
@@ -295,7 +295,7 @@ export default function SpatialThreatField3D({
       />
 
       {/* FOOTER LEGEND */}
-      <div className="absolute bottom-3 left-3 right-3 z-10 flex items-center justify-between text-[10px] font-mono text-slate-400 bg-[#070b10]/90 border border-white/10 rounded px-3 py-1.5 backdrop-blur">
+      <div className="absolute bottom-3 left-3 right-3 z-10 flex items-center justify-between text-[10px] font-mono text-slate-400 bg-white/[0.035] backdrop-blur-md border border-white/10 rounded-lg px-3 py-1.5 backdrop-blur">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-rose-500 shadow-threat-red" />
@@ -310,7 +310,7 @@ export default function SpatialThreatField3D({
             <span>Medium</span>
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-3 border-b border-cyan-400 border-dashed" />
+            <span className="w-3 border-b border-[#a4c639] border-dashed" />
             <span>Correlation Arc</span>
           </span>
         </div>

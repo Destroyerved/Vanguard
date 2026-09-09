@@ -23,7 +23,7 @@ export default {
           4: '#131b26',
           panel: 'rgba(10, 15, 21, 0.88)',
           border: 'rgba(255, 255, 255, 0.08)',
-          technical: 'rgba(56, 189, 248, 0.22)',
+          technical: 'rgba(164, 198, 57, 0.28)',
         },
         tactical: {
           cyan: '#06b6d4',
@@ -41,8 +41,8 @@ export default {
       },
       boxShadow: {
         'tactical': '0 4px 20px -2px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05)',
-        'tactical-focus': '0 0 0 1px rgba(56, 189, 248, 0.4), 0 8px 32px rgba(0, 0, 0, 0.8)',
-        'hud-glow': '0 0 15px rgba(6, 182, 212, 0.15)',
+        'tactical-focus': '0 0 0 1px rgba(164, 198, 57, 0.45), 0 8px 32px rgba(0, 0, 0, 0.85)',
+        'hud-glow': '0 0 18px rgba(82, 106, 39, 0.45)',
         'threat-red': '0 0 20px rgba(239, 68, 68, 0.25)',
       },
       animation: {

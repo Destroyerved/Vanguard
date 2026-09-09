@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { Server, Activity, Radio, CloudSun, ShieldCheck, AlertTriangle, Zap, WifiOff, Layers } from 'lucide-react';
 import { SourceHealthDetail } from '../../types/schema';
+import { ScreenHeading, StatTile, Chip, TacticalButton } from '../ui/tactical';
 
 interface SourceTopologyMatrixProps {
   sourcesHealth: SourceHealthDetail[];
@@ -113,6 +115,11 @@ export default function SourceTopologyMatrix({
   const liveCount = feeds.filter((f) => f.status === 'live').length;
   const downCount = feeds.filter((f) => f.status === 'down').length;
   const degradedCount = feeds.length - liveCount - downCount;
+  // Mean Rs across the inventory — the single number that summarises how
+  // much the confidence engine can currently trust its inputs.
+  const fleetReliability = feeds.length
+    ? Math.round((feeds.reduce((a, f) => a + f.reliabilityScore, 0) / feeds.length) * 100)
+    : 0;
 
   const handleToggle = () => {
     const next = !localDegraded;
@@ -123,112 +130,154 @@ export default function SourceTopologyMatrix({
   };
 
   return (
-    <div className="instrument-panel rounded-sm p-5 border border-white/10 corner-brackets space-y-4 select-none font-mono text-xs">
-      {/* HEADER */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
-        <div className="flex items-center gap-2">
-          <Server className="w-4 h-4 text-cyan-400" />
-          <span className="font-heading font-bold text-sm tracking-wider text-slate-100 uppercase">
-            MULTI-SOURCE INGESTION TOPOLOGY & SENSOR HEALTH
-          </span>
-        </div>
+    <div className="space-y-4 select-none font-mono text-xs pb-2">
+      <ScreenHeading
+        eyebrow="Ingestion Topology"
+        title="Multi-Source Sensor Health"
+        icon={Server}
+        description="Source reliability (Rs = R_nominal × H) feeds the confidence function directly — a degraded feed visibly lowers every track it touches."
+        actions={
+          <TacticalButton
+            onClick={handleToggle}
+            variant={localDegraded ? 'danger' : 'default'}
+            icon={localDegraded ? WifiOff : Activity}
+          >
+            {localDegraded ? 'Degraded Comms Active' : 'Simulate Degraded Comms'}
+          </TacticalButton>
+        }
+      />
 
-        {/* DEGRADED COMMS TOGGLE BUTTON */}
-        <button
-          onClick={handleToggle}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded font-mono text-xs font-semibold border transition-all ${
-            localDegraded
-              ? 'bg-amber-950/80 border-amber-500/80 text-amber-300 shadow-hud-glow animate-pulse'
-              : 'bg-[#05070a] border-white/10 text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          {localDegraded ? <WifiOff className="w-4 h-4 text-amber-400" /> : <Activity className="w-4 h-4 text-cyan-400" />}
-          <span>{localDegraded ? 'DEGRADED COMMS ACTIVE' : 'SIMULATE DEGRADED COMMS'}</span>
-        </button>
+      {/* FLEET SUMMARY STRIP */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <StatTile label="Feeds Online" value={liveCount} icon={Activity} tone="emerald" hint="Reporting nominally" />
+        <StatTile label="Degraded" value={degradedCount} icon={WifiOff} tone="amber" hint="Reduced reliability weight" />
+        <StatTile label="Offline" value={downCount} icon={AlertTriangle} tone={downCount > 0 ? 'rose' : 'slate'} hint="Excluded from fusion" />
+        <StatTile
+          label="Fleet Reliability"
+          value={fleetReliability}
+          unit="%"
+          icon={ShieldCheck}
+          tone="lime"
+          hint="Mean Rs across feeds"
+        />
       </div>
 
       {/* LIVE FEED CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
         {feeds.map((feed, idx) => {
           const Icon = sourceIcons[feed.sourceType] || Radio;
           const isLive = feed.status === 'live';
           const isDegraded = feed.status === 'degraded' || feed.manuallyDegraded;
-          const stateDot = isLive ? 'bg-emerald-400' : isDegraded ? 'bg-amber-400' : 'bg-rose-500';
+          const stateTone = isLive ? '#34d399' : isDegraded ? '#fbbf24' : '#f43f5e';
           const stateLabel = isLive ? 'LIVE' : isDegraded ? 'DEGRADED' : 'DOWN';
           const netReliability = Math.round(feed.reliabilityScore * 100);
 
           return (
-            <div
+            <motion.div
               key={feed.sourceType}
-              className="p-3.5 rounded bg-[#070b10] border border-white/10 hover:border-cyan-500/40 transition-all space-y-2.5 flex flex-col justify-between"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="vg-panel vg-panel-interactive p-4 space-y-3 flex flex-col justify-between"
             >
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1 text-[10px] text-slate-500 uppercase">
-                    <Icon className="w-3 h-3 text-cyan-400" />
-                    {feed.sourceType.toUpperCase()}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-1.5 vg-label">
+                    <Icon className="w-3.5 h-3.5 text-[#a4c639]" />
+                    {feed.sourceType.replace('_', ' ').toUpperCase()}
                   </span>
-                  <div className="flex items-center gap-1.5">
-                    <span className={`w-2 h-2 rounded-full ${stateDot}`} />
-                    <span className="text-[10px] uppercase font-bold text-slate-300">{stateLabel}</span>
-                  </div>
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      className={`w-2 h-2 rounded-full ${isLive ? 'vg-pulse-ring' : ''}`}
+                      style={{ background: stateTone, boxShadow: `0 0 8px ${stateTone}` }}
+                    />
+                    <span
+                      className="vg-readout text-[10px] font-bold"
+                      style={{ color: stateTone }}
+                    >
+                      {stateLabel}
+                    </span>
+                  </span>
                 </div>
 
-                <div className="font-bold text-slate-100 text-sm truncate">{feed.sourceName}</div>
-                <p className="text-slate-400 text-xs leading-relaxed">
+                <div className="font-bold text-slate-100 text-[13px] leading-snug">
+                  {feed.sourceName}
+                </div>
+                <p className="text-slate-400 text-[11px] leading-relaxed font-sans">
                   {feedDescriptions[feed.sourceType] || 'Persistent feed into the fusion pipeline.'}
                 </p>
                 {feed.note && <p className="text-[10px] text-amber-300/90">{feed.note}</p>}
+
+                {/* Reliability bar — the number that actually moves confidence */}
+                <div className="space-y-1 pt-0.5">
+                  <div className="flex items-center justify-between vg-label">
+                    <span>Net reliability (Rs)</span>
+                    <span style={{ color: stateTone }} className="vg-readout font-bold">
+                      {netReliability}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${netReliability}%` }}
+                      transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                      className="h-full rounded-full"
+                      style={{ background: stateTone, boxShadow: `0 0 8px ${stateTone}` }}
+                    />
+                  </div>
+                  {feed.nominalReliability !== undefined &&
+                    feed.nominalReliability !== feed.reliabilityScore && (
+                      <div className="vg-label">
+                        Nominal {Math.round(feed.nominalReliability * 100)}% · health-adjusted
+                      </div>
+                    )}
+                </div>
               </div>
 
               {/* METRIC STRIP */}
-              <div className="grid grid-cols-3 gap-1 pt-2 border-t border-white/5 text-[10px]">
-                <div className="p-1 rounded bg-[#05070a] text-center">
-                  <div className="text-slate-500">NET REL</div>
-                  <div className={`font-bold ${isLive ? 'text-emerald-400' : isDegraded ? 'text-amber-400' : 'text-rose-400'}`}>
-                    {netReliability}%
+              <div className="grid grid-cols-3 gap-1.5 pt-2.5 border-t border-white/8">
+                <div className="vg-glass-inset p-1.5 text-center">
+                  <div className="vg-label">Active</div>
+                  <div className="vg-readout font-bold text-slate-100 text-xs mt-0.5">
+                    {feed.activeCount ?? '—'}
                   </div>
                 </div>
-                <div className="p-1 rounded bg-[#05070a] text-center">
-                  <div className="text-slate-500">ACTIVE</div>
-                  <div className="font-bold text-slate-200">{feed.activeCount ?? '—'}</div>
+                <div className="vg-glass-inset p-1.5 text-center">
+                  <div className="vg-label">Ingested</div>
+                  <div className="vg-readout font-bold text-slate-100 text-xs mt-0.5">
+                    {feed.totalIngested ?? '—'}
+                  </div>
                 </div>
-                <div className="p-1 rounded bg-[#05070a] text-center">
-                  <div className="text-slate-500">LATENCY</div>
-                  <div className="font-bold text-slate-200">
-                    {typeof feed.meanLatencyMs === 'number' ? `${Math.round(feed.meanLatencyMs)}ms` : '—'}
+                <div className="vg-glass-inset p-1.5 text-center">
+                  <div className="vg-label">Latency</div>
+                  <div className="vg-readout font-bold text-slate-100 text-xs mt-0.5">
+                    {typeof feed.meanLatencyMs === 'number'
+                      ? `${Math.round(feed.meanLatencyMs)}ms`
+                      : '—'}
                   </div>
                 </div>
               </div>
 
-              {(feed.consecutiveFailures > 0 || idx === 0) && (
-                <div className="flex items-center gap-1 text-[9px] text-slate-500">
-                  {feed.consecutiveFailures > 0 ? (
-                    <>
-                      <WifiOff className="w-2.5 h-2.5 text-amber-400" />
-                      {feed.consecutiveFailures} CONSECUTIVE FAILURES
-                    </>
-                  ) : (
-                    <>
-                      <Activity className="w-2.5 h-2.5 text-emerald-400" />
-                      INGESTED: {feed.totalIngested ?? '—'}
-                    </>
-                  )}
+              {feed.consecutiveFailures > 0 && (
+                <div className="flex items-center gap-1.5 text-[10px] text-amber-300">
+                  <WifiOff className="w-3 h-3" />
+                  {feed.consecutiveFailures} consecutive failures
                 </div>
               )}
-            </div>
+            </motion.div>
           );
         })}
       </div>
 
       {/* TOPOLOGY SUMMARY BANNER */}
-      <div className="p-3 rounded bg-[#05070a] border border-white/10 text-xs flex flex-wrap items-center justify-between gap-2">
-        <span className="text-slate-400">
-          Server health (Rs = Rnominal × H) drives the fusion confidence function in real time.
+      <div className="vg-panel p-3 flex flex-wrap items-center justify-between gap-2">
+        <span className="text-slate-400 text-[11px] font-sans">
+          Server health drives the fusion confidence function in real time — degrading a feed here
+          immediately re-weights every track it contributes to.
         </span>
-        <span className={`font-bold ${downCount > 0 ? 'text-rose-400' : 'text-cyan-400'}`}>
-          {liveCount} LIVE · {degradedCount} DEGRADED · {downCount} DOWN
-        </span>
+        <Chip active={downCount === 0} tone={downCount > 0 ? 'danger' : 'olive'}>
+          {liveCount} live · {degradedCount} degraded · {downCount} down
+        </Chip>
       </div>
     </div>
   );
