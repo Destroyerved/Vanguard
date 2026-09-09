@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
 import {
   ShieldCheck,
@@ -84,8 +85,19 @@ export default function OperatorAuthModal({ isOpen, onClose }: OperatorAuthModal
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 select-none font-mono">
-      <div className="bg-[#070b10] border border-cyan-500/50 rounded-2xl max-w-md w-full p-6 shadow-2xl shadow-cyan-950/50 flex flex-col space-y-4 text-slate-100 relative">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      onClick={onClose}
+      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 select-none font-mono"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 16, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+        onClick={(e) => e.stopPropagation()}
+        className="vg-panel vg-panel-glow max-w-md w-full p-6 flex flex-col space-y-4 text-slate-100 relative"
+      >
         
         {/* CLOSE BUTTON */}
         <button
@@ -98,8 +110,8 @@ export default function OperatorAuthModal({ isOpen, onClose }: OperatorAuthModal
         {/* HEADER */}
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] bg-cyan-950 border border-cyan-700 text-cyan-300 font-bold px-2 py-0.5 rounded tracking-widest uppercase flex items-center gap-1">
-              <Cpu className="w-3.5 h-3.5 text-cyan-400" /> VANGUARD C2 SECURITY
+            <span className="text-[10px] bg-[#a4c639]/10 backdrop-blur-md border border-[#3f5220] text-[#bcd94f] font-bold px-2 py-0.5 rounded-lg tracking-widest uppercase flex items-center gap-1">
+              <Cpu className="w-3.5 h-3.5 text-[#a4c639]" /> VANGUARD C2 SECURITY
             </span>
             <span className="text-[10px] text-slate-400 font-bold">CLEARANCE: TS-SCI</span>
           </div>
@@ -116,8 +128,8 @@ export default function OperatorAuthModal({ isOpen, onClose }: OperatorAuthModal
         {/* LOGGED IN SESSION VS LOGGED OUT FORM */}
         {operatorProfile ? (
           <div className="space-y-4 py-2">
-            <div className="p-4 rounded-xl border border-cyan-500/40 bg-cyan-950/30 space-y-2">
-              <div className="flex items-center gap-2 text-cyan-400 font-bold text-xs">
+            <div className="p-4 rounded-xl border border-[#526a27]/40 bg-[#a4c639]/10 backdrop-blur-md space-y-2">
+              <div className="flex items-center gap-2 text-[#a4c639] font-bold text-xs">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                 <span>AUTHENTICATED OPERATOR SESSION ACTIVE</span>
               </div>
@@ -127,7 +139,7 @@ export default function OperatorAuthModal({ isOpen, onClose }: OperatorAuthModal
               <div className="text-xs text-slate-400 font-mono">
                 {operatorProfile.email}
               </div>
-              <div className="inline-block px-2 py-0.5 rounded bg-cyan-900/60 border border-cyan-500/40 text-[10px] text-cyan-200 font-mono">
+              <div className="inline-block px-2 py-0.5 rounded-lg bg-[#a4c639]/14 backdrop-blur-md border border-[#526a27]/40 text-[10px] text-[#d8ef95] font-mono">
                 CLEARANCE: {operatorProfile.clearanceLevel}
               </div>
             </div>
@@ -145,12 +157,12 @@ export default function OperatorAuthModal({ isOpen, onClose }: OperatorAuthModal
         ) : (
           <>
             {/* TAB SWITCHER */}
-            <div className="flex items-center gap-1 bg-[#05070a] p-1 rounded-xl border border-white/10 text-xs font-bold">
+            <div className="flex items-center gap-1 bg-white/[0.04] backdrop-blur-md p-1 rounded-xl border border-white/10 text-xs font-bold">
               <button
                 onClick={() => { setAuthTab('LOGIN'); setErrorMessage(''); }}
                 className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
                   authTab === 'LOGIN'
-                    ? 'bg-cyan-950 border border-cyan-500/60 text-cyan-300 shadow-hud-glow'
+                    ? 'bg-[#a4c639]/10 backdrop-blur-md border border-[#526a27]/60 text-[#bcd94f] shadow-hud-glow'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -161,7 +173,7 @@ export default function OperatorAuthModal({ isOpen, onClose }: OperatorAuthModal
                 onClick={() => { setAuthTab('REGISTER'); setErrorMessage(''); }}
                 className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
                   authTab === 'REGISTER'
-                    ? 'bg-cyan-950 border border-cyan-500/60 text-cyan-300 shadow-hud-glow'
+                    ? 'bg-[#a4c639]/10 backdrop-blur-md border border-[#526a27]/60 text-[#bcd94f] shadow-hud-glow'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -225,7 +237,7 @@ export default function OperatorAuthModal({ isOpen, onClose }: OperatorAuthModal
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
                       placeholder="e.g. Commander Sarah Vance"
-                      className="w-full bg-[#05070a] border border-white/10 rounded-lg pl-9 pr-3 py-2 text-slate-100 placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-500/50"
+                      className="w-full bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-lg pl-9 pr-3 py-2 text-slate-100 placeholder-slate-500 text-xs focus:outline-none focus:border-[#526a27]/50"
                     />
                   </div>
                 </div>
@@ -242,7 +254,7 @@ export default function OperatorAuthModal({ isOpen, onClose }: OperatorAuthModal
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="operator@vanguard.c2"
-                    className="w-full bg-[#05070a] border border-white/10 rounded-lg pl-9 pr-3 py-2 text-slate-100 placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-500/50"
+                    className="w-full bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-lg pl-9 pr-3 py-2 text-slate-100 placeholder-slate-500 text-xs focus:outline-none focus:border-[#526a27]/50"
                     required
                   />
                 </div>
@@ -259,7 +271,7 @@ export default function OperatorAuthModal({ isOpen, onClose }: OperatorAuthModal
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••••••"
-                    className="w-full bg-[#05070a] border border-white/10 rounded-lg pl-9 pr-3 py-2 text-slate-100 placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-500/50"
+                    className="w-full bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-lg pl-9 pr-3 py-2 text-slate-100 placeholder-slate-500 text-xs focus:outline-none focus:border-[#526a27]/50"
                     required
                   />
                 </div>
@@ -268,9 +280,9 @@ export default function OperatorAuthModal({ isOpen, onClose }: OperatorAuthModal
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-2.5 px-4 rounded-xl bg-cyan-950 border border-cyan-500/60 hover:bg-cyan-900 text-cyan-300 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-hud-glow"
+                className="w-full py-2.5 px-4 rounded-xl bg-[#a4c639]/10 backdrop-blur-md border border-[#526a27]/60 hover:bg-[#a4c639]/14 text-[#bcd94f] font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-hud-glow"
               >
-                <ShieldCheck className="w-4 h-4 text-cyan-400" />
+                <ShieldCheck className="w-4 h-4 text-[#a4c639]" />
                 <span>{authTab === 'REGISTER' ? 'REGISTER NEW OPERATOR' : 'AUTHENTICATE OPERATOR'}</span>
               </button>
             </form>
@@ -281,12 +293,12 @@ export default function OperatorAuthModal({ isOpen, onClose }: OperatorAuthModal
         {operatorProfile && (
           <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400 font-mono">
             <span>ACTIVE PROFILE:</span>
-            <span className="text-cyan-300 font-bold">
+            <span className="text-[#bcd94f] font-bold">
               {operatorProfile.displayName} [{operatorProfile.clearanceLevel}]
             </span>
           </div>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

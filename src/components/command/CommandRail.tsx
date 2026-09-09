@@ -52,8 +52,8 @@ export default function CommandRail({
     { id: 'overview', label: 'Command Overview', category: 'COMMAND', icon: Activity, shortcut: 'O' },
 
     // INTELLIGENCE
-    { id: 'news', label: 'Verified News Hub', category: 'INTELLIGENCE', icon: Newspaper, badge: 'REUTERS/AP', badgeColor: 'bg-cyan-950 text-cyan-300 border-cyan-500/30', shortcut: 'N' },
-    { id: 'recon', label: 'Satellite Recon', category: 'INTELLIGENCE', icon: Globe, badge: 'ESRI HD', badgeColor: 'bg-indigo-950 text-indigo-300 border-indigo-500/30', shortcut: 'R' },
+    { id: 'news', label: 'Verified News Hub', category: 'INTELLIGENCE', icon: Newspaper, badge: 'REUTERS/AP', badgeColor: 'bg-[#a4c639]/10 backdrop-blur-md text-[#bcd94f] border-[#526a27]/30', shortcut: 'N' },
+    { id: 'recon', label: 'Satellite Recon', category: 'INTELLIGENCE', icon: Globe, badge: 'ESRI HD', badgeColor: 'bg-[#a4c639]/10 backdrop-blur-md text-[#bcd94f] border-[#526a27]/30', shortcut: 'R' },
     { id: 'events', label: 'Signal Stream', category: 'INTELLIGENCE', icon: Radio, badge: eventCount > 0 ? eventCount : undefined, shortcut: 'E' },
     { id: 'osint', label: 'OSINT Veracity', category: 'INTELLIGENCE', icon: ShieldCheck, badge: anomalyCount > 0 ? `${anomalyCount} Anom` : undefined, badgeColor: 'bg-rose-500/20 text-rose-400 border-rose-500/40', shortcut: 'V' },
     { id: 'timeline', label: 'Threat Timeline', category: 'INTELLIGENCE', icon: Clock, shortcut: 'T' },
@@ -69,22 +69,22 @@ export default function CommandRail({
 
   return (
     <aside
-      className={`relative z-30 flex flex-col justify-between border-r border-white/10 bg-[#05070a]/95 backdrop-blur-xl transition-all duration-300 select-none ${
+      className={`relative z-30 flex flex-col justify-between border-r border-white/10 bg-white/[0.04] backdrop-blur-md backdrop-blur-xl transition-all duration-300 select-none ${
         collapsed ? 'w-16' : 'w-60'
       }`}
     >
       {/* RAIL TOP: LOGO & IDENTIFIER */}
       <div>
         <div className="flex items-center gap-3 px-3.5 py-4 border-b border-white/10">
-          <div className="relative flex items-center justify-center w-9 h-9 rounded-sm bg-cyan-950/70 border border-cyan-500/50 text-cyan-400 font-heading font-bold text-lg tracking-widest shadow-hud-glow">
+          <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-[#a4c639]/10 backdrop-blur-md border border-[#526a27]/50 text-[#a4c639] font-heading font-bold text-lg tracking-widest shadow-hud-glow">
             V
-            <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-[#a4c639] animate-pulse" />
           </div>
           {!collapsed && (
             <div className="flex flex-col min-w-0">
               <span className="font-heading text-base font-bold tracking-widest text-slate-100 flex items-center gap-1.5">
                 VANGUARD
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-500/30">
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-lg bg-[#a4c639]/10 backdrop-blur-md text-[#bcd94f] border border-[#526a27]/30">
                   C2
                 </span>
               </span>
@@ -118,20 +118,20 @@ export default function CommandRail({
                       key={item.id}
                       onClick={() => onTabChange(item.id)}
                       title={collapsed ? `${item.label} (${item.shortcut})` : undefined}
-                      className={`w-full group relative flex items-center gap-3 px-2.5 py-2 rounded-sm text-left transition-all duration-150 ${
+                      className={`w-full group relative flex items-center gap-3 px-2.5 py-2 rounded-xl text-left transition-all duration-150 ${
                         isActive
-                          ? 'bg-cyan-950/40 text-cyan-300 border border-cyan-500/40 shadow-tactical'
+                          ? 'bg-[#a4c639]/10 backdrop-blur-md text-[#bcd94f] border border-[#526a27]/40 shadow-tactical'
                           : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent'
                       }`}
                     >
                       {/* Active Indicator Line */}
                       {isActive && (
-                        <div className="absolute left-0 top-1 bottom-1 w-0.5 bg-cyan-400 shadow-hud-glow" />
+                        <div className="absolute left-0 top-1 bottom-1 w-0.5 bg-[#a4c639] shadow-hud-glow" />
                       )}
 
                       <Icon
                         className={`w-4 h-4 shrink-0 transition-colors ${
-                          isActive ? 'text-cyan-400' : 'text-slate-400 group-hover:text-slate-300'
+                          isActive ? 'text-[#a4c639]' : 'text-slate-400 group-hover:text-slate-300'
                         }`}
                       />
 
@@ -143,15 +143,15 @@ export default function CommandRail({
                           <div className="flex items-center gap-1.5">
                             {item.badge !== undefined && (
                               <span
-                                className={`text-[10px] font-mono px-1.5 py-0.2 rounded border ${
-                                  item.badgeColor || 'bg-cyan-950/80 text-cyan-300 border-cyan-500/30'
+                                className={`text-[10px] font-mono px-1.5 py-[1px] rounded-lg border ${
+                                  item.badgeColor || 'bg-[#a4c639]/10 backdrop-blur-md text-[#bcd94f] border-[#526a27]/30'
                                 }`}
                               >
                                 {item.badge}
                               </span>
                             )}
                             {item.shortcut && (
-                              <kbd className="hidden group-hover:inline-block text-[9px] font-mono text-slate-500 bg-black/40 px-1 py-0.5 rounded border border-white/5">
+                              <kbd className="hidden group-hover:inline-block text-[9px] font-mono text-slate-500 bg-black/40 px-1 py-0.5 rounded-lg border border-white/5">
                                 {item.shortcut}
                               </kbd>
                             )}
@@ -183,7 +183,7 @@ export default function CommandRail({
         )}
         <button
           onClick={onToggleCollapse}
-          className="p-1.5 rounded-sm hover:bg-white/[0.06] text-slate-400 hover:text-slate-200 transition-colors ml-auto"
+          className="p-1.5 rounded-xl hover:bg-white/[0.06] text-slate-400 hover:text-slate-200 transition-colors ml-auto"
           title={collapsed ? 'Expand Rail (Ctrl+B)' : 'Collapse Rail'}
         >
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}

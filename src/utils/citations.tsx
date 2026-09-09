@@ -43,7 +43,7 @@ export function renderTextWithCitations(
         <button
           key={idx}
           onClick={() => onSelectEventId && onSelectEventId(token)}
-          className="inline-flex items-center gap-0.5 px-1.5 py-0.2 mx-0.5 rounded bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 hover:text-cyan-100 hover:bg-cyan-900/90 font-mono text-[11px] font-bold transition-all shadow-sm"
+          className="inline-flex items-center gap-0.5 px-1.5 py-[1px] mx-0.5 rounded-lg bg-[#a4c639]/10 backdrop-blur-md border border-[#526a27]/40 text-[#bcd94f] hover:text-[#e8f7c0] hover:bg-[#a4c639]/20 font-mono text-[11px] font-bold transition-all shadow-sm"
           title={`Inspect Grounded Event ${token}`}
         >
           [{token}]

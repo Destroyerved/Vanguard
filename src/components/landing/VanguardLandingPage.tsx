@@ -518,22 +518,26 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
         </div>
 
         {/* HORIZONTAL TACTICAL HIGHLIGHT BAR & COBE 3D PULSE GLOBE BEHIND VANGUARD */}
-        <div className="relative w-full flex items-center justify-center z-20 mb-2 mt-auto pt-24 sm:pt-28 md:pt-32">
+        <div className="relative w-full flex items-center justify-center z-10 mb-2 mt-auto pt-20 sm:pt-24 md:pt-28">
           {/* COBE 3D PULSE GLOBE AESTHETIC SPHERE CENTERED BEHIND VANGUARD */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0 flex items-center justify-center">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[58%] pointer-events-none z-0 flex items-center justify-center">
             {/* Soft tactical radial aura behind globe */}
             <div
-              className={`absolute w-[360px] h-[360px] sm:w-[520px] sm:h-[520px] md:w-[680px] md:h-[680px] rounded-full ${
+              className={`absolute w-[360px] h-[360px] sm:w-[520px] sm:h-[520px] md:w-[640px] md:h-[640px] rounded-full ${
                 isDark ? 'bg-[#526a27]/20 blur-[90px]' : 'bg-[#526a27]/12 blur-[80px]'
               } pointer-events-none`}
             />
 
             <div
-              className={`relative w-[300px] h-[300px] sm:w-[460px] sm:h-[460px] md:w-[580px] md:h-[580px] lg:w-[680px] lg:h-[680px] ${
+              className={`relative w-[300px] h-[300px] sm:w-[440px] sm:h-[440px] md:w-[540px] md:h-[540px] lg:w-[640px] lg:h-[640px] ${
                 isDark
                   ? 'opacity-85 mix-blend-screen drop-shadow-[0_0_40px_rgba(82,106,39,0.4)]'
                   : 'opacity-90 drop-shadow-[0_10px_35px_rgba(82,106,39,0.25)]'
               }`}
+              style={{
+                maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 48%, rgba(0,0,0,0) 80%)',
+                WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 48%, rgba(0,0,0,0) 80%)',
+              }}
             >
               <GlobePulse
                 className="w-full h-full"
@@ -580,7 +584,7 @@ export const VanguardLandingPage: React.FC<VanguardLandingPageProps> = ({
         </div>
 
         {/* BOTTOM BEVELED TACTICAL FRAME CONTAINER */}
-        <div className="relative w-full max-w-[1580px] mx-auto z-10 mb-2">
+        <div className="relative w-full max-w-[1580px] mx-auto z-20 mb-2">
           <div className="relative w-full min-h-[190px] sm:min-h-[210px] md:min-h-[225px] p-5 sm:p-7 flex flex-col justify-between">
             {/* SVG Crisp Chamfered Border & Dynamic Theme Background */}
             <svg

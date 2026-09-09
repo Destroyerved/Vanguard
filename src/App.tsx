@@ -33,7 +33,7 @@ import EventReconMedia from './components/EventReconMedia';
 import VanguardLandingPage from './components/landing/VanguardLandingPage';
 
 function AppContent() {
-  const { isDark } = useTheme();
+  useTheme();
   const [viewMode, setViewMode] = useState<'landing' | 'console'>('landing');
   const [activeTab, setActiveTab] = useState<NavSection>('overview');
   const [loading, setLoading] = useState(true);
@@ -310,11 +310,18 @@ const handleRunNlQuery = async (query: string) => {
   }
 
   return (
-    <div
-      className={`flex flex-col h-screen w-screen overflow-hidden ${
-        isDark ? 'bg-[#000000] text-slate-200' : 'bg-[#f8fafc] text-slate-900'
-      } font-sans transition-colors duration-200`}
-    >
+    <div className="relative flex flex-col h-screen w-screen overflow-hidden bg-black text-slate-200 font-sans selection:bg-[#a4c639] selection:text-black">
+      {/* 0. CONSOLE BACKDROP — hairline tactical grid under every screen */}
+      <div className="pointer-events-none fixed inset-0 vg-console-bg opacity-70" aria-hidden />
+      <div
+        className="pointer-events-none fixed inset-0"
+        aria-hidden
+        style={{
+          background:
+            'radial-gradient(ellipse 90% 60% at 50% 0%, rgba(82,106,39,0.12), transparent 60%), radial-gradient(ellipse 70% 50% at 50% 100%, rgba(0,0,0,0.9), transparent 70%)',
+        }}
+      />
+
       {/* 1. TOP TACTICAL COMMAND HEADER */}
       <TopTacticalHeader
         currentTime={currentTime}
@@ -336,14 +343,22 @@ const handleRunNlQuery = async (query: string) => {
       />
 
       {/* 2. PRIMARY FULL-WIDTH OPERATIONAL WORKSPACE */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="relative flex-1 flex flex-col min-w-0 overflow-hidden">
         <main className="flex-1 overflow-y-auto p-4 md:p-5 relative">
           {/* DEGRADED COMMS AMBER SCANLINE OVERLAY */}
           {isDegradedComms && (
-            <div className="fixed inset-0 degraded-scanlines z-10 pointer-events-none" />
+            <>
+              <div className="fixed inset-0 degraded-scanlines z-10 pointer-events-none" />
+              <div className="fixed top-[104px] left-1/2 -translate-x-1/2 z-30 pointer-events-none vg-chip border-amber-500/60 bg-amber-950/90 text-amber-300 shadow-[0_0_24px_rgba(245,158,11,0.35)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                Degraded comms — reduced feed fidelity
+              </div>
+            </>
           )}
 
-          {/* VIEW ROUTING */}
+          {/* VIEW ROUTING — each screen fades in so tab switches read as a
+              deliberate instrument change rather than a hard cut. */}
+          <div key={activeTab} className="vg-fade-up h-full">
           {activeTab === 'overview' && (
             <OverviewCanvas
               situation={situation}
@@ -445,6 +460,7 @@ const handleRunNlQuery = async (query: string) => {
           )}
 
           {activeTab === 'api_tester' && <ApiConsoleDiagnostics />}
+          </div>
         </main>
       </div>
 

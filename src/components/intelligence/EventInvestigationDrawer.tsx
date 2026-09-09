@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { UnifiedEvent, CorrelationsResponse, CandidatesResponse } from '../../types/schema';
 import { explainEvent } from '../../data/eventExplainer';
 import { getCorrelations, getCandidates } from '../../data/apiClient';
@@ -107,17 +108,32 @@ export default function EventInvestigationDrawer({
   const isSimple = summaryViewMode === 'SIMPLE' || easyMode;
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full max-w-xl bg-[#070b10]/98 border-l border-white/10 shadow-2xl backdrop-blur-2xl flex flex-col font-mono text-xs select-none animate-in slide-in-from-right duration-200">
+    <>
+      {/* Scrim — dims the COP so the investigation reads as a focused overlay,
+          and gives the operator a click-anywhere exit. */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        onClick={onClose}
+        className="fixed inset-0 z-40 bg-black/55 backdrop-blur-[2px]"
+      />
+      <motion.div
+        initial={{ x: 40, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+        className="fixed inset-y-0 right-0 z-50 w-full max-w-xl flex flex-col font-mono text-xs select-none border-l border-[#526a27]/40 bg-[linear-gradient(155deg,rgba(24,34,16,0.62),rgba(4,6,4,0.9))] backdrop-blur-2xl shadow-[-24px_0_60px_-12px_rgba(0,0,0,0.95)]"
+      >
       {/* 1. DRAWER TOP HEADER */}
-      <div className="p-4 border-b border-white/10 bg-[#0a0f15] flex items-center justify-between">
+      <div className="p-4 border-b border-[#526a27]/30 flex items-center justify-between relative">
+        <span className="absolute left-0 bottom-0 h-px w-20 bg-gradient-to-r from-[#c6ff00] to-transparent shadow-[0_0_8px_rgba(164,198,57,0.8)]" />
         <div className="flex items-center gap-3">
-          <div className="p-1.5 rounded bg-cyan-950/80 border border-cyan-500/40 text-cyan-400">
+          <div className="p-1.5 rounded-lg bg-[#a4c639]/10 backdrop-blur-md border border-[#526a27]/40 text-[#a4c639]">
             <Radio className="w-4 h-4" />
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
               <span className="font-bold text-sm text-slate-100">EVENT [{event.id}]</span>
-              <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-semibold border ${severityBadge}`}>
+              <span className={`px-2 py-0.5 rounded-lg text-[10px] uppercase font-semibold border ${severityBadge}`}>
                 {event.severity}
               </span>
             </div>
@@ -130,22 +146,22 @@ export default function EventInvestigationDrawer({
         <div className="flex items-center gap-2">
           <button
             onClick={() => generateEventPdfReport(event)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-cyan-950 border border-cyan-500/60 text-cyan-300 hover:bg-cyan-900 shadow-hud-glow transition-all font-bold text-[10px]"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#a4c639]/10 backdrop-blur-md border border-[#526a27]/60 text-[#bcd94f] hover:bg-[#a4c639]/14 shadow-hud-glow transition-all font-bold text-[10px]"
             title="Generate & Export Detailed Intelligence PDF Dossier"
           >
-            <Download className="w-3.5 h-3.5 text-cyan-400" />
+            <Download className="w-3.5 h-3.5 text-[#a4c639]" />
             <span>EXPORT PDF</span>
           </button>
           <button
             onClick={handleCopyJson}
-            className="p-1.5 rounded hover:bg-white/10 text-slate-400 hover:text-slate-200"
+            className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-slate-200"
             title="Copy Raw Event JSON"
           >
             {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
           </button>
           <button
             onClick={onClose}
-            className="p-1.5 rounded hover:bg-white/10 text-slate-400 hover:text-slate-200"
+            className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-slate-200"
           >
             <X className="w-4 h-4" />
           </button>
@@ -153,7 +169,7 @@ export default function EventInvestigationDrawer({
       </div>
 
       {/* 2. SUB-TABS */}
-      <div className="flex items-center border-b border-white/10 px-3 bg-[#05070a] overflow-x-auto">
+      <div className="flex items-center border-b border-white/10 px-3 bg-white/[0.04] backdrop-blur-md overflow-x-auto">
         {[
           { id: 'EXPLAIN', label: 'Summary' },
           { id: 'RECON', label: 'Satellite Recon' },
@@ -167,7 +183,7 @@ export default function EventInvestigationDrawer({
             onClick={() => setActiveTab(tab.id as any)}
             className={`px-3 py-2.5 text-[11px] font-semibold border-b-2 transition-all whitespace-nowrap ${
               activeTab === tab.id
-                ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20'
+                ? 'border-[#a4c639] text-[#bcd94f] bg-[#a4c639]/10 backdrop-blur-md'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -179,10 +195,10 @@ export default function EventInvestigationDrawer({
       {/* 3. DRAWER BODY SCROLL AREA */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* KEY TELEMETRY STRIP */}
-        <div className="grid grid-cols-3 gap-2 p-2.5 rounded bg-[#0a0f15] border border-white/10 text-slate-300">
+        <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-white/[0.05] backdrop-blur-md border border-white/10 text-slate-300">
           <div>
             <div className="text-[10px] text-slate-500 uppercase">Source Type</div>
-            <div className="font-semibold text-cyan-300">{event.sourceType.toUpperCase()}</div>
+            <div className="font-semibold text-[#bcd94f]">{event.sourceType.toUpperCase()}</div>
           </div>
           <div>
             <div className="text-[10px] text-slate-500 uppercase">Coordinates</div>
@@ -206,10 +222,10 @@ export default function EventInvestigationDrawer({
               <span className="text-[10px] text-slate-400 uppercase font-bold">
                 {isSimple ? 'PLAIN-ENGLISH SUMMARY' : 'TACTICAL INTELLIGENCE BREAKDOWN'}
               </span>
-              <div className="flex items-center gap-1 bg-[#05070a] p-0.5 rounded border border-white/10">
+              <div className="flex items-center gap-1 bg-white/[0.04] backdrop-blur-md p-0.5 rounded-lg border border-white/10">
                 <button
                   onClick={() => setSummaryViewMode('SIMPLE')}
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${
+                  className={`px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
                     isSimple
                       ? 'bg-amber-950/80 border border-amber-500/50 text-amber-300 shadow-sm'
                       : 'text-slate-400 hover:text-slate-200'
@@ -220,13 +236,13 @@ export default function EventInvestigationDrawer({
                 </button>
                 <button
                   onClick={() => setSummaryViewMode('TACTICAL')}
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${
+                  className={`px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
                     !isSimple
-                      ? 'bg-cyan-950/80 border border-cyan-500/50 text-cyan-300 shadow-sm'
+                      ? 'bg-[#a4c639]/10 backdrop-blur-md border border-[#526a27]/50 text-[#bcd94f] shadow-sm'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  <Layers className="w-3 h-3 text-cyan-400" />
+                  <Layers className="w-3 h-3 text-[#a4c639]" />
                   <span>TACTICAL</span>
                 </button>
               </div>
@@ -236,7 +252,7 @@ export default function EventInvestigationDrawer({
               /* SIMPLE WORDS SUMMARY CARDS */
               <div className="space-y-3 font-sans">
                 {/* 1. WHAT HAPPENED */}
-                <div className="p-3.5 rounded bg-amber-950/20 border border-amber-500/30 space-y-1.5">
+                <div className="p-3.5 rounded-lg bg-amber-950/20 border border-amber-500/30 space-y-1.5">
                   <div className="text-[10px] font-mono text-amber-400 uppercase font-bold flex items-center gap-1.5">
                     <Info className="w-3.5 h-3.5 text-amber-400" />
                     WHAT HAPPENED (IN SIMPLE WORDS)
@@ -247,7 +263,7 @@ export default function EventInvestigationDrawer({
                 </div>
 
                 {/* 2. HOW SERIOUS IS IT */}
-                <div className="p-3 rounded bg-[#0a0f15] border border-white/10 space-y-1">
+                <div className="p-3 rounded-lg bg-white/[0.05] backdrop-blur-md border border-white/10 space-y-1">
                   <div className="text-[10px] font-mono text-slate-400 uppercase font-semibold flex items-center gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
                     HOW SERIOUS IS THIS?
@@ -258,7 +274,7 @@ export default function EventInvestigationDrawer({
                 </div>
 
                 {/* 3. WHAT SHOULD WE DO NEXT */}
-                <div className="p-3 rounded bg-emerald-950/20 border border-emerald-500/30 space-y-1.5">
+                <div className="p-3 rounded-lg bg-emerald-950/20 border border-emerald-500/30 space-y-1.5">
                   <div className="text-[10px] font-mono text-emerald-400 uppercase font-bold flex items-center gap-1.5">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                     WHAT WE SHOULD DO (ACTION STEP)
@@ -269,16 +285,16 @@ export default function EventInvestigationDrawer({
                 </div>
 
                 {/* 4. LOCATION & SENSORS IN SIMPLE WORDS */}
-                <div className="p-2.5 rounded bg-[#070b10] border border-white/5 text-[11px] text-slate-400 flex items-center gap-2">
-                  <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <div className="p-2.5 rounded-lg bg-white/[0.035] backdrop-blur-md border border-white/5 text-[11px] text-slate-400 flex items-center gap-2">
+                  <MapPin className="w-3.5 h-3.5 text-[#a4c639] shrink-0" />
                   <span>{explanation.easy.simpleTelemetry}</span>
                 </div>
               </div>
             ) : (
               /* TACTICAL INTELLIGENCE CARDS */
               <div className="space-y-4">
-                <div className="p-3 rounded bg-cyan-950/30 border border-cyan-500/30 space-y-2">
-                  <div className="text-xs font-semibold text-cyan-300 flex items-center gap-1.5">
+                <div className="p-3 rounded-lg bg-[#a4c639]/10 backdrop-blur-md border border-[#526a27]/30 space-y-2">
+                  <div className="text-xs font-semibold text-[#bcd94f] flex items-center gap-1.5">
                     <Info className="w-3.5 h-3.5" />
                     OPERATIONAL SITUATION SUMMARY
                   </div>
@@ -288,9 +304,9 @@ export default function EventInvestigationDrawer({
                 </div>
 
                 {/* TACTICAL IMPACT */}
-                <div className="p-3 rounded bg-[#0a0f15] border border-white/10 space-y-2">
+                <div className="p-3 rounded-lg bg-white/[0.05] backdrop-blur-md border border-white/10 space-y-2">
                   <div className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-                    <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
+                    <TrendingUp className="w-3.5 h-3.5 text-[#a4c639]" />
                     TACTICAL IMPACT ANALYSIS
                   </div>
                   <p className="text-slate-300 text-xs">
@@ -299,7 +315,7 @@ export default function EventInvestigationDrawer({
                 </div>
 
                 {/* ACTIONABLE RECOMMENDATION */}
-                <div className="p-3 rounded bg-[#0a0f15] border border-white/10 space-y-2">
+                <div className="p-3 rounded-lg bg-white/[0.05] backdrop-blur-md border border-white/10 space-y-2">
                   <div className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                     TACTICAL COURSE OF ACTION
@@ -313,7 +329,7 @@ export default function EventInvestigationDrawer({
 
             {/* ANOMALY INDICATOR */}
             {event.isAnomaly && (
-              <div className="p-3 rounded bg-rose-950/40 border border-rose-500/40 space-y-1">
+              <div className="p-3 rounded-lg bg-rose-950/40 border border-rose-500/40 space-y-1">
                 <div className="text-xs font-bold text-rose-300 flex items-center gap-1.5">
                   <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
                   STATISTICAL ANOMALY DETECTED
@@ -327,14 +343,14 @@ export default function EventInvestigationDrawer({
 
             {/* MEDIA AUTHENTICITY AUDIT (server forensic pipeline) */}
             {event.mediaAudit && (
-              <div className="p-3 rounded bg-[#0a0f15] border border-white/10 space-y-1.5">
+              <div className="p-3 rounded-lg bg-white/[0.05] backdrop-blur-md border border-white/10 space-y-1.5">
                 <div className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                  <Camera className="w-3.5 h-3.5 text-cyan-400" />
+                  <Camera className="w-3.5 h-3.5 text-[#a4c639]" />
                   MEDIA AUTHENTICITY AUDIT
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   <span
-                    className={`px-1.5 py-0.2 rounded text-[9px] font-bold border ${
+                    className={`px-1.5 py-[1px] rounded-lg text-[9px] font-bold border ${
                       event.mediaAudit.manipulationCategory === 'NONE_DETECTED'
                         ? 'bg-emerald-950/70 text-emerald-300 border-emerald-500/40'
                         : event.mediaAudit.manipulationCategory === 'EVENT_FABRICATING'
@@ -344,14 +360,14 @@ export default function EventInvestigationDrawer({
                   >
                     {event.mediaAudit.manipulationCategory}
                   </span>
-                  <span className="px-1.5 py-0.2 rounded bg-[#05070a] border border-white/10 text-[9px] text-slate-300">
+                  <span className="px-1.5 py-[1px] rounded-lg bg-white/[0.04] backdrop-blur-md border border-white/10 text-[9px] text-slate-300">
                     AUTH <b>{event.mediaAudit.authenticityScore}</b>/100
                   </span>
-                  <span className="px-1.5 py-0.2 rounded bg-[#05070a] border border-white/10 text-[9px] text-slate-300">
+                  <span className="px-1.5 py-[1px] rounded-lg bg-white/[0.04] backdrop-blur-md border border-white/10 text-[9px] text-slate-300">
                     AI-SYNTH <b>{event.mediaAudit.aiSyntheticScore}%</b>
                   </span>
                   {event.mediaAudit.deepfakeArtifacts?.length > 0 && (
-                    <span className="px-1.5 py-0.2 rounded bg-rose-950/50 border border-rose-500/30 text-[9px] text-rose-300">
+                    <span className="px-1.5 py-[1px] rounded-lg bg-rose-950/50 border border-rose-500/30 text-[9px] text-rose-300">
                       {event.mediaAudit.deepfakeArtifacts.length} artifact(s)
                     </span>
                   )}
@@ -384,12 +400,12 @@ export default function EventInvestigationDrawer({
         {/* TAB 4: DETAILED CONFIDENCE MATH */}
         {activeTab === 'MATH' && (
           <div className="space-y-4">
-            <div className="p-3 rounded bg-[#0a0f15] border border-white/10 space-y-3">
+            <div className="p-3 rounded-lg bg-white/[0.05] backdrop-blur-md border border-white/10 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-200 uppercase">
                   Confidence Evidence Flow
                 </span>
-                <span className="text-xs font-mono font-bold text-cyan-400">
+                <span className="text-xs font-mono font-bold text-[#a4c639]">
                   Total: {bd.overall}%
                 </span>
               </div>
@@ -406,11 +422,11 @@ export default function EventInvestigationDrawer({
                   <div key={factor.label} className="space-y-1">
                     <div className="flex justify-between text-[11px]">
                       <span className="text-slate-300 font-medium">{factor.label}</span>
-                      <span className="font-bold text-cyan-300">{factor.val}%</span>
+                      <span className="font-bold text-[#bcd94f]">{factor.val}%</span>
                     </div>
                     <div className="w-full h-1.5 bg-black/60 rounded-full overflow-hidden border border-white/10">
                       <div
-                        className="h-full bg-cyan-400"
+                        className="h-full bg-[#a4c639]"
                         style={{ width: `${Math.min(100, factor.val)}%` }}
                       />
                     </div>
@@ -421,7 +437,7 @@ export default function EventInvestigationDrawer({
             </div>
 
             {/* COUNTERFACTUAL EVIDENCE GAIN */}
-            <div className="p-3 rounded bg-emerald-950/30 border border-emerald-500/30 text-xs space-y-1.5">
+            <div className="p-3 rounded-lg bg-emerald-950/30 border border-emerald-500/30 text-xs space-y-1.5">
               <span className="font-bold text-emerald-300">COUNTERFACTUAL VERDICT:</span>
               {correlations ? (
                 <>
@@ -445,12 +461,12 @@ export default function EventInvestigationDrawer({
 
             {/* REAL FORMULA STRIP */}
             {correlations && (
-              <div className="p-3 rounded bg-[#0a0f15] border border-white/10 space-y-1.5">
+              <div className="p-3 rounded-lg bg-white/[0.05] backdrop-blur-md border border-white/10 space-y-1.5">
                 <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1.5">
-                  <Cpu className="w-3 h-3 text-cyan-400" />
+                  <Cpu className="w-3 h-3 text-[#a4c639]" />
                   SERVER CONFIDENCE FUNCTION
                 </div>
-                <code className="block text-[10px] text-cyan-200/80 font-mono leading-relaxed break-words">
+                <code className="block text-[10px] text-[#d8ef95]/80 font-mono leading-relaxed break-words">
                   {correlations.confidence.formula}
                 </code>
                 <p className="text-slate-500 text-[10px]">{correlations.confidence.explanation}</p>
@@ -464,15 +480,15 @@ export default function EventInvestigationDrawer({
         {activeTab === 'CORRELATIONS' && (
           <div className="space-y-2">
             {correlations && (
-              <div className="p-2.5 rounded bg-[#0a0f15] border border-cyan-500/20 text-[11px] space-y-1">
+              <div className="p-2.5 rounded-lg bg-white/[0.05] backdrop-blur-md border border-[#526a27]/20 text-[11px] space-y-1">
                 <div className="flex flex-wrap gap-1.5 text-[10px]">
-                  <span className="px-1.5 py-0.2 rounded bg-cyan-950/70 border border-cyan-500/40 text-cyan-300 font-bold">
+                  <span className="px-1.5 py-[1px] rounded-lg bg-[#a4c639]/10 backdrop-blur-md border border-[#526a27]/40 text-[#bcd94f] font-bold">
                     {correlations.corroboration.count} CORROBORATORS
                   </span>
-                  <span className="px-1.5 py-0.2 rounded bg-[#05070a] border border-white/10 text-slate-300">
+                  <span className="px-1.5 py-[1px] rounded-lg bg-white/[0.04] backdrop-blur-md border border-white/10 text-slate-300">
                     Horizon: ≤ {correlations.correlationWindows.radiusMeters}m / {correlations.correlationWindows.windowSeconds}s
                   </span>
-                  <span className="px-1.5 py-0.2 rounded bg-[#05070a] border border-white/10 text-slate-300">
+                  <span className="px-1.5 py-[1px] rounded-lg bg-white/[0.04] backdrop-blur-md border border-white/10 text-slate-300">
                     Sources: {[...correlations.corroboration.distinctSources].join(', ')}
                   </span>
                 </div>
@@ -485,7 +501,7 @@ export default function EventInvestigationDrawer({
             )}
 
             {corrLoading && (
-              <div className="p-3 rounded bg-[#0a0f15] border border-white/10 text-slate-400 animate-pulse text-center text-[10px]">
+              <div className="p-3 rounded-lg bg-white/[0.05] backdrop-blur-md border border-white/10 text-slate-400 animate-pulse text-center text-[10px]">
                 QUERYING CORRELATION ENGINE…
               </div>
             )}
@@ -494,14 +510,14 @@ export default function EventInvestigationDrawer({
               correlations.corroboration.links.map((link) => (
                 <div
                   key={link.event.id}
-                  className="p-2.5 rounded bg-[#0a0f15] border border-white/10 hover:border-cyan-500/40 transition-colors space-y-1"
+                  className="p-2.5 rounded-lg bg-white/[0.05] backdrop-blur-md border border-white/10 hover:border-[#526a27]/40 transition-colors space-y-1"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="font-bold text-cyan-300 shrink-0">[{link.event.id}]</span>
+                      <span className="font-bold text-[#bcd94f] shrink-0">[{link.event.id}]</span>
                       <span className="text-[10px] text-slate-400 truncate">{link.event.title}</span>
                     </div>
-                    <span className="shrink-0 px-1.5 py-0.2 rounded bg-[#05070a] border border-white/10 text-[9px] text-emerald-300">
+                    <span className="shrink-0 px-1.5 py-[1px] rounded-lg bg-white/[0.04] backdrop-blur-md border border-white/10 text-[9px] text-emerald-300">
                       {Math.round(link.strength * 100)}% MATCH
                     </span>
                   </div>
@@ -513,7 +529,7 @@ export default function EventInvestigationDrawer({
                   <p className="text-[10px] text-slate-400 leading-snug">{link.rationale}</p>
                   <button
                     onClick={() => onSelectCorrelatedEvent && onSelectCorrelatedEvent(link.event.id)}
-                    className="flex items-center gap-1 text-[10px] text-cyan-300 hover:text-cyan-100"
+                    className="flex items-center gap-1 text-[10px] text-[#bcd94f] hover:text-[#e8f7c0]"
                   >
                     Inspect Contact <ExternalLink className="w-3 h-3" />
                   </button>
@@ -521,7 +537,7 @@ export default function EventInvestigationDrawer({
               ))}
 
             {correlations && correlations.corroboration.links.length === 0 && !corrLoading && (
-              <div className="p-4 rounded bg-[#0a0f15] border border-white/10 text-slate-500 italic text-center">
+              <div className="p-4 rounded-lg bg-white/[0.05] backdrop-blur-md border border-white/10 text-slate-500 italic text-center">
                 Isolated contact: dynamic correlation had no surviving links.
               </div>
             )}
@@ -536,7 +552,7 @@ export default function EventInvestigationDrawer({
                 {candidates.candidates.map((cand) => (
                   <div
                     key={cand.eventId}
-                    className="p-2 rounded bg-[#070b10] border border-white/5 text-[10px] space-y-0.5"
+                    className="p-2 rounded-lg bg-white/[0.035] backdrop-blur-md border border-white/5 text-[10px] space-y-0.5"
                   >
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-slate-300">[{cand.eventId}]</span>
@@ -552,13 +568,13 @@ export default function EventInvestigationDrawer({
             )}
 
             {corrError && !correlations && (
-              <div className="p-3 rounded bg-amber-950/30 border border-amber-500/30 text-[10px] text-amber-200">
+              <div className="p-3 rounded-lg bg-amber-950/30 border border-amber-500/30 text-[10px] text-amber-200">
                 {corrError} Showing event-local corroboration IDs instead.
                 {event.corroboratedBy?.map((corrId) => (
                   <button
                     key={corrId}
                     onClick={() => onSelectCorrelatedEvent && onSelectCorrelatedEvent(corrId)}
-                    className="mx-1 px-1.5 py-0.2 rounded bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 hover:text-cyan-100"
+                    className="mx-1 px-1.5 py-[1px] rounded-lg bg-[#a4c639]/10 backdrop-blur-md border border-[#526a27]/40 text-[#bcd94f] hover:text-[#e8f7c0]"
                   >
                     [{corrId}]
                   </button>
@@ -567,7 +583,7 @@ export default function EventInvestigationDrawer({
             )}
 
             {!correlations && !candidates && !corrLoading && !corrError && (
-              <div className="p-4 rounded bg-[#0a0f15] border border-white/10 text-slate-500 italic text-center">
+              <div className="p-4 rounded-lg bg-white/[0.05] backdrop-blur-md border border-white/10 text-slate-500 italic text-center">
                 Isolated contact: No secondary sensors currently within spatial-temporal correlation horizon.
               </div>
             )}
@@ -576,11 +592,12 @@ export default function EventInvestigationDrawer({
 
         {/* TAB 6: RAW JSON PAYLOAD */}
         {activeTab === 'RAW' && (
-          <pre className="p-3 rounded bg-[#05070a] border border-white/10 text-[11px] font-mono text-cyan-300/90 overflow-x-auto">
+          <pre className="p-3 rounded-lg bg-white/[0.04] backdrop-blur-md border border-white/10 text-[11px] font-mono text-[#bcd94f]/90 overflow-x-auto">
             {JSON.stringify(event, null, 2)}
           </pre>
         )}
       </div>
-    </div>
+      </motion.div>
+    </>
   );
 }

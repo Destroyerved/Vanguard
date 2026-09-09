@@ -49,6 +49,7 @@ coverage/
 GEMINI.md
 AGENTS.md
 CLAUDE.md
+.claude/
 .cursorrules
 .windsurfrules
 .clinerules

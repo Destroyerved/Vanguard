@@ -159,19 +159,19 @@ export default function VerifiedNewsHub({ event, isStandaloneTab = false }: Veri
   });
 
   return (
-    <div className="hud-card p-6 rounded-2xl border border-amber-500/40 bg-slate-900/90 font-mono shadow-2xl space-y-4">
+    <div className="vg-panel p-5 font-mono space-y-4">
       {/* HUB HEADER & CONTROLS */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4">
         <div>
-          <h2 className="font-hud font-bold text-lg text-slate-100 flex items-center gap-2">
-            <Newspaper className="w-5 h-5 text-amber-400" /> VERIFIED GLOBAL NEWS & OSINT HUB
+          <h2 className="font-heading font-bold text-lg text-slate-100 flex items-center gap-2">
+            <Newspaper className="w-5 h-5 text-[#a4c639]" /> VERIFIED GLOBAL NEWS & OSINT HUB
           </h2>
         </div>
 
         <button
           onClick={handleFetchLiveNews}
           disabled={loading}
-          className="px-4 py-2 bg-amber-950 border border-amber-600 hover:bg-amber-900 text-amber-300 rounded-lg text-xs font-bold flex items-center gap-2 transition-all shadow-md disabled:opacity-50"
+          className="vg-btn vg-btn-primary disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           {loading ? 'REFRESHING NEWS WIRES...' : 'FETCH RECENT BREAKING NEWS'}
@@ -188,8 +188,8 @@ export default function VerifiedNewsHub({ event, isStandaloneTab = false }: Veri
               onClick={() => setSelectedCategory(cat)}
               className={`px-3 py-1.5 rounded-lg border font-bold transition-all ${
                 selectedCategory === cat
-                  ? 'bg-amber-950 border-amber-500 text-amber-300 shadow-sm'
-                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                  ? 'bg-[#a4c639]/16 border-[#a4c639]/60 text-[#c6ff00] shadow-[0_0_16px_rgba(82,106,39,0.5)]'
+                  : 'bg-white/[0.04] border-white/10 text-slate-400 hover:text-slate-200 hover:border-[#526a27]/60'
               }`}
             >
               {cat === 'ALL' ? '🌍 ALL SECTORS' : cat}
@@ -199,13 +199,13 @@ export default function VerifiedNewsHub({ event, isStandaloneTab = false }: Veri
 
         {/* Search Bar */}
         <div className="relative flex-1 min-w-[200px] max-w-xs">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-[#526a27] absolute left-3 top-1/2 -translate-y-1/2 z-10" />
           <input
             type="text"
             placeholder="Search news sources, topics..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 text-slate-200 pl-8 pr-3 py-1.5 rounded-lg text-xs focus:outline-none focus:border-amber-500 font-mono"
+            className="vg-input !pl-8 !py-1.5"
           />
         </div>
       </div>
@@ -213,10 +213,10 @@ export default function VerifiedNewsHub({ event, isStandaloneTab = false }: Veri
       {/* ARTICLES GRID WITH AUTHENTIC NEWS IMAGES */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
         {filteredNews.map((article, idx) => (
-          <div key={idx} className="hud-card overflow-hidden rounded-xl border border-slate-800 hover:border-amber-500/60 bg-slate-950/80 flex flex-col justify-between transition-all group shadow-lg">
+          <div key={idx} className="vg-panel vg-panel-interactive overflow-hidden flex flex-col justify-between group">
             {/* News Image Header */}
             {article.imageUrl && (
-              <div className="relative h-44 w-full overflow-hidden bg-slate-900">
+              <div className="relative h-44 w-full overflow-hidden bg-black/40">
                 <img
                   src={article.imageUrl}
                   alt={article.title}
@@ -226,14 +226,14 @@ export default function VerifiedNewsHub({ event, isStandaloneTab = false }: Veri
                   }}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 brightness-90 group-hover:brightness-100"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#080c14] via-transparent to-transparent opacity-90"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#050803] via-[#050803]/20 to-transparent"></div>
                 <div className="absolute top-2 left-2 flex items-center gap-1.5">
-                  <span className="text-[10px] bg-amber-950/90 border border-amber-600/80 text-amber-300 font-bold px-2 py-0.5 rounded uppercase backdrop-blur flex items-center gap-1">
+                  <span className="vg-chip !text-[9px] font-bold border-emerald-500/50 bg-emerald-950/70 text-emerald-300">
                     <CheckCircle2 className="w-3 h-3 text-emerald-400" /> {article.source}
                   </span>
                 </div>
                 <div className="absolute top-2 right-2">
-                  <span className="text-[10px] bg-cyan-950/90 border border-cyan-700 text-cyan-300 font-bold px-2 py-0.5 rounded uppercase backdrop-blur font-mono">
+                  <span className="vg-chip vg-chip-active !text-[9px] font-bold">
                     {article.category}
                   </span>
                 </div>
@@ -244,26 +244,26 @@ export default function VerifiedNewsHub({ event, isStandaloneTab = false }: Veri
               <div>
                 {!article.imageUrl && (
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] bg-amber-950/80 border border-amber-700 text-amber-300 font-bold px-2 py-0.5 rounded uppercase flex items-center gap-1">
+                    <span className="vg-chip !text-[9px] font-bold border-emerald-500/50 bg-emerald-950/70 text-emerald-300">
                       <CheckCircle2 className="w-3 h-3 text-emerald-400" /> {article.source}
                     </span>
                     <span className="text-[10px] text-slate-400 font-mono">{article.time}</span>
                   </div>
                 )}
 
-                <h3 className="font-hud font-bold text-sm text-slate-100 group-hover:text-amber-300 transition-colors leading-snug">
+                <h3 className="font-heading font-bold text-sm text-slate-100 group-hover:text-[#c6ff00] transition-colors leading-snug">
                   {article.title}
                 </h3>
                 <p className="text-xs text-slate-300 font-sans leading-relaxed mt-2">{article.snippet}</p>
               </div>
 
-              <div className="pt-2 border-t border-slate-900 flex items-center justify-between text-xs">
+              <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs">
                 <span className="text-[10px] text-slate-400 font-mono">{article.time}</span>
                 <a
                   href={article.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-amber-400 hover:text-amber-300 font-bold hover:underline flex items-center gap-1"
+                  className="text-[#a4c639] hover:text-[#c6ff00] font-bold hover:underline flex items-center gap-1"
                 >
                   Read Official Article <ExternalLink className="w-3.5 h-3.5" />
                 </a>
