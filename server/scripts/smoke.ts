@@ -44,7 +44,7 @@ async function main(): Promise<void> {
   const health = orchestrator.getSourceHealth();
 
   console.log('\nIngestion');
-  check('all seven feeds registered', health.length === 7, `${health.length} feeds`);
+  check('all eight feeds registered', health.length === 8, `${health.length} feeds`);
   check('events ingested', events.length > 0, `${events.length} active events`);
 
   const bySource = orchestrator.store.countsBySource();
@@ -105,6 +105,55 @@ async function main(): Promise<void> {
     'every media confidence carries the authenticity discount in [60, 100]',
     media.every((e) => (e.confidenceBreakdown?.mediaAuthenticity ?? 100) >= 60),
     'factor never zeroes an item',
+  );
+
+  console.log('\nVisual intelligence (CCTV)');
+  const video = events.filter((e) => e.sourceType === 'video');
+  check('CCTV feed produced events', video.length > 0, `${video.length} clips`);
+  check(
+    'every CCTV event carries a visual evidence bundle with a forensic read',
+    video.every(
+      (e) =>
+        e.visualEvidence !== undefined &&
+        e.visualEvidence.forensics.classification !== undefined,
+    ),
+    'bundle + classification present on all',
+  );
+  check(
+    'every CCTV event is also media-audited',
+    video.every((e) => e.mediaAudit !== undefined),
+    'generic media audit attached',
+  );
+
+  const vision = orchestrator.getVisionSummary();
+  check(
+    'vision rollup counts clips and live camera tracks',
+    vision.counts.clips > 0 && vision.counts.cameras > 0,
+    `${vision.counts.clips} clips / ${vision.counts.cameras} cameras / ${vision.counts.activeTracks} active tracks`,
+  );
+
+  const fabricatedVideo = video.filter(
+    (e) => e.visualEvidence?.forensics.classification === 'POTENTIAL_SYNTHETIC',
+  );
+  check(
+    'synthetic clips stay surfaced, discounted, never confident',
+    fabricatedVideo.every(
+      (e) =>
+        e.visualEvidence?.manipulated === true &&
+        e.visualEvidence?.forensics.classification === 'POTENTIAL_SYNTHETIC',
+    ),
+    `${fabricatedVideo.length} fabricated clip(s) still in the picture`,
+  );
+
+  const refuted = video.filter((e) => (e.visualEvidence?.contradictions?.length ?? 0) > 0);
+  check(
+    'refuted claims keep BOTH sides visible as surfaced contradictions',
+    refuted.every(
+      (e) =>
+        e.visualEvidence!.claims.some((c) => c.status === 'CONTRADICTED') &&
+        (e.visualEvidence!.contradictions?.length ?? 0) >= 1,
+    ),
+    `${refuted.length} surfaced contradiction(s)`,
   );
 
   console.log('\nSeverity discipline');

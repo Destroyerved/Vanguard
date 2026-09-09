@@ -35,6 +35,7 @@ import { LogsSimAdapter } from '../ingestion/logs.sim.js';
 import { OpenMeteoAdapter } from '../ingestion/weather.openMeteo.js';
 import { PersonnelSimAdapter } from '../ingestion/personnel.sim.js';
 import { RadarSimAdapter } from '../ingestion/radar.sim.js';
+import { CctvVisionSimAdapter } from '../ingestion/vision.sim.js';
 import type { PollOutcome, RawObservation, SourceAdapter } from '../ingestion/SourceAdapter.js';
 import { normalizeBatch } from '../normalization/normalize.js';
 import { validateBatch } from '../normalization/validate.js';
@@ -44,7 +45,15 @@ import { RedisEventStore } from '../state/RedisEventStore.js';
 import { getRedisClient } from '../config/redis.js';
 import { SourceHealthRegistry } from '../state/SourceHealthRegistry.js';
 import { ThreatState } from '../state/ThreatState.js';
-import type { CorrelationCluster, TacticalAsset, UnifiedEvent } from '../types/events.js';
+import { VisionEngine } from '../vision/engine.js';
+import type {
+  CorrelationCluster,
+  TacticalAsset,
+  UnifiedEvent,
+  VisualClaimStatus,
+  VisualManipulationClass,
+} from '../types/events.js';
+import type { CameraRollup, VisionSummary } from '../types/vision.js';
 import type { SituationSnapshot, SystemMetrics } from '../types/health.js';
 import type { LatLng } from '../util/geo.js';
 import { createLogger } from '../util/logger.js';
@@ -68,6 +77,12 @@ export class Orchestrator {
   readonly incidents: IncidentsSimAdapter;
   readonly social: SocialMediaSimAdapter;
   readonly hydrophone: AudioRecordingSimAdapter;
+  readonly cctv: CctvVisionSimAdapter;
+
+  /** The ONE visual engine; normalization and pipeline share the instance so
+   * per-camera track identities persist across every clip, not just within a
+   * single poll. */
+  readonly vision = new VisionEngine();
 
   private readonly adapters: SourceAdapter[];
   private readonly lastPollAt = new Map<string, number>();
@@ -95,6 +110,7 @@ export class Orchestrator {
     this.incidents = new IncidentsSimAdapter(env.simSeed, 5_000, env.simIntensity);
     this.social = new SocialMediaSimAdapter(env.simSeed, 6_000, env.simIntensity);
     this.hydrophone = new AudioRecordingSimAdapter(env.simSeed, 8_000, env.simIntensity);
+    this.cctv = new CctvVisionSimAdapter(env.simSeed, 8_000, env.simIntensity);
 
     this.adapters = [
       this.weather,
@@ -104,6 +120,7 @@ export class Orchestrator {
       this.incidents,
       this.social,
       this.hydrophone,
+      this.cctv,
     ];
   }
 
@@ -172,7 +189,7 @@ export class Orchestrator {
       const observations = await this.pollDueAdapters();
 
       /* -- 2. NORMALIZE ---------------------------------------------- */
-      const normalized = normalizeBatch(observations);
+      const normalized = normalizeBatch(observations, this.vision);
 
       /* -- 3. VALIDATE ----------------------------------------------- */
       const { events: validated, rejected } = validateBatch(normalized);
@@ -204,10 +221,10 @@ export class Orchestrator {
       const escalation = this.threat.update(fusion.threat, fusion.events);
 
       /* -- 7. FEED FORWARD ------------------------------------------- */
-      // Publish contacts of interest so the personnel, log and media simulators
-      // can generate genuinely corroborating observations next tick. This
-      // closes the loop that makes multi-source correlation real rather than
-      // lucky — fabricated media attaches itself to live radar/incident
+      // Publish contacts of interest so the personnel, log, media and CCTV
+      // simulators can generate genuinely corroborating observations next tick.
+      // This closes the loop that makes multi-source correlation real rather
+      // than lucky — fabricated media attaches itself to live radar/incident
       // contacts, which is precisely how the HYBRID_CORROBORATED vs
       // EVENT_FABRICATING discrimination gets exercised.
       const pointsOfInterest = this.contactsOfInterest(fusion.events);
@@ -215,10 +232,17 @@ export class Orchestrator {
       this.logs.setPointsOfInterest(pointsOfInterest);
       this.social.setPointsOfInterest(pointsOfInterest);
       this.hydrophone.setPointsOfInterest(pointsOfInterest);
+      this.cctv.setPointsOfInterest(pointsOfInterest);
 
       /* -- 8. BROADCAST ---------------------------------------------- */
       if (this.hub && validated.length > 0) {
         this.hub.broadcast('EVENT_STREAM', { events: validated });
+        // After any tick that produced new CCTV evidence, push the refreshed
+        // panel rollup so the Visual Intelligence drawer updates without
+        // diffing the whole event stream for visualEvidence bundles.
+        if (validated.some((e) => e.visualEvidence !== undefined)) {
+          this.hub.broadcast('VISION_UPDATE', { summary: this.getVisionSummary() });
+        }
       }
       if (this.hub) {
         this.hub.broadcast('SITUATION_UPDATE', { situation: this.getSituation() });
@@ -402,6 +426,102 @@ export class Orchestrator {
     return this.latestFusion?.clusters ?? [];
   }
 
+  /** Per-camera tracker state, for the Visual Intelligence diagnostics drawer. */
+  getVisionDiagnostics(): ReturnType<VisionEngine['snapshots']> {
+    return this.vision.snapshots();
+  }
+
+  /** §33 panel rollup over every clip the visual engine has analyzed. */
+  getVisionSummary(): VisionSummary {
+    const archives = this.store
+      .active()
+      .filter((e) => e.visualEvidence !== undefined)
+      .map((e) => e.visualEvidence!);
+
+    const mean = (fn: (v: (typeof archives)[number]) => number, fallback: number): number =>
+      archives.length === 0
+        ? fallback
+        : Math.round((archives.reduce((s, v) => s + fn(v), 0) / archives.length) * 100) / 100;
+
+    const claims: Record<VisualClaimStatus, number> = {
+      SUPPORTED: 0,
+      PARTIALLY_SUPPORTED: 0,
+      CONTRADICTED: 0,
+      UNCERTAIN: 0,
+      UNVERIFIABLE: 0,
+    };
+    const classification: Record<VisualManipulationClass, number> = {
+      AUTHENTIC: 0,
+      EDITED: 0,
+      ENHANCED: 0,
+      SUSPICIOUS_MANIPULATION: 0,
+      POTENTIAL_SYNTHETIC: 0,
+      UNKNOWN: 0,
+    };
+
+    for (const v of archives) {
+      classification[v.forensics.classification]++;       // eslint-disable-line @typescript-eslint/no-unnecessary-condition
+      for (const c of v.claims) claims[c.status]++;        // eslint-disable-line @typescript-eslint/no-unnecessary-condition
+    }
+
+    const perCamera = new Map<string, CameraRollup>();
+    for (const v of archives) {
+      let rollup = perCamera.get(v.cameraId);
+      if (!rollup) {
+        rollup = {
+          cameraId: v.cameraId,
+          cameraName: v.cameraName,
+          clips: 0,
+          restrictedEntries: 0,
+          meanAuthenticity: 0,
+          meanManipulationRisk: 0,
+          meanTrackingConsistency: 0,
+        };
+        perCamera.set(v.cameraId, rollup);
+      }
+      rollup.clips++;
+    }
+    for (const s of this.vision.snapshots()) {
+      const rollup = perCamera.get(s.cameraId);
+      if (rollup) rollup.restrictedEntries = s.restrictedEntries;
+    }
+
+    const byCamera = [...perCamera.values()].map((r) => {
+      const clips = archives.filter((v) => v.cameraId === r.cameraId);
+      const m = (fn: (v: (typeof archives)[number]) => number): number =>
+        clips.length === 0
+          ? 0
+          : Math.round((clips.reduce((s, v) => s + fn(v), 0) / clips.length) * 100) / 100;
+      return {
+        ...r,
+        meanAuthenticity: m((v) => v.forensics.authenticityScore),
+        meanManipulationRisk: m((v) => v.forensics.signals.manipulationRisk * 100),
+        meanTrackingConsistency: m((v) => v.trackingConsistency),
+      };
+    });
+
+    return {
+      generatedAt: nowIso(),
+      counts: {
+        clips: archives.length,
+        cameras: byCamera.length,
+        activeTracks: this.vision
+          .snapshots()
+          .reduce((s, x) => s + x.activeTracks, 0),
+        contradictions: claims.CONTRADICTED,
+      },
+      means: {
+        authenticityScore: mean((v) => v.forensics.authenticityScore, 0),
+        manipulationRisk: mean((v) => v.forensics.signals.manipulationRisk * 100, 0),
+        trackingConsistency: mean((v) => v.trackingConsistency, 0),
+        temporalConfidence: mean((v) => v.temporalConfidence, 0),
+      },
+      claims,
+      classification,
+      byCamera,
+    };
+  }
+
   /** Latest fusion result, for the diagnostics endpoint. */
   getFusion(): FusionResult | null {
     return this.latestFusion;
@@ -491,6 +611,7 @@ export class Orchestrator {
     // corroboration appears on the very next tick rather than several later.
     this.logs.setPointsOfInterest([epicenter]);
     this.personnel.setPointsOfInterest([epicenter]);
+    this.cctv.setPointsOfInterest([epicenter]);
 
     log.info(
       `scenario ${scenario} triggered at ${epicenter.lat.toFixed(4)}, ${epicenter.lng.toFixed(4)} ` +
@@ -513,7 +634,7 @@ export class Orchestrator {
     severity?: 'low' | 'medium' | 'high' | 'critical';
   }): UnifiedEvent | null {
     const observation = this.incidents.injectIncident(params);
-    const [event] = normalizeBatch([observation]);
+    const [event] = normalizeBatch([observation], this.vision);
     if (!event) return null;
 
     const { events } = validateBatch([event]);

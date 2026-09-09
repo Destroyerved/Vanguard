@@ -42,35 +42,47 @@ export const MAX_CORROBORATORS_PER_EVENT = 6;
  *    least (0.3): a scenic storm video proves the video exists, not the weather.
  *  - Audio recordings (hydrophone) are instrumented: they corroborate incidents
  *    strongly (0.85), radar moderately (0.6), and each other weakly (0.35).
+ *  - Video (fixed CCTV grid) is instrumented, calibrated and independent: a
+ *    calibrated camera that independently depicts an event corroborates an
+ *    incident strongly (0.85) and a radar/log contact strongly (0.6/0.85), but
+ *    weakly toward weather (0.3 — proof the camera exists, not the weather) and
+ *    moderately toward other cameras of the same grid (0.35 — same vantage
+ *    family) and social media (0.65 — a CCTV frame that matches an open-source
+ *    post is real independent evidence, but open foodage is often the same clip
+ *    re-posted).
  */
 const AFFINITY: Record<SourceType, Record<SourceType, number>> = {
   radar: {
     radar: 0.35, log: 0.95, personnel: 0.85, incident: 0.8, weather: 0.3,
-    social_media: 0.6, audio_recording: 0.6,
+    social_media: 0.6, audio_recording: 0.6, video: 0.6,
   },
   log: {
     log: 0.35, radar: 0.95, personnel: 0.9, incident: 0.85, weather: 0.25,
-    social_media: 0.55, audio_recording: 0.5,
+    social_media: 0.55, audio_recording: 0.5, video: 0.85,
   },
   personnel: {
     personnel: 0.35, radar: 0.85, log: 0.9, incident: 0.9, weather: 0.3,
-    social_media: 0.8, audio_recording: 0.7,
+    social_media: 0.8, audio_recording: 0.7, video: 0.8,
   },
   incident: {
     incident: 0.35, radar: 0.8, log: 0.85, personnel: 0.9, weather: 0.45,
-    social_media: 0.85, audio_recording: 0.85,
+    social_media: 0.85, audio_recording: 0.85, video: 0.85,
   },
   weather: {
     weather: 0.35, radar: 0.3, log: 0.25, personnel: 0.3, incident: 0.45,
-    social_media: 0.3, audio_recording: 0.3,
+    social_media: 0.3, audio_recording: 0.3, video: 0.3,
   },
   social_media: {
     social_media: 0.35, radar: 0.6, log: 0.55, personnel: 0.8, incident: 0.85,
-    weather: 0.3, audio_recording: 0.5,
+    weather: 0.3, audio_recording: 0.5, video: 0.65,
   },
   audio_recording: {
     audio_recording: 0.35, radar: 0.6, log: 0.5, personnel: 0.7, incident: 0.85,
-    weather: 0.3, social_media: 0.5,
+    weather: 0.3, social_media: 0.5, video: 0.55,
+  },
+  video: {
+    video: 0.35, radar: 0.6, log: 0.85, personnel: 0.8, incident: 0.85,
+    weather: 0.3, social_media: 0.65, audio_recording: 0.55,
   },
 };
 

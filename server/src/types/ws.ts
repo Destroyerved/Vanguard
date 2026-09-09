@@ -7,6 +7,7 @@
 
 import type { UnifiedEvent, CorrelationCluster, TacticalAsset } from './events.js';
 import type { AISummary } from './ai.js';
+import type { VisionSummary } from './vision.js';
 import type {
   EscalationRecord,
   SituationSnapshot,
@@ -25,7 +26,8 @@ export type WsMessageType =
   | 'CLUSTER_UPDATE'
   | 'ASSET_UPDATE'
   | 'METRICS'
-  | 'DEGRADED_MODE';
+  | 'DEGRADED_MODE'
+  | 'VISION_UPDATE';
 
 interface WsBase<T extends WsMessageType, P> {
   type: T;
@@ -46,4 +48,5 @@ export type WsMessage =
   | WsBase<'CLUSTER_UPDATE', { clusters: CorrelationCluster[] }>
   | WsBase<'ASSET_UPDATE', { assets: TacticalAsset[] }>
   | WsBase<'METRICS', { metrics: SystemMetrics }>
-  | WsBase<'DEGRADED_MODE', { enabled: boolean; reason: string }>;
+  | WsBase<'DEGRADED_MODE', { enabled: boolean; reason: string }>
+  | WsBase<'VISION_UPDATE', { summary: VisionSummary }>;

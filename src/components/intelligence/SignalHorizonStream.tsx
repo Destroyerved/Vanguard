@@ -21,6 +21,7 @@ const SOURCE_FILTERS = [
   'weather',
   'social_media',
   'audio_recording',
+  'video',
 ];
 
 const SEVERITY_FILTERS = ['ALL', 'critical', 'high', 'medium', 'low'];

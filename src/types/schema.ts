@@ -3,7 +3,7 @@
  * Authoritative Data Schemas (PRD §7.1)
  */
 
-export type SourceType = 'radar' | 'weather' | 'personnel' | 'log' | 'incident' | 'submarine' | 'ground_conflict' | 'social_media' | 'audio_recording';
+export type SourceType = 'radar' | 'weather' | 'personnel' | 'log' | 'incident' | 'submarine' | 'ground_conflict' | 'social_media' | 'audio_recording' | 'video';
 export type SeverityLevel = 'low' | 'medium' | 'high' | 'critical';
 export type ThreatLevel = 'green' | 'yellow' | 'orange' | 'red';
 export type IffTag = 'FRIENDLY' | 'HOSTILE' | 'NEUTRAL' | 'UNKNOWN';
@@ -110,6 +110,11 @@ export interface UnifiedEvent {
   confidenceBreakdown?: ConfidenceBreakdown;
   authenticityAudit?: AuthenticityAudit;
   mediaAudit?: MediaAuthenticityAudit;
+  /**
+   * Structured visual evidence bundle, present on every CCTV (`video`) event:
+   * detections, persistent tracks, temporal/forensic reads and validated claims.
+   */
+  visualEvidence?: VisualEvidence;
   corroboratedBy: string[];     // Array of linked event IDs
   clusterId?: string;
   isAnomaly: boolean;
@@ -215,6 +220,181 @@ export interface MediaAuthenticityAudit {
   temporalConsistency?: TemporalConsistencyAnalysis;
   acousticSpectrum?: AcousticSpectrumAnalysis;
   cameraCharacteristics?: CameraSensorCharacteristics;
+}
+
+// ─── Visual evidence engine (server/src/types/events.ts §24–§33) ─────────────
+
+/** Axis-aligned bounding box, normalized 0..1 relative to the frame. */
+export interface VisualBoundingBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** One object the CV engine detected and linked to a persistent track. */
+export interface VisualDetection {
+  id: string;
+  classId: string;
+  label: string;
+  /** Detector confidence, 0..1 — NOT the system's belief about the event. */
+  confidence: number;
+  bbox: VisualBoundingBox;
+  trackId?: string;
+}
+
+/** A persistent object identity produced by the tracker across frames. */
+export interface ObjectTrack {
+  trackId: string;
+  classId: string;
+  label: string;
+  cameraId: string;
+  framesObserved: number;
+  firstSeen: string;
+  lastSeen: string;
+  avgConfidence: number;
+  bboxHistory: VisualBoundingBox[];
+  latestPosition: { lat: number; lng: number };
+  latestSpeedKnots: number;
+  latestHeadingDegrees: number;
+  status: 'active' | 'closed';
+  restrictedEntry: boolean;
+}
+
+/**
+ * Visual manipulation classification — deliberately not binary. Enhancement,
+ * editing and fabrication are different degrees of distrust, and none of them
+ * authorize an auto-delete.
+ */
+export type VisualManipulationClass =
+  | 'AUTHENTIC'
+  | 'EDITED'
+  | 'ENHANCED'
+  | 'SUSPICIOUS_MANIPULATION'
+  | 'POTENTIAL_SYNTHETIC'
+  | 'UNKNOWN';
+
+/** The multi-signal forensic read of a clip, each 0..1 (1 = anomaly present). */
+export interface VisualForensicSignals {
+  compressionAnomaly: number;
+  frameAnomaly: number;
+  lightingAnomaly: number;
+  temporalAnomaly: number;
+  metadataAnomaly: number;
+  syntheticMediaSignal: number;
+  manipulationRisk: number;
+}
+
+/** Clip-level forensic assessment produced by the deterministic engine. */
+export interface VisualForensicAnalysis {
+  signals: VisualForensicSignals;
+  classification: VisualManipulationClass;
+  /** Weighted authenticity score, 0..100. */
+  authenticityScore: number;
+  /** Human-readable artifact indicators, surfaced to the operator. */
+  indicators: string[];
+  /** Whether the manipulation reads as benign enhancement (stabilize/upscale). */
+  upliftConfidence: number;
+}
+
+/** Schema status of a claim checked against structured visual evidence. */
+export type VisualClaimStatus =
+  | 'SUPPORTED'
+  | 'PARTIALLY_SUPPORTED'
+  | 'CONTRADICTED'
+  | 'UNCERTAIN'
+  | 'UNVERIFIABLE';
+
+/** A grounded or refuted claim, with the evidence that decided it. */
+export interface VisualClaim {
+  id: string;
+  text: string;
+  claimConfidence: number;
+  status: VisualClaimStatus;
+  supportingEvidence: string[];
+  contradictingEvidence: string[];
+  basis: string;
+}
+
+/**
+ * An operator/intelligence statement that conflicts with what the visual
+ * evidence shows. VANGUARD surfaces the conflict and keeps BOTH sides (§15/§28).
+ */
+export interface VisualContradiction {
+  id: string;
+  operatorStatement: string;
+  claimId: string;
+  status: Extract<VisualClaimStatus, 'CONTRADICTED' | 'PARTIALLY_SUPPORTED' | 'SUPPORTED' | 'UNCERTAIN'>;
+  visualEvidenceId: string;
+  contradictionBasis: string[];
+  evidenceConfidence: number;
+  createdAt: string;
+}
+
+/**
+ * The structured visual evidence bundle the CV engine attaches to a video event:
+ * what was detected, how it was tracked, whether the footage is trustworthy, and
+ * which claims survive validation. Never raw frames.
+ */
+export interface VisualEvidence {
+  evidenceId: string;
+  cameraId: string;
+  cameraName: string;
+  clipId: string;
+  framesAnalyzed: number;
+  scene: {
+    durationSec: number;
+    framesAnalyzed: number;
+    objectCounts: Record<string, number>;
+  };
+  objects: VisualDetection[];
+  tracks: ObjectTrack[];
+  trackingConsistency: number;
+  temporalConfidence: number;
+  forensics: VisualForensicAnalysis;
+  claims: VisualClaim[];
+  contradictions?: VisualContradiction[];
+  corroboration: {
+    corroboratedBy: string[];
+    distinctSources: string[];
+    sourceAgreement: number;
+    spatialAgreement: number;
+    temporalAgreement: number;
+  };
+  behaviorFlags: string[];
+  manipulated: boolean;
+  /** Structural guarantee: the item is presented, never auto-discarded. */
+  surfaced: boolean;
+}
+
+/** §33 panel rollup — derived from the same VisualEvidence bundles the engine uses. */
+export interface VisionSummary {
+  generatedAt: string;
+  counts: {
+    clips: number;
+    cameras: number;
+    activeTracks: number;
+    contradictions: number;
+  };
+  means: {
+    authenticityScore: number;
+    manipulationRisk: number;
+    trackingConsistency: number;
+    temporalConfidence: number;
+  };
+  claims: Record<VisualClaimStatus, number>;
+  classification: Record<VisualManipulationClass, number>;
+  byCamera: CameraRollup[];
+}
+
+export interface CameraRollup {
+  cameraId: string;
+  cameraName: string;
+  clips: number;
+  restrictedEntries: number;
+  meanAuthenticity: number;
+  meanManipulationRisk: number;
+  meanTrackingConsistency: number;
 }
 
 /** A spatiotemporal correlation cluster produced by the fusion engine. */
@@ -486,4 +666,65 @@ export interface AnomaliesResponse {
     reason?: string;
     event: UnifiedEvent | null;
   }>;
+}
+
+// ─── Vision REST envelopes (server/src/api/routes/vision.ts) ──────────────────
+
+export interface VisionClipRow {
+  event: UnifiedEvent;
+  confidenceBand: 'high' | 'medium' | 'low';
+  age: string;
+}
+
+export interface VisionClipsResponse {
+  count: number;
+  total: number;
+  classificationOrder: VisualManipulationClass[];
+  videos: VisionClipRow[];
+}
+
+export interface VisionContradictionRow {
+  contradiction: VisualContradiction;
+  event: {
+    id: string;
+    title: string;
+    cameraId: string;
+    cameraName: string;
+    severity: SeverityLevel;
+    confidence: number;
+    clusterId?: string;
+  };
+  age: string;
+}
+
+export interface VisionContradictionsResponse {
+  count: number;
+  contradictions: VisionContradictionRow[];
+}
+
+export interface CameraSnapshot {
+  cameraId: string;
+  cameraName: string;
+  activeTracks: number;
+  closedTracks: number;
+  restrictedEntries: number;
+}
+
+export interface VisionDiagnosticsResponse {
+  cameras: CameraSnapshot[];
+  summary: VisionSummary;
+}
+
+export interface VisionClipDetailResponse {
+  event: UnifiedEvent;
+  visualEvidence: VisualEvidence;
+  mediaAudit: MediaAuthenticityAudit | null;
+  age: string;
+  confidenceBand: 'high' | 'medium' | 'low';
+  corroboration: {
+    count: number;
+    distinctSources: SourceType[];
+    events: UnifiedEvent[];
+  };
+  cluster: CorrelationCluster | null;
 }

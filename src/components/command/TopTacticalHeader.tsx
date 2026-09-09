@@ -19,6 +19,7 @@ import {
   LogOut,
   LogIn,
   ChevronDown,
+  Cctv,
 } from 'lucide-react';
 import { DemoScenarioMode } from '../../data/scenarioEngine';
 import { StatusDot } from '../ui/tactical';
@@ -29,6 +30,7 @@ export type NavSection =
   | 'news'
   | 'recon'
   | 'osint'
+  | 'vision'
   | 'timeline'
   | 'sources'
   | 'simulation'
@@ -132,6 +134,7 @@ export default function TopTacticalHeader({
     { id: 'news', label: 'Verified News', icon: Newspaper, key: 'N', tag: 'LIVE' },
     { id: 'recon', label: 'Satellite Recon', icon: Globe, key: 'R', tag: 'ESRI' },
     { id: 'osint', label: 'OSINT Veracity', icon: ShieldCheck, key: 'V', count: anomalyCount },
+    { id: 'vision', label: 'Visual Intel', icon: Cctv, key: 'W', tag: 'CCTV' },
     { id: 'timeline', label: 'Timeline', icon: Clock, key: 'T' },
     { id: 'sources', label: 'Topology', icon: Server, key: 'S' },
     { id: 'simulation', label: 'Scenario Injector', icon: Play, key: 'X' },

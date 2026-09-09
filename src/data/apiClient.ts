@@ -19,6 +19,10 @@ import type {
   SituationTimelineResponse,
   SourceHealthResponse,
   SystemMetrics,
+  VisionClipsResponse,
+  VisionContradictionsResponse,
+  VisionDiagnosticsResponse,
+  VisionSummary,
 } from '../types/schema';
 
 export const BACKEND_URL = 'http://localhost:3001/api/v1';
@@ -141,3 +145,30 @@ export const postScenario = (scenario: string) =>
     method: 'POST',
     body: JSON.stringify({ scenario }),
   });
+
+/** GET /vision/summary — §33 panel rollup over every analyzed clip. */
+export const getVisionSummary = () => request<VisionSummary>('/vision/summary');
+
+/** GET /vision/contradictions — every surfaced refuted claim, both sides (§28). */
+export const getVisionContradictions = () =>
+  request<VisionContradictionsResponse>('/vision/contradictions');
+
+/** GET /vision/diagnostics — per-camera tracker state for the drawer. */
+export const getVisionDiagnostics = () =>
+  request<VisionDiagnosticsResponse>('/vision/diagnostics');
+
+/** GET /vision?classification=&manipulated=&camera= — filterable clip list. */
+export const getVisionClips = (params: {
+  classification?: string;
+  manipulated?: boolean;
+  camera?: string;
+  limit?: number;
+} = {}) => {
+  const qs = new URLSearchParams();
+  if (params.classification) qs.set('classification', params.classification);
+  if (params.manipulated !== undefined) qs.set('manipulated', String(params.manipulated));
+  if (params.camera) qs.set('camera', params.camera);
+  if (params.limit) qs.set('limit', String(params.limit));
+  const query = qs.toString();
+  return request<VisionClipsResponse>(`/vision${query ? `?${query}` : ''}`);
+};

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { UnifiedEvent, AISummary, CorrelationCluster, BriefingLatestResponse } from './types/schema';
+import { UnifiedEvent, AISummary, CorrelationCluster, BriefingLatestResponse, VisionSummary } from './types/schema';
 import { getScenarioDataset, DemoScenarioMode } from './data/scenarioEngine';
 import {
   getSituation,
@@ -10,6 +10,7 @@ import {
   postBriefing,
   postQuery,
   postDegraded,
+  getVisionSummary,
 } from './data/apiClient';
 import { LiveStreamClient } from './data/wsClient';
 import { AuthProvider } from './context/AuthContext';
@@ -25,6 +26,7 @@ import SignalHorizonStream from './components/intelligence/SignalHorizonStream';
 import TemporalIntelligenceTimeline from './components/timeline/TemporalIntelligenceTimeline';
 import VerifiedNewsHub from './components/VerifiedNewsHub';
 import OsintAuthenticityVerifier from './components/OsintAuthenticityVerifier';
+import VisualIntelligenceDashboard from './components/intelligence/VisualIntelligenceDashboard';
 import SourceTopologyMatrix from './components/sources/SourceTopologyMatrix';
 import ScenarioSimulationController from './components/system/ScenarioSimulationController';
 import ApiConsoleDiagnostics from './components/system/ApiConsoleDiagnostics';
@@ -48,6 +50,7 @@ function AppContent() {
   const [events, setEvents] = useState<UnifiedEvent[]>([]);
   const [sourcesHealth, setSourcesHealth] = useState<any[]>([]);
   const [clusters, setClusters] = useState<CorrelationCluster[]>([]);
+  const [visionSummary, setVisionSummary] = useState<VisionSummary | null>(null);
   const [briefing, setBriefing] = useState<AISummary | null>(null);
   const [briefingMeta, setBriefingMeta] = useState<Pick<BriefingLatestResponse, 'ageMs' | 'generating' | 'groundingVerified'>>({
     ageMs: 0,
@@ -96,6 +99,14 @@ function AppContent() {
       // 4. Correlation clusters (map clustering + topology)
       const cluRes = await getClusters();
       setClusters((cluRes.clusters ?? []).map(({ events: _e, ...cluster }) => cluster));
+
+      // 4b. Visual intelligence rollup — degrades to null when the endpoint
+      // is absent so an older core still renders the event-driven dashboard.
+      try {
+        setVisionSummary(await getVisionSummary());
+      } catch {
+        /* older core — dashboard stays event-driven */
+      }
 
       // 5. Cached AI briefing (never blocks).
       await refreshBriefing();
@@ -177,6 +188,10 @@ function AppContent() {
         if (activeScenario) return;
         setIsDegradedComms(frame.payload.enabled);
       },
+      visionUpdate: (frame) => {
+        if (activeScenario) return;
+        setVisionSummary(frame.payload.summary);
+      },
       alertTrigger: (frame) => {
         if (activeScenario) return;
         const evt = frame.payload.event;
@@ -212,6 +227,8 @@ function AppContent() {
         setActiveTab('news');
       } else if (e.key === 'v' || e.key === 'V') {
         setActiveTab('osint');
+      } else if (e.key === 'w' || e.key === 'W') {
+        setActiveTab('vision');
       } else if (e.key === 'r' || e.key === 'R') {
         setActiveTab('recon');
       } else if (e.key === 's' || e.key === 'S') {
@@ -439,6 +456,17 @@ const handleRunNlQuery = async (query: string) => {
               events={events}
               onSelectEvent={(evt) => setSelectedEvent(evt)}
             />
+          )}
+
+          {activeTab === 'vision' && (
+            <div className="h-[calc(100vh-140px)] flex flex-col overflow-y-auto">
+              <VisualIntelligenceDashboard
+                events={viewEvents}
+                summary={visionSummary}
+                selectedEventId={selectedEvent?.id}
+                onSelectEvent={(evt) => setSelectedEvent(evt)}
+              />
+            </div>
           )}
 
           {activeTab === 'sources' && (

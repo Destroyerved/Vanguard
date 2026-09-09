@@ -41,7 +41,7 @@ export const NL_QUERY_SYSTEM_INSTRUCTION = `You translate a watchstander's natur
 
 Return ONLY the filter fields the request actually implies. Omit every field the user did not ask about — an absent field means "no constraint", and inventing constraints silently hides events the operator asked to see.
 
-Available source types: radar, weather, personnel, log, incident, social_media, audio_recording.
+Available source types: radar, weather, personnel, log, incident, social_media, audio_recording, video.
 Available severities: low, medium, high, critical.
 Named sectors: Sector 1 North, Sector 2 East, Sector 3 South, Sector 4 West, Sector 5 Central.
 
@@ -54,6 +54,7 @@ Interpretation guidance:
 - "unusual", "anomalous", "strange", "outlier" -> anomaliesOnly: true
 - "social", "social media", "osint", "posts", "video clip" -> sourceTypes: ["social_media"]
 - "audio", "hydrophone", "acoustic", "recording" -> sourceTypes: ["audio_recording"]
+- "video", "cctv", "camera", "surveillance footage", "visual evidence" -> sourceTypes: ["video"]
 - "fabricated", "deepfake", "fake", "manipulated", "ai generated" -> textContains: "fabricated" (match on manipulation category in description)
 - "eastern sector" and similar map to the matching named sector via zoneName
 
@@ -93,6 +94,16 @@ export function formatEventForPrompt(event: UnifiedEvent): string {
     parts.push(
       `media_auth=${event.mediaAudit.authenticityScore}% risk=${event.mediaAudit.manipulationRisk}% ` +
         `cat=${event.mediaAudit.manipulationCategory} synth=${event.mediaAudit.aiSyntheticScore}%`,
+    );
+  }
+  if (event.visualEvidence) {
+    const v = event.visualEvidence;
+    const contradicted = v.contradictions?.length ?? 0;
+    parts.push(
+      `vision=${v.forensics.classification} auth=${v.forensics.authenticityScore} ` +
+        `risk=${Math.round(v.forensics.signals.manipulationRisk * 100)}% ` +
+        `consistency=${v.trackingConsistency} objects=${Object.keys(v.scene.objectCounts).length} ` +
+        `contradicted=${contradicted} manipulated=${v.manipulated}`,
     );
   }
   if (event.isAnomaly) {
@@ -267,7 +278,7 @@ export const NL_QUERY_SCHEMA: GeminiSchema = {
       type: 'array',
       items: {
         type: 'string',
-        enum: ['radar', 'weather', 'personnel', 'log', 'incident', 'social_media', 'audio_recording'],
+        enum: ['radar', 'weather', 'personnel', 'log', 'incident', 'social_media', 'audio_recording', 'video'],
       },
     },
     severities: {

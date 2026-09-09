@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Server, Activity, Radio, CloudSun, ShieldCheck, AlertTriangle, Zap, WifiOff, Layers } from 'lucide-react';
+import { Server, Activity, Radio, CloudSun, ShieldCheck, AlertTriangle, Zap, WifiOff, Layers, Cctv } from 'lucide-react';
 import { SourceHealthDetail } from '../../types/schema';
 import { ScreenHeading, StatTile, Chip, TacticalButton } from '../ui/tactical';
 
@@ -86,6 +86,7 @@ const feedDescriptions: Record<string, string> = {
   incident: 'Unstructured operator dispatch records, civilian distress calls, radio chatter.',
   social_media: 'Geotagged social posts and media artifacts routed into the forensic pipeline.',
   audio_recording: 'Acoustic capture streams analyzed for manipulation and temporal consistency.',
+  video: 'CCTV feeds parsed by the visual evidence engine — detections, tracks, forensics and claim validation.',
 };
 
 const sourceIcons: Record<string, any> = {
@@ -96,6 +97,7 @@ const sourceIcons: Record<string, any> = {
   incident: AlertTriangle,
   social_media: Layers,
   audio_recording: Zap,
+  video: Cctv,
 };
 
 export default function SourceTopologyMatrix({
