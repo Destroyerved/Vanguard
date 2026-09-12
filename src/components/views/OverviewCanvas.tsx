@@ -16,6 +16,7 @@ import { StatTile, ScreenHeading, Chip } from '../ui/tactical';
 interface OverviewCanvasProps {
   situation: any;
   events: UnifiedEvent[];
+  recenterNonce?: number;
   briefing?: AISummary | null;
   briefingMeta?: { ageMs: number; generating: boolean; groundingVerified: boolean };
   clusters?: CorrelationCluster[];
@@ -29,6 +30,7 @@ interface OverviewCanvasProps {
 export default function OverviewCanvas({
   situation,
   events,
+  recenterNonce = 0,
   briefing,
   briefingMeta,
   clusters = [],
@@ -57,7 +59,7 @@ export default function OverviewCanvas({
   ];
 
   return (
-    <div className="space-y-6 select-none font-mono">
+    <div className="space-y-4 select-none font-mono pb-2">
       <ScreenHeading
         eyebrow="Common Operating Picture"
         title="Sector Situational Overview"
@@ -84,6 +86,7 @@ export default function OverviewCanvas({
           <TacticalMap
             events={events}
             clusters={clusters}
+            recenterNonce={recenterNonce}
             onSelectEvent={onSelectEvent}
             selectedEventId={selectedEventId}
           />

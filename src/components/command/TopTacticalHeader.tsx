@@ -120,6 +120,8 @@ export default function TopTacticalHeader({
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+
+
   // Dismiss the operator menu on any outside click — a stuck menu over a live
   // COP is worse than an extra click to reopen it.
   useEffect(() => {

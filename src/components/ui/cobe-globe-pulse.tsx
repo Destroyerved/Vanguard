@@ -152,45 +152,65 @@ export function GlobePulse({
       if (!canvas) return
       const width = canvas.offsetWidth
       if (width === 0 || globeRef.current) return
+
+      if (animIdRef.current) {
+        cancelAnimationFrame(animIdRef.current)
+        animIdRef.current = 0
+      }
+
+      // Force a pristine WebGL context before binding buffers. Reusing the same
+      // canvas right after a destroy() (StrictMode remount, resize recreate) leaves
+      // stale enabled attribute arrays on the cached context, which throws
+      // "INVALID_OPERATION: drawArrays - no buffer is bound to enabled attribute".
+      canvas.width = 0
+      canvas.height = 0
+      canvas.width = width * 2
+      canvas.height = width * 2
       currentWidth = width
 
       const cfg = configRef.current
-      globeRef.current = createGlobe(canvas, {
-        devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
-        width: width * 2,
-        height: width * 2,
-        phi: 0,
-        theta: 0.2,
-        dark: cfg.dark,
-        diffuse: cfg.diffuse,
-        mapSamples: 16000,
-        mapBrightness: cfg.mapBrightness,
-        baseColor: cfg.baseColor,
-        markerColor: cfg.markerColor,
-        glowColor: cfg.glowColor,
-        markerElevation: 0,
-        markers: cfg.markers.map((m) => ({ location: m.location, size: 0.035, id: m.id })),
-        arcs: cfg.arcs || [],
-        arcColor: cfg.arcColor,
-        arcWidth: 0.5,
-        arcHeight: 0.25,
-        opacity: 0.9,
-      })
 
-      function animate() {
-        if (!isPausedRef.current) {
-          phiRef.current += configRef.current.speed
-        }
-        if (globeRef.current) {
-          globeRef.current.update({
-            phi: phiRef.current + phiOffsetRef.current + dragOffset.current.phi,
-            theta: 0.2 + thetaOffsetRef.current + dragOffset.current.theta,
-          })
-        }
-        animIdRef.current = requestAnimationFrame(animate)
+      try {
+        globeRef.current = createGlobe(canvas, {
+          devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+          width: width * 2,
+          height: width * 2,
+          phi: 0,
+          theta: 0.2,
+          dark: cfg.dark,
+          diffuse: cfg.diffuse,
+          mapSamples: 16000,
+          mapBrightness: cfg.mapBrightness,
+          baseColor: cfg.baseColor,
+          markerColor: cfg.markerColor,
+          glowColor: cfg.glowColor,
+          markerElevation: 0,
+          markers: cfg.markers.map((m) => ({ location: m.location, size: 0.035, id: m.id })),
+          arcs: cfg.arcs || [],
+          arcColor: cfg.arcColor,
+          arcWidth: 0.5,
+          arcHeight: 0.25,
+          opacity: 0.9,
+        })
+
+        animate()
+      } catch (err) {
+        // WebGL unavailable (headless/no GPU) — degrade gracefully without crashing.
+        globeRef.current = null
       }
+    }
 
-      animate()
+function animate() {
+      if (!isPausedRef.current) {
+        phiRef.current += configRef.current.speed
+      }
+      if (globeRef.current) {
+        globeRef.current.update({
+          phi: phiRef.current + phiOffsetRef.current + dragOffset.current.phi,
+          theta: 0.2 + thetaOffsetRef.current + dragOffset.current.theta,
+        })
+      }
+      animIdRef.current = requestAnimationFrame(animate)
     }
 
     if (canvas.offsetWidth > 0) {

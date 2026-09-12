@@ -76,9 +76,19 @@ function AppContent() {
   const [selectedEvent, setSelectedEvent] = useState<UnifiedEvent | null>(null);
   const [easyMode, setEasyMode] = useState<boolean>(true);
   const [activeScenario, setActiveScenario] = useState<DemoScenarioMode | null>(null);
+  const [scenarioNonce, setScenarioNonce] = useState(0);
   const [isDegradedComms, setIsDegradedComms] = useState<boolean>(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authInitialTab, setAuthInitialTab] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
+  const openAuthModal = useCallback((tab: 'LOGIN' | 'REGISTER' = 'LOGIN') => {
+    setAuthInitialTab(tab);
+    setIsAuthModalOpen(true);
+  }, []);
+
+  // Signature cache: avoids redundant setState → whole-tree re-renders when the
+  // WS/REST picture is byte-identical across 3s ticks / 5s polls.
+  const liveFrameSig = useRef<Record<string, string>>({});
 
   // Natural-language omnibar filter (POST /ai/query)
   const [nlQuery, setNlQuery] = useState<string>('');
@@ -122,23 +132,49 @@ function AppContent() {
       const sitRes = await getSituation();
       setServerOnline(true);
       if (!activeScenario || isManualSync) {
-        setSituation(sitRes.situation);
-        setSourcesHealth(sitRes.sources);
+        const sitSig = JSON.stringify(sitRes.situation);
+        if (sitSig !== liveFrameSig.current.situation) {
+          liveFrameSig.current.situation = sitSig;
+          setSituation(sitRes.situation);
+        }
+        const srcSig = JSON.stringify(sitRes.sources);
+        if (srcSig !== liveFrameSig.current.sources) {
+          liveFrameSig.current.sources = srcSig;
+          setSourcesHealth(sitRes.sources);
+        }
       }
 
       // 2. Timeline (escalation audit log)
       const timeRes = await getTimeline();
-      setTimeline(Array.isArray(timeRes) ? timeRes : timeRes.timeline || []);
+      const timelineData = Array.isArray(timeRes) ? timeRes : timeRes.timeline || [];
+      const timeSig = JSON.stringify(timelineData);
+      if (timeSig !== liveFrameSig.current.timeline) {
+        liveFrameSig.current.timeline = timeSig;
+        setTimeline(timelineData);
+      }
 
       // 3. Events (active in-memory events, capped)
       const evtRes = await getEvents(MAX_LIVE_EVENTS);
       if (!activeScenario || isManualSync) {
-        setEvents(evtRes.events || []);
+        let sig = '';
+        for (const evt of evtRes.events) {
+          sig += evt.id === undefined ? '' : evt.id;
+          sig += ':' + (evt.timestamp ?? '') + ':' + (evt.confidence ?? '') + '|';
+        }
+        if (sig !== liveFrameSig.current.events) {
+          liveFrameSig.current.events = sig;
+          setEvents(evtRes.events || []);
+        }
       }
 
       // 4. Correlation clusters (map clustering + topology)
       const cluRes = await getClusters();
-      setClusters((cluRes.clusters ?? []).map(({ events: _e, ...cluster }) => cluster));
+      const clustersData = (cluRes.clusters ?? []).map(({ events: _e, ...cluster }) => cluster);
+      const cluSig = JSON.stringify(clustersData);
+      if (cluSig !== liveFrameSig.current.clusters) {
+        liveFrameSig.current.clusters = cluSig;
+        setClusters(clustersData);
+      }
 
       // 4b. Visual intelligence rollup — degrades to null when the endpoint
       // is absent so an older core still renders the event-driven dashboard.
@@ -235,7 +271,7 @@ function AppContent() {
       briefingUpdate: liveOnly((frame) => {
         setBriefing(frame.payload.summary);
         setBriefingMeta((m) => ({ ...m, groundingVerified: true }));
-}),
+      }),
       eventStream: liveOnly((frame) => mergeEvents(frame.payload.events)),
       clusterUpdate: liveOnly((frame) => setClusters(frame.payload.clusters)),
       escalation: liveOnly((frame) =>
@@ -292,6 +328,7 @@ function AppContent() {
   // Handle Scenario Injections
   const handleInjectScenario = (mode: DemoScenarioMode) => {
     setActiveScenario(mode);
+    setScenarioNonce((n) => n + 1);
     // The active NL filter was matched against the previous event set.
     clearNlFilter();
     const scenario = getScenarioDataset(mode);
@@ -420,12 +457,21 @@ function AppContent() {
 
   if (viewMode === 'landing') {
     return (
-      <VanguardLandingPage
-        onLaunchCop={() => setViewMode('console')}
-        serverOnline={DEMO_MODE || serverOnline}
-        eventCount={events.length}
-        threatLevel={situation?.threatLevel}
-      />
+      <>
+        <VanguardLandingPage
+          onLaunchCop={() => setViewMode('console')}
+          serverOnline={DEMO_MODE || serverOnline}
+          eventCount={events.length}
+          threatLevel={situation?.threatLevel}
+          onOpenAuthModal={() => openAuthModal('LOGIN')}
+          onOpenSignup={() => openAuthModal('REGISTER')}
+        />
+        <OperatorAuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          initialTab={authInitialTab}
+        />
+      </>
     );
   }
 
@@ -483,6 +529,7 @@ function AppContent() {
             <OverviewCanvas
               situation={situation}
               events={viewEvents}
+              recenterNonce={scenarioNonce}
               briefing={briefing}
               briefingMeta={briefingMeta}
               clusters={clusters}
@@ -628,6 +675,7 @@ function AppContent() {
       <OperatorAuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
+        initialTab={authInitialTab}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback, memo } from 'react';
 import { UnifiedEvent, CorrelationCluster } from '../types/schema';
 import {
   Globe,
@@ -32,6 +32,7 @@ interface TacticalMapProps {
   events: UnifiedEvent[];
   clusters?: CorrelationCluster[];
   selectedEventId?: string;
+  recenterNonce?: number;
   onSelectEvent: (event: UnifiedEvent) => void;
 }
 
@@ -60,15 +61,203 @@ function getMetersPerPixel(lat: number, zoom: number) {
   return (156543.03392 * Math.cos((lat * Math.PI) / 180)) / Math.pow(2, zoom);
 }
 
+/** Helper for entity icons based on kind or source. */
+function getEntityIcon(evt: UnifiedEvent) {
+  const kind = String(evt.raw?.kind || '').toLowerCase();
+  const src = String(evt.sourceType);
+
+  if (kind.includes('aircraft') || kind.includes('rotary') || src === 'radar') {
+    return Plane;
+  }
+  if (kind.includes('vessel') || ((src === 'radar' || src === 'submarine') && evt.title.toLowerCase().includes('vessel'))) {
+    return Ship;
+  }
+  if (kind.includes('vehicle') || (src === 'personnel' && evt.title.toLowerCase().includes('vehicle'))) {
+    return Truck;
+  }
+  if (src === 'personnel') {
+    return Users;
+  }
+  if (src === 'weather') {
+    return CloudRain;
+  }
+  return Radio;
+}
+
 /** True when the selected event is a member of this cluster (highlights it). */
 function aliveMemberId(cluster: CorrelationCluster, selectedEventId?: string): boolean {
   return Boolean(selectedEventId && cluster.eventIds.includes(selectedEventId));
 }
 
+// ---------------------------------------------------------------------------
+// Memoized leaf layers: prevent re-rendering hundreds of markers/arcs whenever
+// unrelated map state changes (hover, selection, zoom buttons, layer toggles).
+// ---------------------------------------------------------------------------
+
+type ProjectedEvent = UnifiedEvent & {
+  lat: number;
+  lng: number;
+  screenX: number;
+  screenY: number;
+  isVisible: boolean;
+};
+
+interface EventMarkerProps {
+  evt: ProjectedEvent;
+  isSelected: boolean;
+  onSelect: (event: ProjectedEvent) => void;
+}
+
+const beaconClass = (severity: string) =>
+  severity === 'critical'
+    ? 'bg-rose-500 border-rose-300 text-rose-300 shadow-threat-red'
+    : severity === 'high'
+      ? 'bg-orange-500 border-orange-300 text-orange-300'
+      : severity === 'medium'
+        ? 'bg-yellow-500 border-yellow-300 text-yellow-300'
+        : 'bg-[#a4c639] border-[#bcd94f] text-[#bcd94f]';
+
+const EventMarker = memo(function EventMarker({ evt, isSelected, onSelect }: EventMarkerProps) {
+  const Icon = getEntityIcon(evt);
+  const heading = typeof evt.raw?.headingDegrees === 'number' ? evt.raw.headingDegrees : 0;
+  const speedKnots = evt.raw?.speedKnots;
+  const altitude = evt.location?.altitudeMeters;
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: `${evt.screenX}px`,
+        top: `${evt.screenY}px`,
+        transform: 'translate(-50%, -50%)'
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(evt);
+      }}
+      className="pointer-events-auto cursor-pointer group transition-transform"
+    >
+      {/* Pulsing Outer Ring — only on the selected track (critical pings everywhere were compositor killers) */}
+      {isSelected && <div className="absolute -inset-3 rounded-full bg-rose-500/30 animate-ping pointer-events-none" />}
+
+      {/* Target Lock Reticle for Selected Entity */}
+      {isSelected && (
+        <div className="absolute -inset-2.5 border border-[#a4c639] rounded-xl animate-pulse pointer-events-none">
+          <div className="absolute -top-1 -left-1 w-1.5 h-1.5 border-t-2 border-l-2 border-[#bcd94f]" />
+          <div className="absolute -top-1 -right-1 w-1.5 h-1.5 border-t-2 border-r-2 border-[#bcd94f]" />
+          <div className="absolute -bottom-1 -left-1 w-1.5 h-1.5 border-b-2 border-l-2 border-[#bcd94f]" />
+          <div className="absolute -bottom-1 -right-1 w-1.5 h-1.5 border-b-2 border-r-2 border-[#bcd94f]" />
+        </div>
+      )}
+
+      {/* Entity Node with Rotation */}
+      <div
+        style={{ transform: `rotate(${heading}deg)` }}
+        className={`w-6 h-6 rounded-full border-2 ${beaconClass(evt.severity)} flex items-center justify-center bg-white/[0.035] shadow-md transition-all group-hover:scale-125`}
+      >
+        <Icon className="w-3.5 h-3.5" />
+      </div>
+
+      {/* Compact Floating Label */}
+      <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 px-1.5 py-[1px] rounded-lg bg-black/85 border border-white/10 text-[9px] text-slate-200 whitespace-nowrap shadow-lg flex items-center gap-1 pointer-events-none">
+        <span className="font-bold text-[#bcd94f]">{evt.id}</span>
+        {speedKnots !== undefined && <span className="text-[8px] text-slate-400">{String(speedKnots)}kt</span>}
+      </div>
+
+      {/* INTERACTIVE HOVER TELEMETRY CARD */}
+      <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block z-50 p-3 rounded-md bg-white/[0.035] border border-[#526a27]/50 shadow-2xl text-[10px] whitespace-nowrap pointer-events-none space-y-1.5">
+        <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-1">
+          <span className="font-bold text-[#bcd94f] text-xs flex items-center gap-1">
+            <Target className="w-3.5 h-3.5" /> {evt.id}
+          </span>
+          <span className="text-emerald-400 font-bold px-1 rounded-lg bg-emerald-950/80 border border-emerald-500/30">
+            {evt.confidence}% CONF
+          </span>
+        </div>
+
+        <div className="font-semibold text-slate-100">{evt.title}</div>
+
+        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-slate-300 text-[9px]">
+          <span>Source: <strong className="text-[#bcd94f]">{evt.sourceType.toUpperCase()}</strong></span>
+          <span>Severity: <strong className={evt.severity === 'critical' ? 'text-rose-400' : 'text-slate-200'}>{evt.severity.toUpperCase()}</strong></span>
+          {speedKnots !== undefined && <span>Speed: <strong>{String(speedKnots)} knots</strong></span>}
+          {altitude !== undefined && <span>Altitude: <strong>{String(altitude)}m</strong></span>}
+          {evt.raw?.transponder && <span>Squawk: <strong>{String(evt.raw.transponder)}</strong></span>}
+          {evt.raw?.classification && <span>IFF: <strong>{String(evt.raw.classification).toUpperCase()}</strong></span>}
+        </div>
+
+        <div className="pt-1 text-[8px] text-slate-400 border-t border-white/5 font-mono">
+          GPS: {evt.lat.toFixed(4)}°N, {evt.lng.toFixed(4)}°E
+        </div>
+      </div>
+    </div>
+  );
+}, (a, b) => {
+  const e = a.evt;
+  const f = b.evt;
+  return (
+    a.isSelected === b.isSelected &&
+    e.id === f.id &&
+    e.screenX === f.screenX &&
+    e.screenY === f.screenY &&
+    e.isVisible === f.isVisible &&
+    e.severity === f.severity &&
+    e.confidence === f.confidence &&
+    e.timestamp === f.timestamp &&
+    (e.raw?.headingDegrees ?? 0) === (f.raw?.headingDegrees ?? 0) &&
+    (e.raw?.speedKnots ?? 0) === (f.raw?.speedKnots ?? 0) &&
+    (e.location?.altitudeMeters ?? 0) === (f.location?.altitudeMeters ?? 0)
+  );
+});
+
+const CorrelationArc = memo(function CorrelationArc({
+  d,
+  color
+}: {
+  d: string;
+  color: string;
+}) {
+  // Static dash styling — continuous animate-pulse on thousands of arcs crushed
+  // the compositor; a single subtle stroke reads identically at a fraction of cost.
+  return <path d={d} fill="none" stroke={color} strokeWidth="1.5" strokeDasharray="4 4" />;
+});
+
+const HeadingArrow = memo(function HeadingArrow({
+  x,
+  y,
+  heading,
+  critical
+}: {
+  x: number;
+  y: number;
+  heading: number;
+  critical: boolean;
+}) {
+  const rad = ((heading - 90) * Math.PI) / 180;
+  const len = 28;
+  const x2 = x + Math.cos(rad) * len;
+  const y2 = y + Math.sin(rad) * len;
+
+  return (
+    <g>
+      <line
+        x1={x}
+        y1={y}
+        x2={x2}
+        y2={y2}
+        stroke={critical ? '#f43f5e' : '#06b6d4'}
+        strokeWidth="1.5"
+      />
+      <circle cx={x2} cy={y2} r="1.5" fill="#38bdf8" />
+    </g>
+  );
+}, (a, b) => a.x === b.x && a.y === b.y && a.heading === b.heading && a.critical === b.critical);
+
 export default function TacticalMap({
   events,
   clusters = [],
   selectedEventId,
+  recenterNonce = 0,
   onSelectEvent
 }: TacticalMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -90,7 +279,6 @@ export default function TacticalMap({
   const [showRangeRings, setShowRangeRings] = useState<boolean>(true);
   const [showCorrelationArcs, setShowCorrelationArcs] = useState<boolean>(true);
   const [showRadarSweep, setShowRadarSweep] = useState<boolean>(true);
-  const [activeHoverEvent, setActiveHoverEvent] = useState<UnifiedEvent | null>(null);
 
   // Dragging state
   const [isDragging, setIsDragging] = useState(false);
@@ -138,6 +326,21 @@ export default function TacticalMap({
       setZoom(11);
     }
   }, [filteredEvents]);
+
+  // Fly the map to injected scenario events when the injector fires (recenterNonce bump)
+  useEffect(() => {
+    if (!recenterNonce) return;
+    const validCoords = events
+      .map((e) => e.location)
+      .filter((loc): loc is { lat: number; lng: number } => Boolean(loc && typeof loc.lat === 'number' && typeof loc.lng === 'number'));
+    if (validCoords.length > 0) {
+      const avgLat = validCoords.reduce((sum, c) => sum + c.lat, 0) / validCoords.length;
+      const avgLng = validCoords.reduce((sum, c) => sum + c.lng, 0) / validCoords.length;
+      setCenter({ lat: avgLat, lng: avgLng });
+      setZoom(11);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recenterNonce]);
 
   // Click a cluster badge → fly to its centroid and drive zoom in so members separate.
   const flyToCluster = useCallback((cluster: CorrelationCluster) => {
@@ -195,15 +398,21 @@ export default function TacticalMap({
     (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
   };
 
-  // Wheel to Zoom
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    if (e.deltaY < 0) {
-      setZoom((z) => Math.min(16, z + 1));
-    } else if (e.deltaY > 0) {
-      setZoom((z) => Math.max(6, z - 1));
-    }
-  };
+  // Wheel to Zoom (native non-passive listener so preventDefault works)
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      if (e.deltaY < 0) {
+        setZoom((z) => Math.min(16, z + 1));
+      } else if (e.deltaY > 0) {
+        setZoom((z) => Math.max(6, z - 1));
+      }
+    };
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, []);
 
   // Calculate Visible Slippy Map Tiles
   const visibleTiles = useMemo(() => {
@@ -277,6 +486,50 @@ export default function TacticalMap({
     });
   }, [filteredEvents, center, zoom, dimensions]);
 
+  // Stable callback so memoized markers never re-render just because the parent
+  // pass through a new function identity on unrelated renders.
+  const onSelectRef = useRef(onSelectEvent);
+  onSelectRef.current = onSelectEvent;
+  const handleSelectStable = useCallback((evt: UnifiedEvent) => {
+    onSelectRef.current(evt);
+  }, []);
+
+  // Correlation arcs — deduped bidirectional, viewport-aware, hard-capped. The
+  // old version emitted O(N x corroborations) animating <path>s every render.
+  const correlationArcs = useMemo(() => {
+    if (!showCorrelationArcs) return [];
+    const arcs: { key: string; d: string; color: string }[] = [];
+    const seen = new Set<string>();
+    const byId = new Map<string, ProjectedEvent>();
+    for (const e of projectedEvents) byId.set(e.id, e);
+    const MAX_ARCS = 350;
+
+    for (const evt of projectedEvents) {
+      if (!evt.corroboratedBy) continue;
+      for (const corrId of evt.corroboratedBy) {
+        const key = evt.id < corrId ? `${evt.id}||${corrId}` : `${corrId}||${evt.id}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+
+        const target = byId.get(corrId);
+        if (!target) continue;
+        if (!evt.isVisible && !target.isVisible) continue;
+
+        const midX = (evt.screenX + target.screenX) / 2;
+        const midY = (evt.screenY + target.screenY) / 2 - 25;
+
+        arcs.push({
+          key,
+          d: `M ${evt.screenX} ${evt.screenY} Q ${midX} ${midY} ${target.screenX} ${target.screenY}`,
+          color: evt.isAnomaly || target.isAnomaly ? 'rgba(244, 63, 94, 0.6)' : 'rgba(6, 182, 212, 0.55)'
+        });
+        if (arcs.length >= MAX_ARCS) return arcs;
+      }
+      if (arcs.length >= MAX_ARCS) return arcs;
+    }
+    return arcs;
+  }, [projectedEvents, showCorrelationArcs]);
+
   // Center Base Station coordinates
   const baseStationScreen = useMemo(() => {
     const { width, height } = dimensions;
@@ -328,37 +581,13 @@ export default function TacticalMap({
   const ring25kmPx = 25000 / mPerPx;
   const ring50kmPx = 50000 / mPerPx;
 
-  // Helper for entity icons based on kind or source
-  const getEntityIcon = (evt: UnifiedEvent) => {
-    const kind = String(evt.raw?.kind || '').toLowerCase();
-    const src = String(evt.sourceType);
-
-    if (kind.includes('aircraft') || kind.includes('rotary') || src === 'radar') {
-      return Plane;
-    }
-    if (kind.includes('vessel') || ((src === 'radar' || src === 'submarine') && evt.title.toLowerCase().includes('vessel'))) {
-      return Ship;
-    }
-    if (kind.includes('vehicle') || (src === 'personnel' && evt.title.toLowerCase().includes('vehicle'))) {
-      return Truck;
-    }
-    if (src === 'personnel') {
-      return Users;
-    }
-    if (src === 'weather') {
-      return CloudRain;
-    }
-    return Radio;
-  };
-
   return (
     <div
       ref={containerRef}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      onWheel={handleWheel}
-      className={`relative w-full h-full min-h-[440px] bg-white/[0.04] border border-white/10 rounded-xl overflow-hidden select-none font-mono shadow-2xl  ${
+      className={`relative w-full h-full min-h-[440px] bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-xl overflow-hidden select-none font-mono shadow-2xl  ${
         isDragging ? 'cursor-grabbing' : 'cursor-grab'
       }`}
     >
@@ -562,53 +791,22 @@ export default function TacticalMap({
           </g>
         )}
 
-        {/* CORRELATION ARCS */}
-        {showCorrelationArcs &&
-          projectedEvents.map((evt) => {
-            if (!evt.corroboratedBy || evt.corroboratedBy.length === 0) return null;
-
-            return evt.corroboratedBy.map((corrId) => {
-              const target = projectedEvents.find((e) => e.id === corrId);
-              if (!target) return null;
-
-              // Quadratic Bezier Arc Curve
-              const midX = (evt.screenX + target.screenX) / 2;
-              const midY = (evt.screenY + target.screenY) / 2 - 25;
-
-              return (
-                <path
-                  key={`${evt.id}-${corrId}`}
-                  d={`M ${evt.screenX} ${evt.screenY} Q ${midX} ${midY} ${target.screenX} ${target.screenY}`}
-                  fill="none"
-                  stroke={evt.isAnomaly ? 'rgba(244, 63, 94, 0.6)' : 'rgba(6, 182, 212, 0.55)'}
-                  strokeWidth="1.5"
-                  strokeDasharray="4 4"
-                  className="animate-pulse"
-                />
-              );
-            });
-          })}
+        {/* CORRELATION ARCS — deduped, capped, static-styled (no animate-pulse) */}
+        {correlationArcs.map((arc) => (
+          <CorrelationArc key={arc.key} d={arc.d} color={arc.color} />
+        ))}
 
         {/* HEADING VECTOR ARROWS */}
         {projectedEvents.map((evt) => {
           if (typeof evt.raw?.headingDegrees !== 'number') return null;
-          const rad = ((evt.raw.headingDegrees - 90) * Math.PI) / 180;
-          const len = 28;
-          const x2 = evt.screenX + Math.cos(rad) * len;
-          const y2 = evt.screenY + Math.sin(rad) * len;
-
           return (
-            <g key={`head-${evt.id}`}>
-              <line
-                x1={evt.screenX}
-                y1={evt.screenY}
-                x2={x2}
-                y2={y2}
-                stroke={evt.severity === 'critical' ? '#f43f5e' : '#06b6d4'}
-                strokeWidth="1.5"
-              />
-              <circle cx={x2} cy={y2} r="1.5" fill="#38bdf8" />
-            </g>
+            <HeadingArrow
+              key={`head-${evt.id}`}
+              x={evt.screenX}
+              y={evt.screenY}
+              heading={evt.raw.headingDegrees}
+              critical={evt.severity === 'critical'}
+            />
           );
         })}
       </svg>
@@ -670,96 +868,13 @@ export default function TacticalMap({
 
         {projectedEvents.map((evt) => {
           if (!evt.isVisible) return null;
-
-          const isSelected = selectedEventId === evt.id;
-          const Icon = getEntityIcon(evt);
-
-          const beaconColor =
-            evt.severity === 'critical'
-              ? 'bg-rose-500 border-rose-300 text-rose-300 shadow-threat-red'
-              : evt.severity === 'high'
-              ? 'bg-orange-500 border-orange-300 text-orange-300'
-              : evt.severity === 'medium'
-              ? 'bg-yellow-500 border-yellow-300 text-yellow-300'
-              : 'bg-[#a4c639] border-[#bcd94f] text-[#bcd94f]';
-
-          const heading = typeof evt.raw?.headingDegrees === 'number' ? evt.raw.headingDegrees : 0;
-          const speedKnots = evt.raw?.speedKnots;
-          const altitude = evt.location?.altitudeMeters;
-
           return (
-            <div
+            <EventMarker
               key={evt.id}
-              style={{
-                position: 'absolute',
-                left: `${evt.screenX}px`,
-                top: `${evt.screenY}px`,
-                transform: 'translate(-50%, -50%)'
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelectEvent(evt);
-              }}
-              onMouseEnter={() => setActiveHoverEvent(evt)}
-              onMouseLeave={() => setActiveHoverEvent(null)}
-              className="pointer-events-auto cursor-pointer group transition-transform"
-            >
-              {/* Pulsing Outer Ring on Selected or Critical */}
-              {(isSelected || evt.severity === 'critical') && (
-                <div className="absolute -inset-3 rounded-full bg-rose-500/30 animate-ping pointer-events-none" />
-              )}
-
-              {/* Target Lock Reticle for Selected Entity */}
-              {isSelected && (
-                <div className="absolute -inset-2.5 border border-[#a4c639] rounded-xl animate-pulse pointer-events-none">
-                  <div className="absolute -top-1 -left-1 w-1.5 h-1.5 border-t-2 border-l-2 border-[#bcd94f]" />
-                  <div className="absolute -top-1 -right-1 w-1.5 h-1.5 border-t-2 border-r-2 border-[#bcd94f]" />
-                  <div className="absolute -bottom-1 -left-1 w-1.5 h-1.5 border-b-2 border-l-2 border-[#bcd94f]" />
-                  <div className="absolute -bottom-1 -right-1 w-1.5 h-1.5 border-b-2 border-r-2 border-[#bcd94f]" />
-                </div>
-              )}
-
-              {/* Entity Node with Rotation */}
-              <div
-                style={{ transform: `rotate(${heading}deg)` }}
-                className={`w-6 h-6 rounded-full border-2 ${beaconColor} flex items-center justify-center bg-white/[0.035] shadow-md transition-all group-hover:scale-125`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-              </div>
-
-              {/* Compact Floating Label */}
-              <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 px-1.5 py-[1px] rounded-lg bg-black/85 border border-white/10 text-[9px] text-slate-200 whitespace-nowrap shadow-lg flex items-center gap-1 pointer-events-none">
-                <span className="font-bold text-[#bcd94f]">{evt.id}</span>
-                {speedKnots !== undefined && <span className="text-[8px] text-slate-400">{String(speedKnots)}kt</span>}
-              </div>
-
-              {/* INTERACTIVE HOVER TELEMETRY CARD */}
-              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block z-50 p-3 rounded-md bg-white/[0.035] border border-[#526a27]/50 shadow-2xl text-[10px] whitespace-nowrap pointer-events-none space-y-1.5">
-                <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-1">
-                  <span className="font-bold text-[#bcd94f] text-xs flex items-center gap-1">
-                    <Target className="w-3.5 h-3.5" /> {evt.id}
-                  </span>
-                  <span className="text-emerald-400 font-bold px-1 rounded-lg bg-emerald-950/80 border border-emerald-500/30">
-                    {evt.confidence}% CONF
-                  </span>
-                </div>
-
-                <div className="font-semibold text-slate-100">{evt.title}</div>
-
-                <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-slate-300 text-[9px]">
-                  <span>Source: <strong className="text-[#bcd94f]">{evt.sourceType.toUpperCase()}</strong></span>
-                  <span>Severity: <strong className={evt.severity === 'critical' ? 'text-rose-400' : 'text-slate-200'}>{evt.severity.toUpperCase()}</strong></span>
-                  {speedKnots !== undefined && <span>Speed: <strong>{String(speedKnots)} knots</strong></span>}
-                  {altitude !== undefined && <span>Altitude: <strong>{String(altitude)}m</strong></span>}
-                  {evt.raw?.transponder && <span>Squawk: <strong>{String(evt.raw.transponder)}</strong></span>}
-                  {evt.raw?.classification && <span>IFF: <strong>{String(evt.raw.classification).toUpperCase()}</strong></span>}
-                </div>
-
-                <div className="pt-1 text-[8px] text-slate-400 border-t border-white/5 font-mono">
-                  GPS: {evt.lat.toFixed(4)}°N, {evt.lng.toFixed(4)}°E
-                </div>
-              </div>
-            </div>
+              evt={evt}
+              isSelected={selectedEventId === evt.id}
+              onSelect={handleSelectStable}
+            />
           );
         })}
       </div>
